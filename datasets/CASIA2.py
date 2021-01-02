@@ -27,18 +27,31 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         """
         :param test_proportion: percentage of data allocated for testing
         """
+
+        #call the parent's __init__
         super(CASIA2, self).__init__()
+
+        #check if the test_proportion parameter is in a valid range
         test_proportion = kwargs.get("test_proportion", 0.1)
         assert (test_proportion < 1 and test_proportion >= 0)
 
+        #check if the validation_proportion parameter is in a valid range
         validation_proportion = kwargs.get("validation_proportion", 0.1)
         assert (validation_proportion < 1 and validation_proportion >= 0)
 
+        #check if testporportion and validation proportion together are still in a valid range
         assert (validation_proportion + test_proportion < 1)
 
         self.test_proportion = test_proportion
         self.validation_proportion = validation_proportion
+
+
     def features(self):
+        """
+        This function return a dictionary holding the type and shape of the data this builder object
+        generates foreach sample
+        :return:
+        """
         return {
             'image': tfds.features.Image(),
             'mask': tfds.features.Image(shape=(None,None,1)),
@@ -46,7 +59,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         }
 
     def _info(self) -> tfds.core.DatasetInfo:
-        """Returns the dataset metadata."""
+        """Returns the dataset metadata describint the dataset"""
 
         return tfds.core.DatasetInfo(
             builder=self,
@@ -63,6 +76,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         """Download the data and define splits."""
 
+        #list of the datasets to download, one contains the training samples, the other contains the ground truths
         datasets_to_download = {
             'samples': 'https://drive.google.com/u/2/uc?id=1YeNjdP3swPSm1ClXJlpOniOyX-9ach9H&export=download',
             'ground_truth': 'https://github.com/namtpham/casia2groundtruth/raw/master/CASIA%202%20Groundtruth.zip',

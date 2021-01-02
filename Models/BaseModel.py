@@ -1,0 +1,101 @@
+import time
+from abc import ABC, abstractmethod
+from pathlib import Path
+
+from tensorflow.python.keras.models import Sequential
+
+from generators import DataGenerator
+
+
+class BaseModel(ABC):
+    """
+        Base class defining the endpoint to use to interact with a model
+    """
+    def __init__(self,model_name:str,log_dir:Path,verbose:bool=True):
+        """
+        :param model_name: name of the model, used for logging and saving it
+        :param log_dir: path of the dir in which to save the model and the tensorboard log
+        :param verbose: boolean indicating if it is necessary to print extensive information
+            in the console
+        """
+
+        #check if the log folder is a valid folder
+        assert(log_dir.is_dir())
+
+        self.name = model_name
+        self.parent_log_dir = log_dir
+        self.verbose = verbose
+
+        #generating a folder in which to save the data of this model
+        str_time = time.strftime("%b %d %Y %H:%M:%S", time.time())
+        self.log_dir = self.parent_log_dir / self.model_name / str_time
+
+        if not self.log_dir.is_dir():
+            self.log_dir.mkdir(parents=True, exist_ok=True)
+
+        #generating a unique name for the model depending on the time of its creation
+        self.name_with_time = self.model_name +" "+ str_time
+
+    @abstractmethod
+    def build_model(self) -> Sequential:
+        """
+        Function in charge of defining the model structure
+        :return: Keras Sequential Model
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def _get_callbacks(self) -> list:
+        """
+        Function defining all the callbacks for the given model and returning them as a list
+        :return: list(keras.Callbacks)
+        """
+        return []
+
+    def _on_before_train(self):
+        """
+        Set of actions to do right before the training phase
+        :return:
+        """
+        self.training_start_time = time.time()
+
+        if self.verbose:
+            print("The training phase of the model {} has started at:{}".format())
+
+    def _on_after_train(self):
+        """
+        Set of actions to do right after the training phase
+        :return:
+        """
+        self.training_time = time.time() - self.training_start_time
+
+        if self.verbose:
+            print("The model:{} has completed the training phase in: {}".format(self.model_name,self.training_time))
+
+    def train_model(self,training_data : DataGenerator,validation_data : DataGenerator, epochs:int,save:bool = False):
+        """
+        Function in charge of training the model defined in the given class
+        :param training_data: DataGenerator class, generating the training data
+        :param validation_data: Datagenerator class, generating the validation data
+        :param epochs: number of epochs to run
+        :param save: should the model be saved at the end of the training phase?
+        :return:
+        """
+
+        #get the structure of the model as defined by the build function
+        self.model = self.build_model()
+
+        #execute "on before train" operations
+        self._on_before_train()
+
+        #execute "on after train" operations
+        self.model.fit_generator(training_data,steps_per_epoch=len(training_data), epochs=epochs,
+                                 validation_data=validation_data, validation_steps=len(validation_data),
+                                 callbacks=self._get_callbacks())
+
+        #execute "on after train" operations
+        self._on_after_train()
+
+        #save the final model
+        if save:
+            self.model.save(self.log_dir / "final-model.h5")
