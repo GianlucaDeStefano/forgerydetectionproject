@@ -3,16 +3,14 @@ import random
 from os.path import basename,splitext
 from pathlib import Path
 import pandas as pd
-from pandas import read_excel
 import numpy as np
 from PIL import Image
-import tensorflow as tf
 import tensorflow_datasets as tfds
 from tqdm import tqdm
 
-from datasets.utilityFunctions import getExisting, get_files_with_type
+from datasets.utilities.utilityFunctions import get_files_with_type
 
-"Class to download the gaia2 dataset"
+"Class to download the CASIA2 dataset"
 class CASIA2(tfds.core.GeneratorBasedBuilder):
     VERSION = tfds.core.Version('1.0.0')
     RELEASE_NOTES = {
@@ -23,18 +21,27 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
     MASK_TYPES = ('*.png')
     PATH_SHEET_NAME_FIXES = Path(__file__).absolute().parent / "utilities" / "CASIA2_fileNamesCorrection.xlsx"
 
-    def __init__(self,test_proportion:float = 0.1):
+    test_proportion = 0.1
+
+    def __init__(self,**kwargs):
         """
         :param test_proportion: percentage of data allocated for testing
         """
         super(CASIA2, self).__init__()
+        test_proportion = kwargs.get("test_proportion", 0.1)
         assert (test_proportion < 1 and test_proportion >= 0)
-        self.test_proportion = test_proportion
 
+        validation_proportion = kwargs.get("validation_proportion", 0.1)
+        assert (validation_proportion < 1 and validation_proportion >= 0)
+
+        assert (validation_proportion + test_proportion < 1)
+
+        self.test_proportion = test_proportion
+        self.validation_proportion = validation_proportion
     def features(self):
         return {
-            'image': tfds.features.Tensor(shape=(None,None,3), dtype=tf.float16),
-            'mask': tfds.features.Tensor(shape=(None,None,1), dtype=tf.float16),
+            'image': tfds.features.Image(),
+            'mask': tfds.features.Image(shape=(None,None,1)),
             'tampered':tfds.features.ClassLabel(num_classes=2)
         }
 
@@ -48,7 +55,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             # If there's a common (input, target) tuple from the
             # features, specify them here. They'll be used if
             # `as_supervised=True` in `builder.as_dataset`.
-            supervised_keys=None,  # e.g. ('image', 'label')
+            supervised_keys=("image","mask"),  # e.g. ('image', 'label')
             homepage='https://dataset-homepage/',
             citation="_CITATION",
         )
@@ -89,15 +96,21 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         tampered_files = tampered_files[:min_len]
 
         #select elements belonging to the train partition
-        split_index = int(min_len*(1-self.test_proportion))
+        split_index = int(min_len*(1-self.test_proportion-self.validation_proportion))
         train_authentic = authentic_files[:split_index]
         train_tampered = tampered_files[:split_index]
 
-        # select elements belonging to the test partition
-        test_authentic = authentic_files[split_index:]
-        test_tampered = tampered_files[split_index:]
+        #select elements belonging to the validation partition
+        split_index_val = int(min_len*(1-self.test_proportion))
+        val_authentic = authentic_files[split_index:split_index_val]
+        val_tampered = tampered_files[split_index:split_index_val]
+
+        #select elements belonging to the test partition
+        test_authentic = authentic_files[split_index_val:]
+        test_tampered = tampered_files[split_index_val:]
 
         return {"train":self._generate_examples(train_authentic,train_tampered),
+                "validation":self._generate_examples(val_authentic,val_tampered),
                 "test":self._generate_examples(test_authentic,test_tampered)}
 
     def _generate_examples(self, authentic_files : list,tampered_files : list):
@@ -130,7 +143,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
 
         image = Image.open(path).convert('RGB')
         #quality = jpeg_quality_of(image)
-        image = np.asarray(image)/255
+        image = np.asarray(image)
         tampered = 0
         if not mask_path:
             #the image is authentic, the mask has to be completly black
@@ -141,7 +154,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             mask = np.asarray(Image.open(mask_path).convert('1'))[...,np.newaxis]
             tampered = 1
 
-        return {"image":image.astype(np.float16),"mask":mask.astype(np.float16),"tampered":tampered}
+        return {"image":image.astype(np.uint8),"mask":mask.astype(np.uint8),"tampered":tampered}
 
     def _fix_files_name(self, path_tampered : Path,path_sheet : Path):
         """The original creator of the dataset made several errors in naming the samples, luckly, on the repo of
