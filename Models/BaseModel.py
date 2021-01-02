@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from tensorflow.python.keras.models import Sequential
-
+import tensorflow as tf
 from generators import DataGenerator
 
 
@@ -44,13 +44,21 @@ class BaseModel(ABC):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def _get_callbacks(self) -> list:
         """
-        Function defining all the callbacks for the given model and returning them as a list
+        Function defining all the callbacks for the given model and returning them as a list.
+        In particular by default each model uses the following 3 callbacks
+            - early stopping -> to stop the train early if the model has not improved in the past 10 epochs
+            - checkpoint -> to save the model each time we find better weights
+            - tensorboard -> to save the model logs and be able to confront the models
         :return: list(keras.Callbacks)
         """
-        return []
+        callbacks = [
+            tf.keras.callbacks.EarlyStopping(patience=10),
+            tf.keras.callbacks.ModelCheckpoint(filepath=self.log_dir / "checkpoints"/'model{epoch:02d}-{val_loss:.2f}.h5'),
+            tf.keras.callbacks.TensorBoard(log_dir=self.parent_log_dir / "tensorboard"),
+        ]
+        return  callbacks
 
     def _on_before_train(self):
         """
@@ -98,4 +106,4 @@ class BaseModel(ABC):
 
         #save the final model
         if save:
-            self.model.save(self.log_dir / "final-model.h5")
+            self.model.save(self.log_dir / "final-model.{val_loss:.2f}.h5")

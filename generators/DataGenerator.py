@@ -10,10 +10,12 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
     Class that given a dataset, prepares and splits the data to serve to the model
     """
 
-    def __init__(self, batch_size,
-                 to_fit, shuffle=True):
+    def __init__(self, batch_size, shuffle=True):
+        """
+        :param batch_size: how many elements will every batch contain?
+        :param shuffle: should the elements be shuffled at each epoch?
+        """
         self.batch_size = batch_size
-        self.to_fit = to_fit
         self.shuffle = shuffle
         self.batch_index = 0
 
@@ -47,11 +49,8 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
 
         X = self._generate_x(list_IDs_temp)
 
-        if self.to_fit:
-            y = self._generate_y(list_IDs_temp)
-            return X, y
-        else:
-            return X
+        Y = self._generate_y(list_IDs_temp)
+        return X, Y
 
     @abstractmethod
     def __len__(self):

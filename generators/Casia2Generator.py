@@ -13,9 +13,8 @@ class Casia2Generator(DataGenerator, ABC):
     Class that given a dataset, prepares and splits the data to serve to the model
     """
 
-    def __init__(self,dataset:Dataset, batch_size,
-                 to_fit, shuffle=True):
-        super().__init__(batch_size,to_fit,shuffle)
+    def __init__(self,dataset:Dataset, batch_size,shuffle=True):
+        super().__init__(batch_size,shuffle)
         self.dataset = dataset
         self.indexes = []
         self.on_epoch_end()
