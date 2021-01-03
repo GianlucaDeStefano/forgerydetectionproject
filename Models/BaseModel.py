@@ -1,5 +1,7 @@
+import os
 import time
 from abc import ABC, abstractmethod
+from contextlib import redirect_stdout
 from pathlib import Path
 
 from tensorflow.python.keras.models import Sequential
@@ -22,19 +24,29 @@ class BaseModel(ABC):
         #check if the log folder is a valid folder
         assert(log_dir.is_dir())
 
-        self.name = model_name
-        self.parent_log_dir = log_dir
+        #the verbose parameter controls how many log info will be printed in the console
         self.verbose = verbose
 
-        #generating a folder in which to save the data of this model
+        #save the time of creation of this class, it will help us to uniquelly identify this specific train run
         self.str_time = time.strftime("%b %d %Y %H:%M:%S", time.gmtime())
-        self.log_dir = self.parent_log_dir / self.name / self.str_time
 
+        #save the model name and the directory in which to save the logs
+        self.name = model_name
+        self.parent_log_dir = log_dir
+
+        #create the path of the log folder for this train run
+        self.log_dir = self.parent_log_dir / "models" / self.name / self.str_time
+
+        #create the log folder
         if not self.log_dir.is_dir():
             self.log_dir.mkdir(parents=True, exist_ok=True)
 
+        #tensorboard has its own log directory
+        self.tensorboard_log_dir =self.parent_log_dir / "tensorboard" / self.name/self.str_time
+
         #generating a unique name for the model depending on the time of its creation
         self.name_with_time = self.name +" "+ self.str_time
+
 
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -62,7 +74,7 @@ class BaseModel(ABC):
         callbacks = [
             tf.keras.callbacks.EarlyStopping(patience=10),
             tf.keras.callbacks.ModelCheckpoint(filepath=self.log_dir / "checkpoints"/'model{epoch:02d}-{val_loss:.2f}.h5'),
-            tf.keras.callbacks.TensorBoard(log_dir=self.parent_log_dir / "tensorboard" / self.name/self.str_time),
+            tf.keras.callbacks.TensorBoard(log_dir=self.tensorboard_log_dir),
         ]
         return  callbacks
 
@@ -88,7 +100,7 @@ class BaseModel(ABC):
 
     def train_model(self,training_data : DataGenerator,validation_data : DataGenerator, epochs:int,loss_function,
                     optimizer = tf.keras.optimizers.Adam(lr=0.0001),
-                    save:bool = False):
+                    save_model:bool = False,save_summary:bool=True):
         """
         Function in charge of training the model defined in the given class
         :param training_data: DataGenerator class, generating the training data
@@ -96,7 +108,8 @@ class BaseModel(ABC):
         :param optimizer: optimizer to use during training,
         :param loss_function: loss function to use
         :param epochs: number of epochs to run
-        :param save: should the model be saved at the end of the training phase?
+        :param save_model: should the model be saved at the end of the training phase?
+        :param save_summary: save the summary of the model into the log folder
         :return:
         """
 
@@ -106,17 +119,41 @@ class BaseModel(ABC):
         #compile the model
         self.model.compile(optimizer=optimizer,loss=loss_function,metrics=['accuracy'])
 
+        #save the summary of the model if required
+        if save_summary:
+            with open(self.log_dir / 'summary.txt', 'w') as f:
+                with redirect_stdout(f):
+                    self.model.summary()
+
         #execute "on before train" operations
         self._on_before_train()
 
         #execute "on after train" operations
-        self.model.fit_generator(training_data,steps_per_epoch=len(training_data), epochs=epochs,
+        self.model.fit(training_data,steps_per_epoch=len(training_data), epochs=epochs,
                                  validation_data=validation_data, validation_steps=len(validation_data),
-                                 callbacks=self._get_callbacks())
+                                 callbacks=self._get_callbacks(),workers=4)
 
         #execute "on after train" operations
         self._on_after_train()
 
         #save the final model
-        if save:
+        if save_model:
             self.model.save(self.log_dir / "final-model.{val_loss:.2f}.h5")
+
+    def __del__(self, exc_type, exc_val, exc_tb):
+        """
+        On deleting the instance of this model, check if its log folder is empty, if it is, delete it to keep
+        the logs as clean as possible
+        :return:
+        """
+
+        #check if the folder exists
+        if not self.log_dir.is_dir():
+            return
+
+        #get the content of the folder as a list of paths
+        dirContents = os.listdir(self.log_dir)
+
+        #if the content list is empty delete the folder
+        if len(dirContents) == 0:
+            os.rmdir(self.log_dir)
