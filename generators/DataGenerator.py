@@ -47,10 +47,11 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
         # Find list of IDs
         list_IDs_temp = self._generate_indexes(index)
 
-        X = self._generate_x(list_IDs_temp)
+        X = np.array(self._generate_x(list_IDs_temp))
 
-        Y = self._generate_y(list_IDs_temp)
-        return X, Y
+        Y = np.array(self._generate_y(list_IDs_temp))
+
+        return X.astype('float32') ,Y.astype('float32')
 
     @abstractmethod
     def __len__(self):

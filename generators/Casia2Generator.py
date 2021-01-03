@@ -15,7 +15,7 @@ class Casia2Generator(DataGenerator, ABC):
 
     def __init__(self,dataset:Dataset, batch_size,shuffle=True):
         super().__init__(batch_size,shuffle)
-        self.dataset = dataset
+        self.dataset = list(dataset)
         self.indexes = []
         self.on_epoch_end()
 
@@ -49,7 +49,7 @@ class Casia2Generator(DataGenerator, ABC):
         :param batch_id:
         :return:
         """
-        return self.dataset[batch_id*self.batch_size,(batch_id+1)*self.batch_size]
+        return self.indexes[batch_id*self.batch_size:(batch_id+1)*self.batch_size]
 
     def _generate_x(self, list_IDs_temp):
         """
@@ -59,19 +59,33 @@ class Casia2Generator(DataGenerator, ABC):
         """
 
         #create batch object
-        X = np.empty((self.batch_size, 3))
+        batch = []
+
+        #each batch should have a well defined dimension
+        #this means that each element inside the np array should
+        #have the same dimansion, therefore, we pad each image in the batch
+        #to the dimension of the biggest one
+
+        #compute the target dimension of each image
+        samples = [self.dataset[i] for i in list_IDs_temp]
+        max_width = max(sample[0].shape[0] for sample in samples)
+        max_heigth = max(sample[0].shape[1] for sample in samples)
+        target_shape = (max_width,max_heigth,3)
 
         #foreach sample in the batch
         for i, ID in enumerate(list_IDs_temp):
 
             #read the sample from the dataset
-            X[i,] = self.dataset[ID]["image"]
+            X= np.array(self.dataset[ID][0])
+
+            #pad each image
+            result = np.zeros(target_shape)
+            result[:X.shape[0], :X.shape[1],:X.shape[2]] = X
 
             # Normalize data
-            X = (X / 255).astype('float32')
+            batch.append((result / 255).astype('float32'))
 
-        #return a 4 dimensional tensor
-        return X[:, :, :, np.newaxis]
+        return batch
 
     def _generate_y(self, list_IDs_temp):
         """
@@ -80,16 +94,31 @@ class Casia2Generator(DataGenerator, ABC):
         :return: list of sample data
         """
 
-        # create batch object
-        Y = np.empty((self.batch_size, 3))
+        #create batch object
+        batch = []
+
+        #each batch should have a well defined dimension
+        #this means that each element inside the np array should
+        #have the same dimansion, therefore, we pad each image in the batch
+        #to the dimension of the biggest one
+
+        #compute the target dimension of each image
+        samples = [self.dataset[i] for i in list_IDs_temp]
+        max_width = max(sample[1].shape[0] for sample in samples)
+        max_heigth = max(sample[1].shape[1] for sample in samples)
+        target_shape = (max_width,max_heigth,1)
 
         #foreach sample in the batch
         for i, ID in enumerate(list_IDs_temp):
 
-            # read the sample from the dataset
-            Y[i,] = self.dataset[ID]["mask"]
+            #read the sample from the dataset
+            Y= np.array(self.dataset[ID][1])
+
+            #pad each image
+            result = np.zeros(target_shape)
+            result[:Y.shape[0], :Y.shape[1],:Y.shape[2]] = Y
 
             # Normalize data
-            X = (X / 255).astype('float32')
+            batch.append((result / 255).astype('float32'))
 
-        return X[:, :, :, np.newaxis]
+        return batch
