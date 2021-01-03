@@ -16,12 +16,12 @@ dataset.download_and_prepare()
 
 #prepare the training data generator
 train_set = tfds.load('CASIA2',split="train",as_supervised=True)
-train_generator = Casia2Generator(train_set, batch_size=32)
+train_generator = Casia2Generator(train_set, batch_size=6)
 
 #prepare the validation data generator
 validation_set = tfds.load('CASIA2',split="validation",as_supervised=True)
-validation_generator = Casia2Generator(train_set, batch_size=32)
+validation_generator = Casia2Generator(train_set, batch_size=6)
 
 #define the model to use
 model = SingleBranchFCNN("Simple CNN",Path("./logs"),(None,None,3),(None,None,1))
-model.train_model(train_generator,validation_generator,30)
+model.train_model(train_generator,validation_generator,30,"sparse_categorical_crossentropy")

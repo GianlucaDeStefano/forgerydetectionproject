@@ -31,3 +31,4 @@ class CNNModel(BaseModel, ABC):
         model = tf.keras.layers.BatchNormalization()(model)
         model = tf.keras.layers.Activation(activation)(model)
         return model
+

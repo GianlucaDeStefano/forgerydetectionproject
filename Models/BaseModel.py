@@ -27,14 +27,14 @@ class BaseModel(ABC):
         self.verbose = verbose
 
         #generating a folder in which to save the data of this model
-        str_time = time.strftime("%b %d %Y %H:%M:%S", time.gmtime())
-        self.log_dir = self.parent_log_dir / self.name / str_time
+        self.str_time = time.strftime("%b %d %Y %H:%M:%S", time.gmtime())
+        self.log_dir = self.parent_log_dir / self.name / self.str_time
 
         if not self.log_dir.is_dir():
             self.log_dir.mkdir(parents=True, exist_ok=True)
 
         #generating a unique name for the model depending on the time of its creation
-        self.name_with_time = self.name +" "+ str_time
+        self.name_with_time = self.name +" "+ self.str_time
 
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -62,7 +62,7 @@ class BaseModel(ABC):
         callbacks = [
             tf.keras.callbacks.EarlyStopping(patience=10),
             tf.keras.callbacks.ModelCheckpoint(filepath=self.log_dir / "checkpoints"/'model{epoch:02d}-{val_loss:.2f}.h5'),
-            tf.keras.callbacks.TensorBoard(log_dir=self.parent_log_dir / "tensorboard"),
+            tf.keras.callbacks.TensorBoard(log_dir=self.parent_log_dir / "tensorboard" / self.name/self.str_time),
         ]
         return  callbacks
 
@@ -86,9 +86,8 @@ class BaseModel(ABC):
         if self.verbose:
             print("The model:{} has completed the training phase in: {}".format(self.name,self.training_time))
 
-    def train_model(self,training_data : DataGenerator,validation_data : DataGenerator, epochs:int,
+    def train_model(self,training_data : DataGenerator,validation_data : DataGenerator, epochs:int,loss_function,
                     optimizer = tf.keras.optimizers.Adam(lr=0.0001),
-                    loss_function = 'categorical_crossentropy',
                     save:bool = False):
         """
         Function in charge of training the model defined in the given class
