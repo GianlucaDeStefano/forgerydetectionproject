@@ -1,11 +1,13 @@
 from abc import ABC
 
+from tensorflow.python.keras.models import Sequential
+
 from Models.BaseModel import BaseModel
 import tensorflow as tf
 
-class StandardCNNModel(BaseModel, ABC):
+class CNNModel(BaseModel, ABC):
 
-    def convolutional_layer(self,model,filters,kernel_size,strides,dropout_rate=0.4,activation="relu"):
+    def convolutional_layer(self,model:Sequential,filters,kernel_size,strides,dropout_rate=0.4,activation="relu") -> Sequential:
         """
         This function defines the standard layer of a CNN conposed by:
             - Convolution
