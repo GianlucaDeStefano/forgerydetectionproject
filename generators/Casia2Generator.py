@@ -35,8 +35,7 @@ class Casia2Generator(DataGenerator, ABC):
         """
 
         #generate the indexes of the samples
-        if not self.indexes:
-            self.indexes = np.arange(len(self.dataset))
+        self.indexes = np.arange(len(self.dataset))
 
         #shuffle the samples orders
         if self.shuffle:
