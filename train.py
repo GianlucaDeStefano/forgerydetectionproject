@@ -1,6 +1,4 @@
 from pathlib import Path
-
-from Models.Losses.DICE import dice_loss
 from Models.SingleBranchFCNN import SingleBranchFCNN
 from Datasets.CASIA2 import CASIA2
 import tensorflow_datasets as tfds
@@ -25,4 +23,4 @@ validation_generator = Casia2Generator(train_set, batch_size=20)
 
 #define the model to use
 model = SingleBranchFCNN("Simple CNN", Path("Logs"))
-model.train_model(train_generator,validation_generator,30,dice_loss)
+model.train_model(train_generator,validation_generator,30,"sparse_categorical_crossentropy")
