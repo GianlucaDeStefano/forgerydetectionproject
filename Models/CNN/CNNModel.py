@@ -3,7 +3,7 @@ from abc import ABC
 from tensorflow.python.keras.layers import MaxPooling2D, UpSampling2D
 from tensorflow.python.keras.models import Sequential
 
-from Models.BaseModel import BaseModel
+from Models.CNN.BaseModel import BaseModel
 import tensorflow as tf
 
 class CNNModel(BaseModel, ABC):
