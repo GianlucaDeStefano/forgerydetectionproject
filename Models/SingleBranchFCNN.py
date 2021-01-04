@@ -16,3 +16,23 @@ class SingleBranchFCNN(CNNModel):
         model = self.convolutional_block(model, 16, 3, 1)
 
         return Model([input], [model])
+
+    @property
+    def input_shape(self) -> tuple:
+        """
+        This property returns the input shape of the model
+        :return: tuple, in this case the tuple is (None,None,3) because the input images can have variable width and height
+        but they are always RGB images with 3 channels
+        """
+        return (None,None,3)
+
+    @property
+    def output_shape(self) -> tuple:
+        """
+        This property returns the output shape of the model
+        :return: tuple, in this case the tuple is (None,None,1) because the output image can have variable width and height
+        and only one class of pixel to recognize (Tampered)
+        """
+        return (None,None,1)
+
+

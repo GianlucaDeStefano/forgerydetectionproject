@@ -1,6 +1,6 @@
 from abc import ABC
 
-from tensorflow.python.keras.layers import MaxPooling2D
+from tensorflow.python.keras.layers import MaxPooling2D, UpSampling2D
 from tensorflow.python.keras.models import Sequential
 
 from Models.BaseModel import BaseModel
@@ -11,7 +11,7 @@ class CNNModel(BaseModel, ABC):
     @staticmethod
     def convolutional_block(model:Sequential, filters, kernel_size, strides, padding="same", dropout_rate=0.4, activation="relu") -> Sequential:
         """
-        This function defines the standard layer of a CNN conposed by:
+        This function defines the standard block of a CNN conposed by:
             - Convolution
             - Dropout
             - BatchNormalization
@@ -36,4 +36,22 @@ class CNNModel(BaseModel, ABC):
 
     @staticmethod
     def downsampling_block(model:Sequential,downsampling_factor,padding="same"):
+        """
+            This block can be used to downsample daa of a 2D convolution
+        :param model: the model to which we should append the block
+        :param downsampling_factor: the factor by which we want to downsample
+        :param padding: the type of padding to apply
+        :return:
+        """
         return MaxPooling2D(downsampling_factor, padding=padding)(model)
+
+    @staticmethod
+    def upsampling_block(model:Sequential, upsampling_factor, interpolation="nearest"):
+        """
+            This block can be used to upsample data of a 2D convolution
+        :param model: the model to which we should append the block
+        :param upsampling_factor: the factor by which we want to downsample
+        :param padding: the type of padding to apply
+        :return:
+        """
+        return UpSampling2D(upsampling_factor, interpolation=interpolation)(model)
