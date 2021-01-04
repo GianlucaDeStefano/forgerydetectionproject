@@ -34,6 +34,17 @@ To train a model execute:
 python train.py
 ```
 
+## Folder structure
+
+    .
+    ├── Datasets                # Contains the builder classes to download and save datasets
+    ├── Generators              # Contains the generator classes to load datasets from memory
+    ├── Logs                    # Folder used to save log data during training
+    ├── Models                  # Contains the implementation of the classes to build and train the model
+    ├── train.py                # Main endpoint to use to train a model
+    └── README.md
+
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
