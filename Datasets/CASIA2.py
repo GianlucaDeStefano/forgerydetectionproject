@@ -8,7 +8,7 @@ from PIL import Image
 import tensorflow_datasets as tfds
 from tqdm import tqdm
 
-from datasets.utilities.utilityFunctions import get_files_with_type
+from Datasets.Utilities.utilityFunctions import get_files_with_type
 
 "Class to download the CASIA2 dataset"
 
@@ -21,7 +21,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
 
     IMAGE_TYPES = ('*.jpg', '*.tif')
     MASK_TYPES = ('*.png')
-    PATH_SHEET_NAME_FIXES = Path(__file__).absolute().parent / "utilities" / "CASIA2_fileNamesCorrection.xlsx"
+    PATH_SHEET_NAME_FIXES = Path(__file__).absolute().parent / "Utilities" / "CASIA2_fileNamesCorrection.xlsx"
 
     test_proportion = 0.1
 
@@ -77,13 +77,13 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         """Download the data and define splits."""
 
-        # list of the datasets to download, one contains the training samples, the other contains the ground truths
+        # list of the Datasets to download, one contains the training samples, the other contains the ground truths
         datasets_to_download = {
             'samples': 'https://drive.google.com/u/2/uc?id=1YeNjdP3swPSm1ClXJlpOniOyX-9ach9H&export=download',
             'ground_truth': 'https://github.com/namtpham/casia2groundtruth/raw/master/CASIA%202%20Groundtruth.zip',
         }
 
-        # download and extract the datasets
+        # download and extract the Datasets
         extracted_ds_paths = dl_manager.download_and_extract(datasets_to_download)
 
         # get paths of the extracted archives
@@ -91,7 +91,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         self.extracted_path_data_au = Path(extracted_ds_paths['samples']) / "Au"
         self.extracted_path_data_tp = Path(extracted_ds_paths['samples']) / "Tp"
 
-        # fix filenames in the datasets
+        # fix filenames in the Datasets
         self._fix_files_name(self.extracted_path_data_tp, self.PATH_SHEET_NAME_FIXES)
 
         # get list of authentic and tapered images

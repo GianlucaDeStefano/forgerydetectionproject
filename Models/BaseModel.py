@@ -6,7 +6,7 @@ from pathlib import Path
 
 from tensorflow.python.keras.models import Sequential
 import tensorflow as tf
-from generators import DataGenerator
+from Geneartors import DataGenerator
 
 
 class BaseModel(ABC):
@@ -30,7 +30,7 @@ class BaseModel(ABC):
         #save the time of creation of this class, it will help us to uniquelly identify this specific train run
         self.str_time = time.strftime("%b %d %Y %H:%M:%S", time.gmtime())
 
-        #save the model name and the directory in which to save the logs
+        #save the model name and the directory in which to save the Logs
         self.name = model_name
         self.parent_log_dir = log_dir
 
@@ -68,7 +68,7 @@ class BaseModel(ABC):
         In particular by default each model uses the following 3 callbacks
             - early stopping -> to stop the train early if the model has not improved in the past 10 epochs
             - checkpoint -> to save the model each time we find better weights
-            - tensorboard -> to save the model logs and be able to confront the models
+            - tensorboard -> to save the model Logs and be able to confront the models
         :return: list(keras.Callbacks)
         """
         callbacks = [
@@ -143,7 +143,7 @@ class BaseModel(ABC):
     def __del__(self, exc_type, exc_val, exc_tb):
         """
         On deleting the instance of this model, check if its log folder is empty, if it is, delete it to keep
-        the logs as clean as possible
+        the Logs as clean as possible
         :return:
         """
 

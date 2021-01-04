@@ -5,7 +5,7 @@ from abc import ABC
 import numpy as np
 from tensorflow.python.data import Dataset
 
-from generators.DataGenerator import DataGenerator
+from Geneartors.DataGenerator import DataGenerator
 
 
 class Casia2Generator(DataGenerator, ABC):
