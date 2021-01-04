@@ -1,7 +1,7 @@
 from tensorflow.python.keras.models import Sequential, Model
 import tensorflow as tf
 
-from Models.CNNModel import CNNModel
+from Models.CNN.CNNModel import CNNModel
 
 
 class SingleBranchFCNN(CNNModel):
