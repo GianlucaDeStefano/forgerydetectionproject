@@ -11,6 +11,12 @@ class SingleBranchFCNN(CNNModel):
     """
 
     def build_model(self, input_shape, output_shape) -> Sequential:
+        """
+        Function in charge of defining the model structure
+        :param input_shape: tuple containing the shape of the data this model will recive as input
+        :param output_shape: tuple containing the shape of the output produced by this model
+        :return: Keras Sequential Model
+        """
         input = tf.keras.layers.Input(shape=input_shape)
         model = self.convolutional_block(input, 16, 3, 1)
         model = self.convolutional_block(model, 16, 3, 1)

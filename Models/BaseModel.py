@@ -14,7 +14,7 @@ class BaseModel(ABC):
         Base class defining the endpoint to use to interact with a model
     """
 
-    def __init__(self, model_name: str, log_dir: Path, input_shape, output_shape, verbose: bool = True):
+    def __init__(self, model_name: str, log_dir: Path, verbose: bool = True):
         """
         :param model_name: name of the model, used for logging and saving it
         :param log_dir: path of the dir in which to save the model and the tensorboard log
@@ -47,9 +47,6 @@ class BaseModel(ABC):
 
         # generating a unique name for the model depending on the time of its creation
         self.name_with_time = self.name + " " + self.str_time
-
-        self.input_shape = input_shape
-        self.output_shape = output_shape
 
     @abstractmethod
     def build_model(self, input_shape, output_shape) -> Sequential:

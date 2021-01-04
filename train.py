@@ -22,5 +22,5 @@ validation_set = dataset.as_dataset(split="validation",as_supervised=True)
 validation_generator = Casia2Generator(train_set, batch_size=20)
 
 #define the model to use
-model = SingleBranchFCNN("Simple CNN", Path("Logs"), (None, None, 3), (None, None, 1))
+model = SingleBranchFCNN("Simple CNN", Path("Logs"))
 model.train_model(train_generator,validation_generator,30,"sparse_categorical_crossentropy")
