@@ -1,5 +1,6 @@
 from abc import ABC
 
+from tensorflow.python.keras.layers import MaxPooling2D
 from tensorflow.python.keras.models import Sequential
 
 from Models.BaseModel import BaseModel
@@ -7,7 +8,8 @@ import tensorflow as tf
 
 class CNNModel(BaseModel, ABC):
 
-    def convolutional_layer(self,model:Sequential,filters,kernel_size,strides,padding="same",dropout_rate=0.4,activation="relu") -> Sequential:
+    @staticmethod
+    def convolutional_block(model:Sequential, filters, kernel_size, strides, padding="same", dropout_rate=0.4, activation="relu") -> Sequential:
         """
         This function defines the standard layer of a CNN conposed by:
             - Convolution
@@ -32,3 +34,6 @@ class CNNModel(BaseModel, ABC):
         model = tf.keras.layers.Activation(activation)(model)
         return model
 
+    @staticmethod
+    def downsampling_block(model:Sequential,downsampling_factor,padding="same"):
+        return MaxPooling2D(downsampling_factor, padding=padding)(model)

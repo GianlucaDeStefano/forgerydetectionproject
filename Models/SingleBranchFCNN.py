@@ -12,7 +12,7 @@ class SingleBranchFCNN(CNNModel):
 
     def build_model(self, input_shape, output_shape) -> Sequential:
         input = tf.keras.layers.Input(shape=input_shape)
-        model = self.convolutional_layer(input, 16, 3, 1)
-        model = self.convolutional_layer(model, 16, 3, 1)
+        model = self.convolutional_block(input, 16, 3, 1)
+        model = self.convolutional_block(model, 16, 3, 1)
 
         return Model([input], [model])
