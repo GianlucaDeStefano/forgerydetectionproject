@@ -101,6 +101,8 @@ class BaseModel(ABC):
         self.training_start_time = time.time()
 
         if self.verbose:
+            print("Model structure:")
+            print(self.model.summary())
             print("The training phase of the model {} has started at:{}".format(self.name, self.training_start_time))
 
     def _on_after_train(self):

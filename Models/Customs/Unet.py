@@ -4,7 +4,7 @@ import tensorflow as tf
 from Models.CNN.CNNModel import CNNModel
 
 
-class SingleBranchFCNN(CNNModel):
+class Unet(CNNModel):
     """
         Class containing the implementation of a Unet networks for segmentation.
         More details here: https://en.wikipedia.org/wiki/U-Net
@@ -19,7 +19,11 @@ class SingleBranchFCNN(CNNModel):
         """
         input = tf.keras.layers.Input(shape=input_shape)
 
-        down_1 = self.unet_downscale_block(input, filters=32, kernel_size=(3, 3), strides=1,
+        input_conv = self.convolutional_block(input, filters=32, kernel_size=(3, 3), strides=1)
+
+        input_conv = self.convolutional_block(input, filters=32, kernel_size=(3, 3), strides=1)
+
+        down_1 = self.unet_downscale_block(input_conv, filters=32, kernel_size=(3, 3), strides=1,
                                            downsamppling_factor=(2, 2))
 
         down_2 = self.unet_downscale_block(down_1, filters=64, kernel_size=(3, 3), strides=1,
@@ -33,13 +37,13 @@ class SingleBranchFCNN(CNNModel):
         conv = self.convolutional_block(conv, filters=128, kernel_size=(3, 3), strides=1)
 
         up_3 = self.unet_upscale_block(conv, filters=128, kernel_size=(3, 3), strides=1, upsampling_factor=(2, 2),
-                                       input2=down_3)
-
-        up_2 = self.unet_upscale_block(up_3, filters=64, kernel_size=(3, 3), strides=1, upsampling_factor=(2, 2),
                                        input2=down_2)
 
-        up_1 = self.unet_upscale_block(up_2, filters=32, kernel_size=(3, 3), strides=1, upsampling_factor=(2, 2),
+        up_2 = self.unet_upscale_block(up_3, filters=64, kernel_size=(3, 3), strides=1, upsampling_factor=(2, 2),
                                        input2=down_1)
+
+        up_1 = self.unet_upscale_block(up_2, filters=32, kernel_size=(3, 3), strides=1, upsampling_factor=(2, 2),
+                                       input2=input_conv)
 
         conv = self.convolutional_block(up_1, filters=16, kernel_size=(3, 3), strides=1)
 
@@ -47,7 +51,7 @@ class SingleBranchFCNN(CNNModel):
 
         # add a last block with activation = sigmoidal to squash the output of each pixel in the range [0,1]
         # the number of filters should be the same as the number of depth dimensions in the output image
-        segmentation = self.convolutional_block(conv, filters=input_shape[2], strides=(1, 1), activation="sigmoid")
+        segmentation = self.convolutional_block(conv, filters=input_shape[2], kernel_size=(1,1), strides=1, activation="sigmoid")
 
         return Model([input], [segmentation])
 
@@ -101,7 +105,7 @@ class SingleBranchFCNN(CNNModel):
         model = CNNModel.upsampling_block(input1, upsampling_factor)
 
         # if a second input is defined create a skip connection
-        if input2:
+        if input2 is not None:
             model = concatenate([model, input2], axis=-1)
 
         model = CNNModel.convolutional_block(model, filters, kernel_size, strides, padding, dropout_rate, activation)
