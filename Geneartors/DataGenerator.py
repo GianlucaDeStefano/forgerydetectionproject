@@ -10,12 +10,15 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
     Class that given a dataset, prepares and splits the data to serve to the model
     """
 
-    def __init__(self, batch_size, shuffle=True):
+    def __init__(self, batch_size, augment_data: bool = True, shuffle: bool = True):
         """
         :param batch_size: how many elements will every batch contain?
+        :param augment_data: Should we use some data augmentation technique
+            (if defined) to perturb the data differently at each epoch?
         :param shuffle: should the elements be shuffled at each epoch?
         """
         self.batch_size = batch_size
+        self.augment_data = augment_data
         self.shuffle = shuffle
         self.batch_index = 0
 
@@ -45,13 +48,36 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
         """
 
         # Find list of IDs
-        list_IDs_temp = self._generate_indexes(index)
+        sample_ids = self._generate_indexes(index)
 
-        X = np.array(self._generate_x(list_IDs_temp))
+        X, Y = self._generate_batch(sample_ids)
 
-        Y = np.array(self._generate_y(list_IDs_temp))
+        return X.astype('float32'), Y.astype('float32')
 
-        return X.astype('float32') ,Y.astype('float32')
+    def _generate_batch(self, sample_ids):
+        """
+        Given a list of samples ids, create a batch with those samples
+        :param sample_ids: ids of the samples that have to be included in the batch
+        :return:
+        """
+        X = []
+        Y = []
+
+        for sample_id in sample_ids:
+
+            # read the samples
+            x = self._generate_x(sample_id)
+            y = self._generate_y(sample_id)
+
+            # augment the data
+            if self.augment_data:
+                x, y = self._apply_transformations(x, y)
+
+            # append the data to the batch objects
+            X.append(x)
+            Y.append(y)
+
+        return np.array(X, dtype=np.float32), np.array(Y, dtype=np.float32)
 
     @abstractmethod
     def __len__(self):
@@ -80,19 +106,29 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
         raise NotImplementedError
 
     @abstractmethod
-    def _generate_x(self, list_IDs_temp):
+    def _generate_x(self, sample_id):
         """
-        Given a list of ids, return the respective input data ready to be used by the model
-        :param list_IDs_temp: list of ids
-        :return: list of sample data
+        Given a sample id, read the sample input from the
+        :param sample_id: id of the sample we have to generte
+        :return: input of the sample
         """
         raise NotImplementedError
 
     @abstractmethod
-    def _generate_y(self, list_IDs_temp):
+    def _generate_y(self, sample_id):
         """
-        Given a list of ids, return the respective output data ready to be used by the model
-        :param list_IDs_temp: list of ids
-        :return: list of sample data
+        Given a sample id, read the sample input from the
+        :param sample_id: id of the sample we have to generte
+        :return: input of the sample
         """
         raise NotImplementedError
+
+    def _apply_transformations(self, x, y):
+        """
+        Given a set of inputs and outpust representing a batch, apply some sort of data augmentation
+
+        :param x: batch of inputs elements
+        :param y: batch of output elements
+        :return: X,Y batches
+        """
+        return x, y
