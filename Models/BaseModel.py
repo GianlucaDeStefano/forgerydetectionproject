@@ -88,7 +88,7 @@ class BaseModel(ABC):
         callbacks = [
             tf.keras.callbacks.EarlyStopping(patience=10),
             tf.keras.callbacks.ModelCheckpoint(
-                filepath=self.log_dir / "checkpoints" / 'model{epoch:02d}-{val_loss:.2f}.h5'),
+                filepath=self.log_dir / "checkpoints" / 'model{epoch:02d}-{val_loss:.2f}.h5',monitor='val_loss',save_best_only=True),
             tf.keras.callbacks.TensorBoard(log_dir=self.tensorboard_log_dir),
         ]
         return callbacks

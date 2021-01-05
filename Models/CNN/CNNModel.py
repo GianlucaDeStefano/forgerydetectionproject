@@ -3,7 +3,7 @@ from abc import ABC
 from tensorflow.python.keras.layers import MaxPooling2D, UpSampling2D
 from tensorflow.python.keras.models import Sequential
 
-from Models.CNN.BaseModel import BaseModel
+from Models.BaseModel import BaseModel
 import tensorflow as tf
 
 class CNNModel(BaseModel, ABC):
@@ -25,7 +25,7 @@ class CNNModel(BaseModel, ABC):
         :param padding: the padding parameter to pass to the CNN layer (default: same)
         :param dropout_rate: probability of a neuron to be switched off
         :param activation: the type of activation function to use (eg: Relu)
-        :return:
+        :return: the initial sequential model with the block appended
         """
 
         model = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size, strides=strides,padding=padding)(model)
@@ -41,7 +41,7 @@ class CNNModel(BaseModel, ABC):
         :param model: the model to which we should append the block
         :param downsampling_factor: the factor by which we want to downsample
         :param padding: the type of padding to apply
-        :return:
+        :return: the initial sequential model with the block appended
         """
         return MaxPooling2D(downsampling_factor, padding=padding)(model)
 
@@ -52,6 +52,6 @@ class CNNModel(BaseModel, ABC):
         :param model: the model to which we should append the block
         :param upsampling_factor: the factor by which we want to downsample
         :param padding: the type of padding to apply
-        :return:
+        :return: the initial sequential model with the block appended
         """
         return UpSampling2D(upsampling_factor, interpolation=interpolation)(model)

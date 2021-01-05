@@ -1,10 +1,7 @@
 from pathlib import Path
-from Models.SingleBranchFCNN import SingleBranchFCNN
+from Models.Customs.SingleBranchFCNN import SingleBranchFCNN
 from Datasets.CASIA2 import CASIA2
-import tensorflow_datasets as tfds
 from Geneartors.Casia2Generator import Casia2Generator
-from tensorflow.python.client import device_lib
-
 
 #print device information to see if tensorflow is running on the cpu or the gpu
 #print(device_lib.list_local_devices())
@@ -23,4 +20,4 @@ validation_generator = Casia2Generator(train_set, batch_size=20)
 
 #define the model to use
 model = SingleBranchFCNN("Simple CNN", Path("Logs"))
-model.train_model(train_generator,validation_generator,30,"sparse_categorical_crossentropy")
+model.train_model(train_generator,validation_generator,30,"binary_crossentropy")
