@@ -51,7 +51,7 @@ class SingleBranchFCNN(CNNModel):
 
         return Model([input], [segmentation])
 
-    @staticmeth
+    @staticmethod
     def unet_downscale_block(model: Sequential, filters, kernel_size, strides, downsamppling_factor, padding="same",
                              dropout_rate=0.4,
                              activation="relu"):
