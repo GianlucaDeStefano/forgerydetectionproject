@@ -47,7 +47,7 @@ class Unet(CNNModel):
 
         conv = self.convolutional_block(up_1, filters=16, kernel_size=(3, 3), strides=1)
 
-        conv = self.convolutional_block(conv, filters=8, kernel_size=(3, 3), strides=1)
+        conv = self.convolutional_block(conv, filters=16, kernel_size=(3, 3), strides=1)
 
         # add a last block with activation = sigmoidal to squash the output of each pixel in the range [0,1]
         # the number of filters should be the same as the number of depth dimensions in the output image
