@@ -101,6 +101,10 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         # discard tampered files that have no mask
         tampered_files = list(filter(self._check_mask, tampered_files))
 
+        #discard invalid files
+        authentic_files = self._keep_valid(authentic_files)
+        tampered_files = self._keep_valid(tampered_files)
+
         # shuffle the elements in the 2 lists
         random.shuffle(authentic_files)
         random.shuffle(tampered_files)
@@ -134,9 +138,13 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
           :param tampered_files: tampered files to include in this set
         """
 
+        counter_tampered = 0
+        counter_authentic = 0
         # let's make sure the set is balance
         assert (len(authentic_files) == len(tampered_files))
 
+        """
+        
         for authentic_img in authentic_files:
 
             # generate the data of the sample
@@ -146,8 +154,9 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             if not sample:
                 continue
 
+            counter_authentic += 1
             yield authentic_img, sample
-
+        """
         for tampered_img in tampered_files:
 
             mask_path = self.extracted_path_gt / (splitext(basename(tampered_img))[0] + "_gt.png")
@@ -159,7 +168,32 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             if not sample:
                 continue
 
+            counter_tampered += 1
             yield tampered_img,sample
+
+        print("Generated dataset containing: {} authentic and {} tampered images".format(counter_authentic,counter_tampered))
+
+    def _keep_valid(self,files_paths:list):
+        """
+        Given a list of files return a list only of those that are valid
+        :param files_paths:
+        :return:
+        """
+        list = []
+
+        for file_path in files_paths:
+
+            image = Image.open(file_path).convert('RGB')
+
+            width, height = image.size
+
+            #for the moment we just use images 384x256 to make the train easier
+            if width != 384 or height != 256:
+                continue
+
+            list.append(file_path)
+
+        return list
 
     def _process_image(self, path, mask_path=None):
         """
@@ -170,8 +204,9 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         """
 
         image = Image.open(path).convert('RGB')
-        # quality = jpeg_quality_of(image)
+
         image = np.asarray(image)
+
         tampered = 0
         if not mask_path:
             # the image is authentic, the mask has to be completly black
@@ -183,7 +218,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             tampered = 1
 
         #check that the shape of the mask and the image are compatible
-        if image.shape[0] != mask.shape[0] or image.shape[1] != mask.shape[1] or image.shape[2]!=3 or mask.shape[2] != 1:
+        if image.shape[0] != mask.shape[0] or image.shape[1] != mask.shape[1]:
             return None
 
         return {"image": image.astype(np.uint8), "mask": mask.astype(np.uint8), "tampered": tampered}
