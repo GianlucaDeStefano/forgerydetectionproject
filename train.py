@@ -1,4 +1,6 @@
 from pathlib import Path
+
+from Datasets.CASIA2Noiseprint import CASIA2Noiseprint
 from Models.Customs.SingleBranchFCNN import SingleBranchFCNN
 from Datasets.CASIA2 import CASIA2
 from Geneartors.Casia2Generator import Casia2Generator
@@ -9,7 +11,7 @@ from Geneartors.Casia2Generator import Casia2Generator
 #get a reference to the CASIA2 dataset, downloading it if not already present
 from Models.Customs.Unet import Unet
 
-dataset = CASIA2()
+dataset = CASIA2Noiseprint()
 dataset.download_and_prepare()
 
 #prepare the training data generator
