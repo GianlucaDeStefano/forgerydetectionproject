@@ -1,4 +1,5 @@
 import math
+import random
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -10,17 +11,19 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
     Class that given a dataset, prepares and splits the data to serve to the model
     """
 
-    def __init__(self, batch_size, augment_data: bool = True, shuffle: bool = True):
+    def __init__(self,dataset, batch_size, augment_data: bool = True, shuffle: bool = True):
         """
         :param batch_size: how many elements will every batch contain?
         :param augment_data: Should we use some data augmentation technique
             (if defined) to perturb the data differently at each epoch?
         :param shuffle: should the elements be shuffled at each epoch?
         """
+        self.dataset = list(dataset)
         self.batch_size = batch_size
         self.augment_data = augment_data
         self.shuffle = shuffle
         self.batch_index = 0
+        self.indexes = []
 
     def __next__(self):
         """
@@ -69,41 +72,40 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
             x = self._generate_x(sample_id)
             y = self._generate_y(sample_id)
 
-            # augment the data
-            if self.augment_data:
-                x, y = self._apply_transformations(x, y)
-
             # append the data to the batch objects
             X.append(x)
             Y.append(y)
 
-        return np.array(X, dtype=np.float32), np.array(Y, dtype=np.float32)
+        return np.array(X), np.array(Y)
 
-    @abstractmethod
     def __len__(self):
         """
-        Compute the amount of batches in each epoch
-        :return: the amount of batches in each epoch
+        Compute the length of the set using the elements in the given dataset divided by the number of elements
+        in ach batch
+        :return: integer
         """
-        # Return the number of batches of the dataset
-        return NotImplementedError
+        return math.ceil(len(self.dataset) / self.batch_size)
 
-    @abstractmethod
     def on_epoch_end(self):
         """
-        After the execution of an epoch, set up the generator to execute another one
+        After the execution of an epoch, set up the generator to execute another one.
         :return: None
         """
-        raise NotImplementedError
 
-    @abstractmethod
+        # generate the indexes of the samples
+        self.indexes = np.arange(len(self.dataset))
+
+        # shuffle the samples orders
+        if self.shuffle:
+            random.shuffle(self.indexes)
+
     def _generate_indexes(self, batch_id):
         """
         Given the id of a batch, generate a list of samples indexes to use in that batch
         :param batch_id:
         :return:
         """
-        raise NotImplementedError
+        return self.indexes[batch_id * self.batch_size:(batch_id + 1) * self.batch_size]
 
     @abstractmethod
     def _generate_x(self, sample_id):
@@ -122,13 +124,3 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
         :return: input of the sample
         """
         raise NotImplementedError
-
-    def _apply_transformations(self, x, y):
-        """
-        Given a set of inputs and outpust representing a batch, apply some sort of data augmentation
-
-        :param x: batch of inputs elements
-        :param y: batch of output elements
-        :return: X,Y batches
-        """
-        return x, y

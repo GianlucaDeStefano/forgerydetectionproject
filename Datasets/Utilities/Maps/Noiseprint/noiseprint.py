@@ -1,14 +1,16 @@
 from pathlib import Path
-
+import os
 from PIL import Image
 from tensorflow.python.keras.layers import Conv2D, BatchNormalization, Activation
 
-import os
+import logging
+logging.getLogger("tensorflow").setLevel(logging.ERROR)
 import tensorflow as tf
+tf.get_logger().setLevel('ERROR')
 import numpy as np
 from tensorflow.python.keras.models import Model
 
-from Datasets.Utilities.Noiseprint.utility import jpeg_qtableinv
+from Datasets.Utilities.Maps.Noiseprint.utility import jpeg_qtableinv
 
 
 class BiasLayer(tf.keras.layers.Layer):
@@ -41,7 +43,7 @@ def _FullConvNetV2(num_levels=17, padding='SAME'):
 
 
 class NoiseprintEngineV2:
-    save_path = os.path.join(os.path.dirname(__file__), './noiseprint_V2/net_jpg%d/')
+    save_path = os.path.join(os.path.dirname(__file__), 'noiseprint_V2/net_jpg%d/')
     slide = 1024  # 3072
     largeLimit = 1050000  # 9437184
     overlap = 34

@@ -7,7 +7,11 @@ import numpy as np
 from PIL import Image
 import tensorflow_datasets as tfds
 from tqdm import tqdm
+import tensorflow as tf
 
+from Datasets.Utilities.Maps.Noiseprint.NoiseprintExtractor import NoiseprintExtractor
+from Datasets.Utilities.Maps.Noiseprint.noiseprint import gen_noiseprint
+from Datasets.Utilities.Maps.SRM.SRMExtractor import SRMExtractor
 from Datasets.Utilities.utilityFunctions import get_files_with_type
 
 "Class to download the CASIA2 dataset"
@@ -47,15 +51,31 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         self.test_proportion = test_proportion
         self.validation_proportion = validation_proportion
 
+        # if true prints logs while building the dataset
+        self.verbose = kwargs.get("verbose", True)
+
+        # the shape of the images accepted by the model
+        self.supported_shape = (256, 384, 3)
+
+        # setup data generators
+        self.SRMGenerator = SRMExtractor()
+        self.NoiseprintGenerator = NoiseprintExtractor()
+
     def features(self):
         """
         This function return a dictionary holding the type and shape of the data this builder object
         generates foreach sample
         :return:
         """
+
+        desired_shape_3 = (256, 384, 3)
+        desired_shape_1 = (256, 384, 1)
+
         return {
-            'image': tfds.features.Image(),
-            'mask': tfds.features.Image(shape=(None, None, 1)),
+            'image': tfds.features.Image(shape=desired_shape_3),
+            'noiseprint': tfds.features.Tensor(shape=desired_shape_1, dtype=tf.float32),
+            'SRM': tfds.features.Image(shape=desired_shape_3),
+            'flipped': tfds.features.ClassLabel(num_classes=2),
             'tampered': tfds.features.ClassLabel(num_classes=2)
         }
 
@@ -69,7 +89,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             # If there's a common (input, target) tuple from the
             # features, specify them here. They'll be used if
             # `as_supervised=True` in `builder.as_dataset`.
-            supervised_keys=("image", "mask"),  # e.g. ('image', 'label')
+            supervised_keys=("image", "tampered"),
             homepage='https://dataset-homepage/',
             citation="_CITATION",
         )
@@ -101,9 +121,11 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         # discard tampered files that have no mask
         tampered_files = list(filter(self._check_mask, tampered_files))
 
-        #discard invalid files
+        # discard invalid files
         authentic_files = self._keep_valid(authentic_files)
         tampered_files = self._keep_valid(tampered_files)
+
+        print("Found {} pristine and {} tampered images".format(len(authentic_files),len(tampered_files)))
 
         # shuffle the elements in the 2 lists
         random.shuffle(authentic_files)
@@ -128,52 +150,42 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         test_authentic = authentic_files[split_index_val:]
         test_tampered = tampered_files[split_index_val:]
 
-        return {"train": self._generate_examples(train_authentic, train_tampered),
-                "validation": self._generate_examples(val_authentic, val_tampered),
-                "test": self._generate_examples(test_authentic, test_tampered)}
+        return {"train": self._generate_examples("train",train_authentic, train_tampered, []),
+                "validation": self._generate_examples("validation",val_authentic, val_tampered, []),
+                "test": self._generate_examples("test",test_authentic, test_tampered, [])}
 
-    def _generate_examples(self, authentic_files: list, tampered_files: list):
+    def _generate_examples(self,name:str,authentic_files: list, tampered_files: list, modifications: list):
         """Generator of examples for each split.
-          :param authentic_files: authentic files to include in this set
+          :param name: name of the set used for logginf informations
           :param tampered_files: tampered files to include in this set
+          :param modifications: set of modifications that should be applied to the elements in this set
         """
 
-        counter_tampered = 0
-        counter_authentic = 0
         # let's make sure the set is balance
         assert (len(authentic_files) == len(tampered_files))
 
-        """
-        
+        # import authentic images
+        counter_authentic = 0
         for authentic_img in authentic_files:
-
             # generate the data of the sample
-            sample = self._process_image(authentic_img)
-
-            # if the sample generated is not valid skip this element
-            if not sample:
-                continue
+            sample = self._process_image(authentic_img, False, modifications)
 
             counter_authentic += 1
-            yield authentic_img, sample
-        """
+            yield str(authentic_img), sample
+
+        # import tampered images
+        counter_tampered = 0
         for tampered_img in tampered_files:
 
-            mask_path = self.extracted_path_gt / (splitext(basename(tampered_img))[0] + "_gt.png")
+            # generate the data of the sample
+            sample = self._process_image(tampered_img, True, modifications)
 
-            #generate the data of the sample
-            sample = self._process_image(tampered_img, mask_path)
+            counter_tampered +=1
+            yield str(tampered_img), sample
 
-            #if the sample generated is not valid skip this element
-            if not sample:
-                continue
+        print("Dataset: {} contains {} pristine and {} tampered images".format(name,counter_authentic,counter_tampered))
 
-            counter_tampered += 1
-            yield tampered_img,sample
-
-        print("Generated dataset containing: {} authentic and {} tampered images".format(counter_authentic,counter_tampered))
-
-    def _keep_valid(self,files_paths:list):
+    def _keep_valid(self, files_paths: list):
         """
         Given a list of files return a list only of those that are valid
         :param files_paths:
@@ -181,47 +193,72 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         """
         list = []
 
+        set_of_shapes = {}
+
         for file_path in files_paths:
 
             image = Image.open(file_path).convert('RGB')
+            image = np.asarray(image)
 
-            width, height = image.size
+            if str(image.shape) not in set_of_shapes:
+                set_of_shapes[str(image.shape)] = 0
 
-            #for the moment we just use images 384x256 to make the train easier
-            if width != 384 or height != 256:
+            set_of_shapes[str(image.shape)] += 1
+
+            # check that the image is of the right dimension (or directly transformable to)
+            if image.shape[0] not in self.supported_shape or image.shape[1] not in self.supported_shape:
                 continue
 
             list.append(file_path)
 
+        # print data about the dataset
+        if self.verbose:
+            for key in set_of_shapes:
+                print("Found {} images of size {}".format(set_of_shapes[key], key))
+
+            print("Valid images:{}".format(len(list)))
+
         return list
 
-    def _process_image(self, path, mask_path=None):
+    def _process_image(self, path, is_tampered, modifications=[]):
         """
         Read the data of an image and the corresponding mask, it the image is authentic, the mask should be black
         :param path: path of the image
-        :param mask_path: path of the mask of the image
+        :param is_tampered: bool denoting if an image is tampered or not
+        :param modifications: set of modification to apply at the given image before generating the various maps
         :return: n[ array w x h x 3 containing the data of the image and a w x h x 1 np array containing the mask
         """
 
-        image = Image.open(path).convert('RGB')
+        target_shape = (256, 384)
 
+        image = Image.open(path).convert('RGB')
         image = np.asarray(image)
 
-        tampered = 0
-        if not mask_path:
-            # the image is authentic, the mask has to be completly black
-            mask = np.zeros((image.shape[0], image.shape[1], 1))
-            tampered = 0
-        else:
-            # if a mask is given the image is tampered, read the ground truth mask
-            mask = np.asarray(Image.open(mask_path).convert('1'))[..., np.newaxis]
-            tampered = 1
+        # apply modifications to the image
+        for modification in modifications:
+            image = modification.apply(image)
 
-        #check that the shape of the mask and the image are compatible
-        if image.shape[0] != mask.shape[0] or image.shape[1] != mask.shape[1]:
-            return None
+        # if the image is flipped rotate it and all its noise maps
+        flipped = False
+        if image.shape[0] == target_shape[1]:
+            image = np.rot90(image, 3)
+            flipped = True
 
-        return {"image": image.astype(np.uint8), "mask": mask.astype(np.uint8), "tampered": tampered}
+        # extract noiseprint map
+        noiseprint = self.NoiseprintGenerator.extract(image)
+
+        # extract SRM map
+        srm = self.SRMGenerator.extract(image)
+
+        assert (image.shape[0] == self.supported_shape[0])
+        assert (image.shape[1] == self.supported_shape[1])
+        assert (image.shape[2] == 3)
+
+        assert (image.shape == srm.shape)
+        assert (image.shape[0] == noiseprint.shape[0])
+        assert (image.shape[1] == noiseprint.shape[1])
+
+        return {"image": image, "noiseprint": noiseprint, "SRM": srm, "flipped": flipped, "tampered": is_tampered}
 
     def _fix_files_name(self, path_tampered: Path, path_sheet: Path):
         """The original creator of the dataset made several errors in naming the samples, luckly, on the repo of
