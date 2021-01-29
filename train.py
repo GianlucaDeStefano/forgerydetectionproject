@@ -8,7 +8,7 @@ from Datasets.Utilities.Maps.Noiseprint.noiseprint import normalize_noiseprint
 # Download and prepare the dataset
 # This will take a while since we have to process each image singularly to extract the noise features
 from Geneartors.CASIA2.Casia2Generator import Casia2Generator
-from Models.Customs.ClassifierBase import ResnetClassifier
+from Models.Customs.ClassifierBase import ClassifierBase
 
 dataset = CASIA2()
 dataset.download_and_prepare()
