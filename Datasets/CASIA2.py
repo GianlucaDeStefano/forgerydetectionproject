@@ -76,8 +76,8 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             'image': tfds.features.Image(shape=desired_shape_3),
             'noiseprint': tfds.features.Tensor(shape=desired_shape_1, dtype=tf.float32),
             'SRM': tfds.features.Image(shape=desired_shape_3),
-            'flipped': tfds.features.ClassLabel(num_classes=1),
-            'tampered': tfds.features.ClassLabel(num_classes=1)
+            'flipped': tfds.features.ClassLabel(num_classes=2),
+            'tampered': tfds.features.ClassLabel(num_classes=2)
         }
 
     def _info(self) -> tfds.core.DatasetInfo:
