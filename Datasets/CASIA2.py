@@ -154,11 +154,13 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         test_tampered = tampered_files[split_index_val:]
 
         #create Modification classes
+        blur_5 = BlurModification(5)
         blur_7 = BlurModification(7)
 
         return {"train": self._generate_examples("train",train_authentic, train_tampered, []),
                 "validation": self._generate_examples("validation",val_authentic, val_tampered, []),
                 "test": self._generate_examples("test",test_authentic, test_tampered, []),
+                "test_blur_5": self._generate_examples("test", test_authentic, test_tampered, [blur_5]),
                 "test_blur_7": self._generate_examples("test",test_authentic, test_tampered, [blur_7]),
                 }
 
