@@ -84,7 +84,7 @@ verbose = True
 generator_training_rgb = Casia2Generator(dataset.as_dataset(split="train"), ["rgb"], batch_size)
 generator_validation_rgb = Casia2Generator(dataset.as_dataset(split="validation"), ["rgb"], batch_size)
 # Train a Resnet Classifier using the RGB data
-model_rgb = ResnetClassifier(input_shape_rgb, output_classes, "RGB model", logs_folder, verbose)
+model_rgb = ClassifierBase(input_shape_rgb, output_classes, "RGB model", logs_folder, verbose)
 model_rgb.train_model(generator_training_rgb, generator_validation_rgb, epochs, loss_function, save_model=True)
 
 

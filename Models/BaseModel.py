@@ -33,7 +33,7 @@ class BaseModel(ABC):
         self.verbose = verbose
 
         # save the time of creation of this class, it will help us to uniquelly identify this specific train run
-        self.str_time = time.strftime("%b %d %Y %H:%M:%S", time.gmtime())
+        self.str_time = time.strftime("%b%d%Y%H%M%S", time.gmtime())
 
         # save the model name and the directory in which to save the Logs
         self.name = model_name
@@ -165,9 +165,9 @@ class BaseModel(ABC):
 
         # save the final model
         if save_model & self.logs:
-            self.model.save(self.log_dir / "final-model.{val_loss:.2f}.h5")
+            self.model.save(self.log_dir / "final-model.h5")
             if self.verbose:
-                print("Model saved: {}".format(self.log_dir / "final-model.{val_loss:.2f}.h5"))
+                print("Model saved: {}".format(self.log_dir / "final-model.h5"))
 
         return history
 
