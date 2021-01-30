@@ -9,6 +9,7 @@ import tensorflow_datasets as tfds
 from tqdm import tqdm
 import tensorflow as tf
 
+from Datasets.Modifications.BlurModification import BlurModification
 from Datasets.Utilities.Maps.Noiseprint.NoiseprintExtractor import NoiseprintExtractor
 from Datasets.Utilities.Maps.Noiseprint.noiseprint import gen_noiseprint
 from Datasets.Utilities.Maps.SRM.SRMExtractor import SRMExtractor
@@ -127,6 +128,8 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
 
         print("Found {} pristine and {} tampered images".format(len(authentic_files),len(tampered_files)))
 
+        authentic_files = authentic_files[:100]
+
         # shuffle the elements in the 2 lists
         random.shuffle(authentic_files)
         random.shuffle(tampered_files)
@@ -150,9 +153,14 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         test_authentic = authentic_files[split_index_val:]
         test_tampered = tampered_files[split_index_val:]
 
+        #create Modification classes
+        blur_7 = BlurModification(7)
+
         return {"train": self._generate_examples("train",train_authentic, train_tampered, []),
                 "validation": self._generate_examples("validation",val_authentic, val_tampered, []),
-                "test": self._generate_examples("test",test_authentic, test_tampered, [])}
+                "test": self._generate_examples("test",test_authentic, test_tampered, []),
+                "test_blur_7": self._generate_examples("test",test_authentic, test_tampered, [blur_7]),
+                }
 
     def _generate_examples(self,name:str,authentic_files: list, tampered_files: list, modifications: list):
         """Generator of examples for each split.
