@@ -12,7 +12,10 @@ import tensorflow as tf
 from Datasets.Modifications.BlurModification import BlurModification
 from Datasets.Modifications.CompressionModification import CompressionModification
 from Datasets.Modifications.ExposureModification import ExposureModification
+from Datasets.Modifications.GaussianModification import GaussianModification
+from Datasets.Modifications.PoissonModification import PoissonModification
 from Datasets.Modifications.SaltAndPepperModification import SaltAndPepperModification
+from Datasets.Modifications.SpeckleModification import SpeckleModification
 from Datasets.Utilities.Maps.Noiseprint.NoiseprintExtractor import NoiseprintExtractor
 from Datasets.Utilities.Maps.Noiseprint.noiseprint import gen_noiseprint
 from Datasets.Utilities.Maps.SRM.SRMExtractor import SRMExtractor
@@ -171,15 +174,27 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         #JPEG Compression
         #compressed = CompressionModification(50)
 
+        #speckle
+        #speckle = SpeckleModification()
 
-        return {#"train": self._generate_examples("train",train_authentic, train_tampered, []),
-                #"validation": self._generate_examples("validation",val_authentic, val_tampered, []),
-                #"test": self._generate_examples("test",test_authentic, test_tampered, []),
+        #gaussian
+        #gaussian = GaussianModification()
+
+        #Poisson
+        #poisson = PoissonModification()
+
+
+        return {"train": self._generate_examples("train",train_authentic, train_tampered, []),
+                "validation": self._generate_examples("validation",val_authentic, val_tampered, []),
+                "test": self._generate_examples("test",test_authentic, test_tampered, []),
                 "test_blur_5": self._generate_examples("test", test_authentic, test_tampered, [blur_5]),
                 "test_blur_7": self._generate_examples("test",test_authentic, test_tampered, [blur_7]),
                 "test_salt": self._generate_examples("test", test_authentic, test_tampered, [salt]),
                 "test_exposed": self._generate_examples("test", test_authentic, test_tampered, [exposed]),
                 #"test_compressed": self._generate_examples("test", test_authentic, test_tampered, [compressed]),
+                #"test_speckle": self._generate_examples("test", test_authentic, test_tampered, [speckle]),
+                #"test_gaussian": self._generate_examples("test", test_authentic, test_tampered, [gaussian]),
+                #"test_poisson": self._generate_examples("test", test_authentic, test_tampered, [poisson]),
                 }
 
     def _generate_examples(self,name:str,authentic_files: list, tampered_files: list, modifications: list):
