@@ -1,13 +1,14 @@
 from abc import abstractmethod
 import numpy as np
 
+
 class BaseModification:
 
     def __init__(self):
         pass
 
     @abstractmethod
-    def apply(self,sample):
+    def apply(self, sample):
         """
         Function to apply this modification to an image
         :param sample: sample to which this modification we be applied

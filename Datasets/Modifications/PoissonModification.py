@@ -1,12 +1,9 @@
 from abc import abstractmethod
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter
 
 
-class BlurModification:
+class PoissonModification:
 
-    def __init__(self, sigma):
-        self.sigma = sigma
 
     @abstractmethod
     def apply(self, sample):
@@ -15,5 +12,7 @@ class BlurModification:
         :param sample as numpy array: sample to which this modification we be applied
         """
 
-        assert (type(self.sigma) == int)
-        return gaussian_filter(sample, sigma=self.sigma)
+        vals = len(np.unique(sample))
+        vals = 2 ** np.ceil(np.log2(vals))
+        noisy = np.random.poisson(sample * vals) / float(vals)
+        return noisy
