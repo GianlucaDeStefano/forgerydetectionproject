@@ -34,7 +34,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
     MASK_TYPES = ('*.png')
     PATH_SHEET_NAME_FIXES = Path(__file__).absolute().parent / "Utilities" / "CASIA2_fileNamesCorrection.xlsx"
 
-    test_proportion = 0.01
+    test_proportion = 0.1
 
     def __init__(self, **kwargs):
         """
@@ -134,7 +134,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
 
         print("Found {} pristine and {} tampered images".format(len(authentic_files),len(tampered_files)))
 
-        authentic_files = authentic_files[:100]
+        #authentic_files = authentic_files[:100]
 
         # shuffle the elements in the 2 lists
         random.shuffle(authentic_files)
@@ -168,10 +168,10 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         #Salt and pepper
         salt = SaltAndPepperModification(0.5,0.004)
 
-        # Change exposure
+        # Change exposure 1-100
         exposed = ExposureModification(50)
 
-        #JPEG Compression
+        #JPEG Compression 1-100
         compressed = CompressionModification(5)
 
         #speckle
@@ -184,14 +184,14 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         #poisson = PoissonModification()
 
 
-        return {#"train": self._generate_examples("train",train_authentic, train_tampered, []),
-                #"validation": self._generate_examples("validation",val_authentic, val_tampered, []),
-                #"test": self._generate_examples("test",test_authentic, test_tampered, []),
+        return {"train": self._generate_examples("train",train_authentic, train_tampered, []),
+                "validation": self._generate_examples("validation",val_authentic, val_tampered, []),
+                "test": self._generate_examples("test",test_authentic, test_tampered, []),
                 #"test_blur_5": self._generate_examples("test", test_authentic, test_tampered, [blur_5]),
                 #"test_blur_7": self._generate_examples("test",test_authentic, test_tampered, [blur_7]),
                 #"test_salt": self._generate_examples("test", test_authentic, test_tampered, [salt]),
                 #"test_exposed": self._generate_examples("test", test_authentic, test_tampered, [exposed]),
-                "test_compressed": self._generate_examples("test", test_authentic, test_tampered, [compressed]),
+                #"test_compressed": self._generate_examples("test", test_authentic, test_tampered, [compressed]),
                 #"test_speckle": self._generate_examples("test", test_authentic, test_tampered, [speckle]),
                 #"test_gaussian": self._generate_examples("test", test_authentic, test_tampered, [gaussian]),
                 #"test_poisson": self._generate_examples("test", test_authentic, test_tampered, [poisson]),
