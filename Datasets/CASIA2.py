@@ -134,7 +134,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
 
         print("Found {} pristine and {} tampered images".format(len(authentic_files),len(tampered_files)))
 
-        authentic_files = authentic_files[:100]
+        #authentic_files = authentic_files[:100]
 
         # shuffle the elements in the 2 lists
         random.shuffle(authentic_files)

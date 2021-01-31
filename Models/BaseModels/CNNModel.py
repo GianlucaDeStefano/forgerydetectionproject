@@ -30,8 +30,9 @@ class CNNModel(BaseModel, ABC):
 
         model = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size, strides=strides,padding=padding,
                                        activation=activation,kernel_initializer='he_uniform')(model)
-        model = tf.keras.layers.Dropout(dropout_rate)(model)
         model = tf.keras.layers.BatchNormalization()(model)
+        model = tf.keras
+        model = tf.keras.layers.Dropout(dropout_rate)(model)
         return model
 
     @staticmethod

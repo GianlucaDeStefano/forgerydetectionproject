@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
 from pathlib import Path
 
+from tensorflow.python.keras.backend import clear_session
 from tensorflow.python.keras.models import Sequential, Model
 import tensorflow as tf
 from Geneartors import DataGenerator
@@ -38,6 +39,8 @@ class BaseModel(ABC):
         # save the model name and the directory in which to save the Logs
         self.name = model_name
 
+        self.checkpoint_path = None
+
         if self.logs:
             self.parent_log_dir = log_dir
 
@@ -50,6 +53,9 @@ class BaseModel(ABC):
 
             # tensorboard has its own log directory
             self.tensorboard_log_dir = self.parent_log_dir / "tensorboard" / self.name / self.str_time
+
+            #set the path to use to save a checkpoint
+            self.checkpoint_path = self.log_dir / 'best_model.h5'
 
         # generating a unique name for the model depending on the time of its creation
         self.name_with_time = self.name + " " + self.str_time
@@ -95,9 +101,8 @@ class BaseModel(ABC):
 
         if self.logs:
             callbacks += [
-                tf.keras.callbacks.ModelCheckpoint(
-                    filepath=self.log_dir / "checkpoints" / 'model{epoch:02d}-{val_loss:.2f}.h5', monitor='val_loss',
-                    save_best_only=True),
+                tf.keras.callbacks.ModelCheckpoint(self.checkpoint_path, monitor='val_accuracy',
+                    save_best_only=True,verbose=self.verbose),
                 tf.keras.callbacks.TensorBoard(log_dir=self.tensorboard_log_dir),
             ]
 
@@ -109,6 +114,7 @@ class BaseModel(ABC):
         :return:
         """
         self.training_start_time = time.time()
+
 
         if self.verbose:
             print("Model structure:")
@@ -126,7 +132,7 @@ class BaseModel(ABC):
             print("The model:{} has completed the training phase in: {}".format(self.name, self.training_time))
 
     def train_model(self, training_data: DataGenerator, validation_data: DataGenerator, epochs: int, loss_function,
-                    optimizer=tf.keras.optimizers.Adam(lr=1e-3),
+                    optimizer=tf.keras.optimizers.Adam(),
                     save_model: bool = False, save_summary: bool = True):
         """
         Function in charge of training the model defined in the given class
@@ -163,28 +169,15 @@ class BaseModel(ABC):
         # execute "on after train" operations
         self._on_after_train()
 
+        model_path = None
         # save the final model
         if save_model & self.logs:
-            self.model.save(self.log_dir / "final-model.h5")
+            model_path = self.log_dir / "final-model.h5"
+            self.model.save(model_path)
             if self.verbose:
-                print("Model saved: {}".format(self.log_dir / "final-model.h5"))
+                print("Model saved: {}".format(model_path))
 
-        return history
+        #clean keras session
+        clear_session()
 
-    def __del__(self, exc_type, exc_val, exc_tb):
-        """
-        On deleting the instance of this model, check if its log folder is empty, if it is, delete it to keep
-        the Logs as clean as possible
-        :return:
-        """
-
-        # check if the folder exists
-        if not self.log_dir.is_dir() or not self.logs:
-            return
-
-        # get the content of the folder as a list of paths
-        dirContents = os.listdir(self.log_dir)
-
-        # if the content list is empty delete the folder
-        if len(dirContents) == 0:
-            os.rmdir(self.log_dir)
+        return history.history,model_path,self.checkpoint_path

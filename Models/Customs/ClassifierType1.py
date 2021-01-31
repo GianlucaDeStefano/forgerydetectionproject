@@ -7,7 +7,7 @@ from tensorflow.python.keras.models import Sequential, Model
 
 from Models.BaseModels.CNNModel import CNNModel
 from Models.BaseModels.DenseModel import DenseModel
-from Models.Customs.ClassifierBase import ClassifierBase
+from Models.Customs.BaseClassifier import ClassifierBase
 
 
 class ClassifierType1(ClassifierBase):

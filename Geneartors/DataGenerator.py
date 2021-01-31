@@ -24,6 +24,7 @@ class DataGenerator(ABC, tf.compat.v2.keras.utils.Sequence):
         self.shuffle = shuffle
         self.batch_index = 0
         self.indexes = []
+        self.on_epoch_end()
 
     def __next__(self):
         """
