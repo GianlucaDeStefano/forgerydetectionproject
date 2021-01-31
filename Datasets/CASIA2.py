@@ -132,9 +132,9 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         authentic_files = self._keep_valid(authentic_files)
         tampered_files = self._keep_valid(tampered_files)
 
-        print("Found {} pristine and {} tampered images".format(len(authentic_files),len(tampered_files)))
+        print("Found {} pristine and {} tampered images".format(len(authentic_files), len(tampered_files)))
 
-        #authentic_files = authentic_files[:100]
+        # authentic_files = authentic_files[:100]
 
         # shuffle the elements in the 2 lists
         random.shuffle(authentic_files)
@@ -159,45 +159,58 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         test_authentic = authentic_files[split_index_val:]
         test_tampered = tampered_files[split_index_val:]
 
-        #create Modification classes
+        # create Modification classes
 
-        #Blurred images
+        # Blurred images
+        blur_2 = BlurModification(2)
         blur_5 = BlurModification(5)
         blur_7 = BlurModification(7)
 
-        #Salt and pepper
-        salt = SaltAndPepperModification(0.5,0.004)
+        # Salt and pepper
+        salt_4 = SaltAndPepperModification(0.4, 0.001)
+        salt_5 = SaltAndPepperModification(0.5, 0.008)
+        salt_6 = SaltAndPepperModification(0.6, 0.016)
 
         # Change exposure 1-100
-        exposed = ExposureModification(50)
+        exposed_20 = ExposureModification(20)
+        exposed_50 = ExposureModification(50)
+        exposed_70 = ExposureModification(70)
 
-        #JPEG Compression 1-100
-        compressed = CompressionModification(5)
+        # JPEG Compression 1-100
+        compressed_20 = CompressionModification(20)
+        compressed_50 = CompressionModification(50)
+        compressed_75 = CompressionModification(75)
 
-        #speckle
-        #speckle = SpeckleModification()
+        # speckle
+        # speckle = SpeckleModification()
 
-        #gaussian
-        #gaussian = GaussianModification()
+        # gaussian
+        # gaussian = GaussianModification()
 
-        #Poisson
-        #poisson = PoissonModification()
+        # Poisson
+        # poisson = PoissonModification()
 
-
-        return {"train": self._generate_examples("train",train_authentic, train_tampered, []),
-                "validation": self._generate_examples("validation",val_authentic, val_tampered, []),
-                "test": self._generate_examples("test",test_authentic, test_tampered, []),
-                #"test_blur_5": self._generate_examples("test", test_authentic, test_tampered, [blur_5]),
-                #"test_blur_7": self._generate_examples("test",test_authentic, test_tampered, [blur_7]),
-                #"test_salt": self._generate_examples("test", test_authentic, test_tampered, [salt]),
-                #"test_exposed": self._generate_examples("test", test_authentic, test_tampered, [exposed]),
-                #"test_compressed": self._generate_examples("test", test_authentic, test_tampered, [compressed]),
-                #"test_speckle": self._generate_examples("test", test_authentic, test_tampered, [speckle]),
-                #"test_gaussian": self._generate_examples("test", test_authentic, test_tampered, [gaussian]),
-                #"test_poisson": self._generate_examples("test", test_authentic, test_tampered, [poisson]),
+        return {"train": self._generate_examples("train", train_authentic, train_tampered, []),
+                "validation": self._generate_examples("validation", val_authentic, val_tampered, []),
+                "test": self._generate_examples("test", test_authentic, test_tampered, []),
+                "test_blur_2": self._generate_examples("test", test_authentic, test_tampered, [blur_2]),
+                "test_blur_5": self._generate_examples("test", test_authentic, test_tampered, [blur_5]),
+                "test_blur_7": self._generate_examples("test", test_authentic, test_tampered, [blur_7]),
+                "test_salt_4": self._generate_examples("test", test_authentic, test_tampered, [salt_4]),
+                "test_salt_5": self._generate_examples("test", test_authentic, test_tampered, [salt_5]),
+                "test_salt_6": self._generate_examples("test", test_authentic, test_tampered, [salt_6]),
+                "test_exposed_20": self._generate_examples("test", test_authentic, test_tampered, [exposed_20]),
+                "test_exposed_50": self._generate_examples("test", test_authentic, test_tampered, [exposed_50]),
+                "test_exposed_70": self._generate_examples("test", test_authentic, test_tampered, [exposed_70]),
+                "test_compressed_20": self._generate_examples("test", test_authentic, test_tampered, [compressed_20]),
+                "test_compressed_50": self._generate_examples("test", test_authentic, test_tampered, [compressed_50]),
+                "test_compressed_75": self._generate_examples("test", test_authentic, test_tampered, [compressed_75]),
+                # "test_speckle": self._generate_examples("test", test_authentic, test_tampered, [speckle]),
+                # "test_gaussian": self._generate_examples("test", test_authentic, test_tampered, [gaussian]),
+                # "test_poisson": self._generate_examples("test", test_authentic, test_tampered, [poisson]),
                 }
 
-    def _generate_examples(self,name:str,authentic_files: list, tampered_files: list, modifications: list):
+    def _generate_examples(self, name: str, authentic_files: list, tampered_files: list, modifications: list):
         """Generator of examples for each split.
           :param name: name of the set used for logginf informations
           :param tampered_files: tampered files to include in this set
@@ -219,14 +232,14 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         # import tampered images
         counter_tampered = 0
         for tampered_img in tampered_files:
-
             # generate the data of the sample
             sample = self._process_image(tampered_img, True, modifications)
 
-            counter_tampered +=1
+            counter_tampered += 1
             yield str(tampered_img), sample
 
-        print("Dataset: {} contains {} pristine and {} tampered images".format(name,counter_authentic,counter_tampered))
+        print(
+            "Dataset: {} contains {} pristine and {} tampered images".format(name, counter_authentic, counter_tampered))
 
     def _keep_valid(self, files_paths: list):
         """
