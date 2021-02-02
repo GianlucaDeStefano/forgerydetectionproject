@@ -17,7 +17,7 @@ from Datasets.Modifications.PoissonModification import PoissonModification
 from Datasets.Modifications.SaltAndPepperModification import SaltAndPepperModification
 from Datasets.Modifications.SpeckleModification import SpeckleModification
 from Datasets.Utilities.Maps.Noiseprint.NoiseprintExtractor import NoiseprintExtractor
-from Datasets.Utilities.Maps.Noiseprint.noiseprint import gen_noiseprint
+from Datasets.Utilities.Maps.Noiseprint.noiseprint import gen_noiseprint, normalize_noiseprint
 from Datasets.Utilities.Maps.SRM.SRMExtractor import SRMExtractor
 from Datasets.Utilities.utilityFunctions import get_files_with_type
 
@@ -96,7 +96,6 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             # If there's a common (input, target) tuple from the
             # features, specify them here. They'll be used if
             # `as_supervised=True` in `builder.as_dataset`.
-            supervised_keys=("image", "tampered"),
             homepage='https://dataset-homepage/',
             citation="_CITATION",
         )
@@ -133,8 +132,6 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
         tampered_files = self._keep_valid(tampered_files)
 
         print("Found {} pristine and {} tampered images".format(len(authentic_files), len(tampered_files)))
-
-        # authentic_files = authentic_files[:100]
 
         # shuffle the elements in the 2 lists
         random.shuffle(authentic_files)
@@ -301,7 +298,7 @@ class CASIA2(tfds.core.GeneratorBasedBuilder):
             flipped = True
 
         # extract noiseprint map
-        noiseprint = self.NoiseprintGenerator.extract(image)
+        noiseprint = normalize_noiseprint(self.NoiseprintGenerator.extract(image))
 
         # extract SRM map
         srm = self.SRMGenerator.extract(image)

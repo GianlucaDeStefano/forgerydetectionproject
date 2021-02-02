@@ -11,11 +11,12 @@ from Models.BaseModels.DenseModel import DenseModel
 
 class BaseClassifier(DenseModel, CNNModel):
 
-    def __init__(self, input_shape, n_classes, model_name: str, log_dir: Path, verbose: bool = True):
+    def __init__(self, input_shape, n_classes, model_name: str,log_dir: Path,batchnormalization = True,dropout = 0.4, verbose: bool = True):
         super(BaseClassifier, self).__init__(model_name, log_dir, verbose)
         self.input_structure = input_shape
         self.n_classes = n_classes
-
+        self.batchnormalization = batchnormalization
+        self.dropout = dropout
     @property
     def output_shape(self) -> tuple:
         """
@@ -39,28 +40,40 @@ class BaseClassifier(DenseModel, CNNModel):
         """
 
         model = Sequential()
-        model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same',
-                         input_shape=input_shape))
-        model.add(MaxPooling2D((2, 2)))
 
-        model.add(Conv2D(16, (3, 3),kernel_initializer='he_uniform', padding='same'))
+        model.add(Conv2D(32, (3, 3),kernel_initializer='he_uniform', padding='same',input_shape=input_shape))
         model.add(Activation('relu'))
-        model.add(Dropout(0.2))
-        model.add(MaxPooling2D((2, 2)))
-
-        model.add(Conv2D(32, (3, 3),kernel_initializer='he_uniform', padding='same'))
-        model.add(Activation('relu'))
-        model.add(Dropout(0.2))
+        if self.batchnormalization:
+            model.add(BatchNormalization())
+        model.add(Dropout(self.dropout))
         model.add(MaxPooling2D((2, 2)))
 
         model.add(Conv2D(64, (3, 3),kernel_initializer='he_uniform', padding='same'))
         model.add(Activation('relu'))
-        model.add(Dropout(0.2))
+        if self.batchnormalization:
+            model.add(BatchNormalization())
+        model.add(Dropout(self.dropout))
         model.add(MaxPooling2D((2, 2)))
 
         model.add(Conv2D(128, (3, 3),kernel_initializer='he_uniform', padding='same'))
         model.add(Activation('relu'))
-        model.add(Dropout(0.2))
+        if self.batchnormalization:
+            model.add(BatchNormalization())
+        model.add(Dropout(self.dropout))
+        model.add(MaxPooling2D((2, 2)))
+
+        model.add(Conv2D(128, (3, 3),kernel_initializer='he_uniform', padding='same'))
+        model.add(Activation('relu'))
+        if self.batchnormalization:
+            model.add(BatchNormalization())
+        model.add(Dropout(self.dropout))
+        model.add(MaxPooling2D((2, 2)))
+
+        model.add(Conv2D(128, (3, 3),kernel_initializer='he_uniform', padding='same'))
+        model.add(Activation('relu'))
+        if self.batchnormalization:
+            model.add(BatchNormalization())
+        model.add(Dropout(self.dropout))
         model.add(MaxPooling2D((2, 2)))
 
         model.add(Flatten())

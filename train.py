@@ -4,6 +4,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from Datasets.CASIA2 import CASIA2
 from Datasets.Utilities.Maps.Noiseprint.noiseprint import normalize_noiseprint
+import gc
 
 # %%
 
@@ -62,7 +63,7 @@ output_classes = 1
 loss_function = "binary_crossentropy"
 
 # Define the number of epochs each model has to be trained for
-epochs = 1
+epochs = 10
 
 # define the size of each training batch
 batch_size = 32
@@ -82,17 +83,16 @@ verbose = True
 # %%
 
 # Create 2 generator of datas that has that provide samples with the following structure:
-#   X -> [RGB image]
+#   X -> RGB image
 #   Y -> class of the image
 # The first generator will produce training data, the second will produce validation data
 
-generator_training_rgb = Casia2Generator(dataset.as_dataset(split="train"), ["rgb"], batch_size)
-generator_validation_rgb = Casia2Generator(dataset.as_dataset(split="validation"), ["rgb"], batch_size)
+generator_training = Casia2Generator(dataset.as_dataset(split="train"), "image", batch_size)
+generator_validation = Casia2Generator(dataset.as_dataset(split="validation"), "image", batch_size)
 # Train a Resnet Classifier using the RGB data
 model_rgb = BaseClassifier(input_shape_rgb, output_classes, "RGB model", logs_folder, verbose)
-history_rgb, rgb_model_path, rgb_checkpoint_path = model_rgb.train_model(generator_training_rgb,
-                                                                         generator_validation_rgb, epochs,
-                                                                         loss_function, save_model=True)
+history_rgb, rgb_model_path, rgb_checkpoint_path = model_rgb.train_model(generator_training, generator_validation,
+                                                                         epochs, loss_function, save_model=True)
 
 # %%
 
@@ -101,19 +101,19 @@ plot_model_data(history_rgb, ("accuracy", "val_accuracy"), ("training  accuracy"
 
 # %%
 
+
 # %%
 
 # Create 2 generator of datas that has that provide samples with the following structure:
-#   X -> [Noiseprint image]
+#   X -> Noiseprint
 #   Y -> class of the image
 # The first generator will produce training data, the second will produce validation data
 
-generator_training = Casia2Generator(dataset.as_dataset(split="train"), ["noiseprint"], batch_size)
-generator_validation = Casia2Generator(dataset.as_dataset(split="validation"), ["noiseprint"], batch_size)
-
-# Train a Resnet Classifier using the Noiseprint data
+generator_training = Casia2Generator(dataset.as_dataset(split="train"), "noiseprint", batch_size)
+generator_validation = Casia2Generator(dataset.as_dataset(split="validation"), "noiseprint", batch_size)
+# Train a Resnet Classifier using the RGB data
 model_noiseprint = BaseClassifier(input_shape_noiseprint, output_classes, "Noiseprint model", logs_folder, verbose)
-history_noiseprint, noiseprint_model_path, noiseprint_checkpoint_path = model_noiseprint.train_model(generator_training,
+history_noiseprint, model_noiseprint_path, checkpoint_noiseprint_path = model_noiseprint.train_model(generator_training,
                                                                                                      generator_validation,
                                                                                                      epochs,
                                                                                                      loss_function,

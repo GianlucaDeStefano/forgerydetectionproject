@@ -177,7 +177,4 @@ class BaseModel(ABC):
             if self.verbose:
                 print("Model saved: {}".format(model_path))
 
-        #clean keras session
-        clear_session()
-
         return history.history,model_path,self.checkpoint_path
