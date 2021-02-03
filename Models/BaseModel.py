@@ -132,7 +132,7 @@ class BaseModel(ABC):
             print("The model:{} has completed the training phase in: {}".format(self.name, self.training_time))
 
     def train_model(self, training_data: DataGenerator, validation_data: DataGenerator, epochs: int, loss_function,
-                    optimizer=tf.keras.optimizers.Adam(),
+                    optimizer=tf.keras.optimizers.Adam(0.0001),
                     save_model: bool = False, save_summary: bool = True):
         """
         Function in charge of training the model defined in the given class
@@ -177,4 +177,5 @@ class BaseModel(ABC):
             if self.verbose:
                 print("Model saved: {}".format(model_path))
 
+        clear_session()
         return history.history,model_path,self.checkpoint_path
