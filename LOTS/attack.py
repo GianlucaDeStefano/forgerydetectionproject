@@ -10,9 +10,7 @@ from noiseprint2 import gen_noiseprint, NoiseprintEngine, normalize_noiseprint
 from noiseprint2.noiseprint_blind import noiseprint_blind_post, genMappFloat
 import tensorflow as tf
 
-def euclidean_loss(target,current):
-    return ((target - current)**2)/2
-
+from noiseprint2.utility.visualization import image_gt_noiseprint_heatmap_visualization
 
 
 def evaluate_heatmaps(attacked_heatmap: np.array, ground_truth:np.array) -> bool:
@@ -30,7 +28,18 @@ def evaluate_heatmaps(attacked_heatmap: np.array, ground_truth:np.array) -> bool
     return tampered_heatmap[ground_truth!=0].mean() < authentic_heatmap[(1-ground_truth)!=0].mean() and tampered_heatmap[ground_truth!=0].mean() <0.1
 
 
-def attack_noiseprint_model(image,ground_truth, target, QF, steps, debug:bool = False,debug_folder="./Data/Debug/") -> np.array:
+def attack_noiseprint_model(image,ground_truth, target, QF, steps,debug_folder=None) -> np.array:
+    """
+    Function to try to break the noiseprint identification mechanism on an imahe
+    :param image: image that is the subject of the attack
+    :param ground_truth: mask of the forged area
+    :param target: target noiseprint
+    :param QF: quality factor to use
+    :param steps: maximum number of steps to perform
+    :param debug: activate the debug mode
+    :param debug_folder: folder in which to save logs
+    :return:
+    """
 
     # noiseprint when no adversarial attack is performed on the imgage
     original_noiseprint = gen_noiseprint(image, QF)
@@ -51,25 +60,12 @@ def attack_noiseprint_model(image,ground_truth, target, QF, steps, debug:bool = 
     #variable to use to store the gradient of the image
     target = tf.cast(tf.convert_to_tensor(target), tf.float32)
 
-    start_time = time.time()
-    debug_folder = os.path.join(debug_folder, str(start_time))
-    if debug:
-        os.makedirs(debug_folder)
-
     for iteration_counter in tqdm(range(steps)):
 
         #save the image for debug purposes
-        if debug:
-            fig, axs = plt.subplots(1,3)
-            axs[0].imshow(attacked_image)
-            axs[0].set_title('Attacked image')
-            axs[1].imshow(normalize_noiseprint(np.squeeze(attacked_noiseprint)))
-            axs[1].set_title('Attacked noiseprint')
-            axs[2].imshow(attacked_heatmap)
-            axs[2].set_title('Attacked heatmap')
-
-            plt.savefig(os.path.join(debug_folder,"{}.png".format(iteration_counter+1)))
-            plt.close(fig)
+        if debug_folder:
+            img_path = os.path.join(debug_folder, "{}.png".format(str(iteration_counter + 1)))
+            image_gt_noiseprint_heatmap_visualization(attacked_image,ground_truth,np.squeeze(attacked_noiseprint),attacked_heatmap,img_path)
 
         with tf.GradientTape() as tape:
             tensor_attacked_image = tf.convert_to_tensor(attacked_image[np.newaxis, :, :, np.newaxis])
@@ -82,7 +78,7 @@ def attack_noiseprint_model(image,ground_truth, target, QF, steps, debug:bool = 
             loss = tf.multiply(tf.pow(tf.subtract(target, attacked_noiseprint), 2), 1 / 2)
 
         #compute the gradient
-        gradient = tape.gradient(loss, tensor_attacked_image)
+        gradient = tape.gradient(loss, tensor_attacked_image).numpy()
 
         #generate the attacked heatmap
         mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(np.squeeze(attacked_noiseprint.numpy()), attacked_image)
@@ -97,7 +93,7 @@ def attack_noiseprint_model(image,ground_truth, target, QF, steps, debug:bool = 
             if iteration_counter == 0:
                 warnings.warn("No attack is needed to break on this image")
 
-            # The image has been attacked succesfully
+            # The image has been attacked succesfully, return usefull data
             return attacked_image, original_noiseprint, np.squeeze(attacked_noiseprint), \
                    original_heatmap, attacked_heatmap
 

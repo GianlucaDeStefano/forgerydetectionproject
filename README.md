@@ -2,7 +2,7 @@
 
 This repo contains an implementation of the LTS attack against the noiseprint detector.
 
-## Installation
+## Setup
 
 Clone the project:
 ```bash
@@ -12,7 +12,7 @@ cd LOTS-Noiseprint-implementation
 
 Create environment (using conda), installing also CUDA:
 ```bash
-conda create --name LOTS-attack-env python=3.5 
+conda create --name LOTS-attack-env python=3.8 
 conda activate LOTS-attack-env
 conda install -c anaconda cudatoolkit
 conda install -c anaconda cudnn
@@ -25,10 +25,18 @@ To download the datasets:
 ```
 
 ## Usage
-
-Use the generate_target.py script to generste the target average noiseprint for the selected quality model. 
-In this example we are generating the average noiseprint for the model with quality factor = 101, on the columbia dataset. 
-The average noiseprint is then saved with name "avgNoiseprint" in a .npy file
+To analyze an image use the python analyze_image.py script.
 ```bash
-python generate_target.py -o avgNoiseprint -d columbia -q 101
+    python analyze_image.py -i <input image path> -g <ground truth image path> -q <quality factor>
 ```
+
+Use the generate_targets.py script to generate the average target representation for each quality model
+```bash
+    python generate_targets.py 
+```
+
+To attack an image use the following command
+```bash
+    python attack_image.py -i <input image path> -g <ground truth path> -d
+```
+In the folder /Data/Debug/<run id>/ the script will save the final comparison and other images useful for debug purposes

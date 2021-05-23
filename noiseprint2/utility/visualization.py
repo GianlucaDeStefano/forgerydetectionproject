@@ -13,6 +13,64 @@ erodeKernSize = 15
 dilateKernSize = 11
 
 
+def image_gt_noiseprint_heatmap_visualization(image,gt,noiseprint,heatmap,path,should_close = True):
+    """
+    Visualize the "full noiseprint's pipeline"
+    :param image: numpy array containing the image
+    :param gt: numpy array containing the ground truth mask
+    :param noiseprint: numpy array containing the noiseprint unnormalized
+    :param heatmap: numpy array containing the heatmap
+    :param path:
+    :param should_close:
+    :return:
+    """
+    fig, axs = plt.subplots(1, 4)
+    axs[0].imshow(image, clim=[0, 1])
+    axs[0].set_title('Image')
+    axs[1].imshow(normalize_noiseprint(noiseprint),clim=[0, 1], cmap='gray')
+    axs[1].set_title('Noiseprint')
+    axs[2].imshow(gt,clim=[0, 1], cmap='gray')
+    axs[2].set_title('Ground truth')
+    axs[3].imshow(heatmap,clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
+    axs[3].set_title('Heatmap')
+    plt.savefig(path)
+
+    if should_close:
+        plt.close(fig)
+    return plt
+
+def image_noiseprint_heatmap_visualization_2(image,image2,noiseprint,noiseprint2,heatmap,heatmap2,path,should_close = True):
+    """
+    Visualize the "2 full noiseprint's pipeline"
+    :param image: numpy array containing the image
+    :param gt: numpy array containing the ground truth mask
+    :param noiseprint: numpy array containing the noiseprint unnormalized
+    :param heatmap: numpy array containing the heatmap
+    :param path:
+    :param should_close:
+    :return:
+    """
+    fig, axs = plt.subplots(2, 4)
+    axs[0,0].imshow(image, clim=[0, 1])
+    axs[0,0].set_title('Image')
+    axs[0,1].imshow(normalize_noiseprint(noiseprint),clim=[0, 1], cmap='gray')
+    axs[0,1].set_title('Noiseprint')
+    axs[0,3].imshow(heatmap,clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
+    axs[0,3].set_title('Heatmap')
+
+    axs[1,0].imshow(image2, clim=[0, 1])
+    axs[1,0].set_title('Image')
+    axs[1,1].imshow(normalize_noiseprint(noiseprint2),clim=[0, 1], cmap='gray')
+    axs[1,1].set_title('Noiseprint')
+    axs[1,3].imshow(heatmap2,clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
+    axs[1,3].set_title('Heatmap')
+
+    plt.savefig(path)
+
+    if should_close:
+        plt.close(fig)
+    return plt
+
 def full_image_visualization(image_path,gt_path, QF = None, output_path: str = None):
     # load the image
     img, mode = imread2f(image_path, channel = 3)

@@ -1,4 +1,6 @@
 import argparse
+import os
+import time
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -6,11 +8,11 @@ from matplotlib import pyplot as plt
 from LOTS.attack import attack_noiseprint_model
 from noiseprint2 import normalize_noiseprint, jpeg_quality_of_file
 from noiseprint2.utility.utilityRead import imread2f
+from noiseprint2.utility.visualization import image_noiseprint_heatmap_visualization_2
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i','--inputImage', required=True, help='Input image')
 parser.add_argument('-g','--groundTruth', required=True, help='Input image')
-parser.add_argument('-o','--output', required=True, help='Output path')
 parser.add_argument('-t','--target', default=None, help='Load target representation as a .npy file')
 parser.add_argument('-q','--qualityFactor',default=None,type=int,choices=range(51,102), help='Specify the quality factor of the model to use')
 parser.add_argument('-s','--steps', default=100,type=int, help='Cap to the LOTS steps per image')
@@ -43,8 +45,13 @@ if not target_path:
 #load the target representation
 target_representation = np.load(target_path)
 
+# create the debug folder
+start_time = time.time()
+debug_folder = os.path.join("./Data/Debug/", str(start_time))
+os.makedirs(debug_folder)
+
 # add adversarial perturbation generated using the LOTS method
-res = attack_noiseprint_model(img,gt, target_representation, quality, args.steps,args.debug)
+res = attack_noiseprint_model(img,gt, target_representation, quality, args.steps,debug_folder)
 
 if not res:
     print("The attack has not been succesful")
@@ -52,20 +59,8 @@ else:
     attacked_image, original_noiseprint, attacked_noiseprint, \
     original_heatmap, attacked_heatmap = res
 
-    fig, axs = plt.subplots(2, 3)
-    axs[0, 0].imshow(img)
-    axs[0, 0].set_title('Original image')
-    axs[1, 0].imshow(attacked_image)
-    axs[1, 0].set_title('Attacked image')
-    axs[0, 1].imshow(normalize_noiseprint(original_noiseprint))
-    axs[0, 1].set_title('Original noiseprint')
-    axs[1, 1].imshow(normalize_noiseprint(attacked_noiseprint))
-    axs[1, 1].set_title('Attacked noiseprint')
-    axs[0, 2].imshow(original_heatmap)
-    axs[0, 2].set_title('Original heatmap')
-    axs[1, 2].imshow(attacked_heatmap)
-    axs[1, 2].set_title('Attacked heatmap')
+    image_noiseprint_heatmap_visualization_2(img,attacked_image,original_noiseprint,attacked_noiseprint,original_heatmap
+                                             ,attacked_heatmap,os.path.join(debug_folder,"final comparison"))
 
-    plt.savefig(args.output)
-    plt.show()
+
 
