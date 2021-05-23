@@ -4,7 +4,7 @@ from os import listdir
 from pathlib import Path
 
 
-def get_authentic_images(root: str = os.path.dirname(__file__) + "/Data/"):
+def get_authentic_images(root: str = os.path.dirname(__file__) + "/Data/",target_shape=None):
     """
     Return a list of paths to all the authentic images
     :param root: root folder of the dataset
@@ -19,7 +19,7 @@ def get_authentic_images(root: str = os.path.dirname(__file__) + "/Data/"):
     return paths
 
 
-def get_spliced_images(root: str= os.path.dirname(__file__) + "/Data/"):
+def get_forgered_images(root: str= os.path.dirname(__file__) + "/Data/",target_shape=None):
     """
     Return a list of paths to all the authentic images
     :param root: root folder of the dataset
