@@ -25,7 +25,7 @@ def evaluate_heatmaps(attacked_heatmap: np.array, ground_truth:np.array) -> bool
     tampered_heatmap = attacked_heatmap * ground_truth
     authentic_heatmap = attacked_heatmap *(1-ground_truth)
 
-    return tampered_heatmap[ground_truth!=0].mean() < authentic_heatmap[(1-ground_truth)!=0].mean() and tampered_heatmap[ground_truth!=0].mean() <0.1
+    return tampered_heatmap[ground_truth!=0].mean() < authentic_heatmap[(1-ground_truth)!=0].mean()
 
 
 def attack_noiseprint_model(image,ground_truth, target, QF, steps,debug_folder=None) -> np.array:
@@ -102,6 +102,6 @@ def attack_noiseprint_model(image,ground_truth, target, QF, steps,debug_folder=N
         gradient = gradient/((np.abs(gradient)).max())
 
         #apply perturbation on the attacked image
-        attacked_image -= np.squeeze(gradient*0.05)
+        attacked_image -= np.squeeze(gradient*0.03)
 
     return False
