@@ -8,7 +8,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.keras.models import Model
 # Bias layer necessary because noiseprint applies bias after batch-normalization.
-from noiseprint2.utility.utility import jpeg_quality_of_file
+from noiseprint2.utility.utility import jpeg_quality_of_file, jpeg_quality_of_img
 
 
 class BiasLayer(tf.keras.layers.Layer):
@@ -129,6 +129,17 @@ class NoiseprintEngine:
         else:
             return self._predict_small(img)
 
+    def predict_tensor(self,img_tensor):
+        """
+        Run the noiseprint generation over an image represented as a tensor returning also the raw tensor producing by
+        the model
+        :param img_tensor:
+        :return:
+        """
+        if self._loaded_quality is None:
+            raise RuntimeError("The engine quality has not been specified, please call load_quality first")
+        else:
+            return  self._model(img_tensor)
 
 def gen_noiseprint(image, quality=None):
     """
@@ -148,7 +159,8 @@ def gen_noiseprint(image, quality=None):
         image = np.asarray(Image.open(image).convert("YCbCr"))[..., 0].astype(np.float32) / 256.0
     else:
         if quality is None:
-            quality = 101
+                quality = 101
+
     engine = NoiseprintEngine()
     engine.load_quality(quality)
     return engine.predict(image)

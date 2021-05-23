@@ -13,7 +13,7 @@ erodeKernSize = 15
 dilateKernSize = 11
 
 
-def full_image_visualization(image_path,gt_path, QF: int = 101, output_path: str = None):
+def full_image_visualization(image_path,gt_path, QF = None, output_path: str = None):
     # load the image
     img, mode = imread2f(image_path, channel = 3)
 
@@ -33,9 +33,7 @@ def full_image_visualization(image_path,gt_path, QF: int = 101, output_path: str
     plt.imshow(img, clim=[0, 1])
     plt.title('Input image')
 
-    img, mode = imread2f(image_path, channel=1)
-
-    mapp, valid, range0, range1, imgsize, other,noiseprint = noiseprint_blind(img,QF)
+    mapp, valid, range0, range1, imgsize, other,noiseprint = noiseprint_blind(image_path,QF)
 
     heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 

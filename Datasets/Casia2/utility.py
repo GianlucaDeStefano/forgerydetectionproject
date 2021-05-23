@@ -53,3 +53,16 @@ def get_forgered_images(root: str= os.path.dirname(__file__) + "/Data/",target_s
 
         paths.append(os.path.join(root,"Tp",filename))
     return paths
+
+
+def get_mask_of_image(image_path:str,root: str= os.path.dirname(__file__) + "/Data/"):
+    """
+    Given the path of an image belonging to the Casia 2 dataset return the path to the mas of said image
+    :param image_path: path to the image in question
+    :param root:  root folder of the dataset
+    :return: path to the mask
+    """
+
+    filename = os.path.basename(image_path)
+    filename = os.path.splitext(filename)[0]+ "_gt.png"
+    return os.path.join(root, "Gt", filename)

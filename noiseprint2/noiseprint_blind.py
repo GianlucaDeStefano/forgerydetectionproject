@@ -37,6 +37,10 @@ def noiseprint_blind_file(filename, model_name='net'):
 
 def noiseprint_blind(img, QF):
     res = gen_noiseprint(img,QF)
+
+    if isinstance(img,str):
+        img, mode = imread2f(img)
+
     assert(img.shape==res.shape)
     return noiseprint_blind_post(res, img)
 
@@ -49,7 +53,7 @@ def noiseprint_blind_post(res, img):
     
     mapp, other = EMgu_img(spam, valid, extFeat = range(32), seed = 0, maxIter = 100, replicates = 10, outliersNlogl = 42)
     
-    return mapp, valid, range0, range1, imgsize, other , res
+    return mapp, valid, range0, range1, imgsize, other
 
 def genMappFloat(mapp, valid, range0, range1, imgsize):
     mapp_s = np.copy(mapp)
