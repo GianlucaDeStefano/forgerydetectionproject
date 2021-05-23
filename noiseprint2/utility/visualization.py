@@ -50,20 +50,20 @@ def image_noiseprint_heatmap_visualization_2(image,image2,noiseprint,noiseprint2
     :param should_close:
     :return:
     """
-    fig, axs = plt.subplots(2, 4)
+    fig, axs = plt.subplots(2, 3)
     axs[0,0].imshow(image, clim=[0, 1])
     axs[0,0].set_title('Image')
     axs[0,1].imshow(normalize_noiseprint(noiseprint),clim=[0, 1], cmap='gray')
     axs[0,1].set_title('Noiseprint')
-    axs[0,3].imshow(heatmap,clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
-    axs[0,3].set_title('Heatmap')
+    axs[0,2].imshow(heatmap,clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
+    axs[0,2].set_title('Heatmap')
 
     axs[1,0].imshow(image2, clim=[0, 1])
     axs[1,0].set_title('Image')
     axs[1,1].imshow(normalize_noiseprint(noiseprint2),clim=[0, 1], cmap='gray')
     axs[1,1].set_title('Noiseprint')
-    axs[1,3].imshow(heatmap2,clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
-    axs[1,3].set_title('Heatmap')
+    axs[1,2].imshow(heatmap2,clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
+    axs[1,2].set_title('Heatmap')
 
     plt.savefig(path)
 
