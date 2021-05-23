@@ -49,7 +49,7 @@ def noiseprint_blind_post(res, img):
     
     mapp, other = EMgu_img(spam, valid, extFeat = range(32), seed = 0, maxIter = 100, replicates = 10, outliersNlogl = 42)
     
-    return mapp, valid, range0, range1, imgsize, other
+    return mapp, valid, range0, range1, imgsize, other , res
 
 def genMappFloat(mapp, valid, range0, range1, imgsize):
     mapp_s = np.copy(mapp)
