@@ -12,6 +12,15 @@ import tensorflow as tf
 
 from noiseprint2.utility.visualization import image_gt_noiseprint_heatmap_visualization
 
+def euclidean_distance_loss(y_true, y_pred):
+    """
+    Euclidean distance loss
+    https://en.wikipedia.org/wiki/Euclidean_distance
+    :param y_true: TensorFlow/Theano tensor
+    :param y_pred: TensorFlow/Theano tensor of the same shape as y_true
+    :return: float
+    """
+    return tf.sqrt(tf.reduce_sum(tf.square(y_pred - y_true)))
 
 def evaluate_heatmaps(attacked_heatmap: np.array, ground_truth:np.array) -> bool:
     """
@@ -24,6 +33,7 @@ def evaluate_heatmaps(attacked_heatmap: np.array, ground_truth:np.array) -> bool
     #very basic evaluation procedure to change in the future with a better one
     tampered_heatmap = attacked_heatmap * ground_truth
     authentic_heatmap = attacked_heatmap *(1-ground_truth)
+
 
     return tampered_heatmap[ground_truth!=0].mean() < authentic_heatmap[(1-ground_truth)!=0].mean()
 
@@ -75,7 +85,8 @@ def attack_noiseprint_model(image,ground_truth, target, QF, steps,debug_folder=N
             attacked_noiseprint = engine._model(tensor_attacked_image)
 
             # compute the loss with respect to the target representation
-            loss = tf.multiply(tf.pow(tf.subtract(target, attacked_noiseprint), 2), 1 / 2)
+            #loss = tf.multiply(tf.pow(tf.subtract(target, attacked_noiseprint), 2), 1 / 2)
+            loss  = euclidean_distance_loss(target,attacked_noiseprint)
 
         #compute the gradient
         gradient = tape.gradient(loss, tensor_attacked_image).numpy()
@@ -102,6 +113,6 @@ def attack_noiseprint_model(image,ground_truth, target, QF, steps,debug_folder=N
         gradient = gradient/((np.abs(gradient)).max())
 
         #apply perturbation on the attacked image
-        attacked_image -= np.squeeze(gradient*0.03)
+        attacked_image -= np.squeeze(gradient*0.01)
 
     return False
