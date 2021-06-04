@@ -13,11 +13,11 @@
 """
 
 import numpy as np
+from numba import jit
 
 from . import gen_noiseprint
 from .post_em import EMgu_img, getSpamFromNoiseprint
 from .utility.utilityRead import imread2f, jpeg_qtableinv, resizeMapWithPadding
-
 
 def noiseprint_blind_file(filename, model_name='net'):
     try:

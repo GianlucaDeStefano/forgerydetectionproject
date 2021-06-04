@@ -3,6 +3,7 @@ from PIL import Image
 from matplotlib import pyplot as plt
 
 from noiseprint2 import normalize_noiseprint
+from noiseprint2.utility.utilityRead import imread2f
 
 
 def get_shape_of_image(path: str):
@@ -30,6 +31,18 @@ def drop_borders(img: np.array, borders_size: tuple = (1, 1, 1, 1)):
     return img[top_index:bottom_index, right_index:left_index]
 
 
+def load_mask(img_path, threshold: float = 0.5):
+    """
+    Load the groundtruth and be sure the mask is only composd by 0 or ones
+    :param img_path: path  of the gt to load
+    :param threshold: thereshold to define a positive or negative pixel
+    :return:numpy array containing the mask
+    """
+    mask, mode = imread2f(img_path)
+    mask = np.where(mask < threshold, 0, 1)
+    return mask
+
+
 def plot_noiseprint(noiseprint: np.array, saveTo: str = None, toNormalize: bool = True, showMetrics: bool = True):
     """
     Function used to plot the noiseprint into a file
@@ -50,3 +63,12 @@ def plot_noiseprint(noiseprint: np.array, saveTo: str = None, toNormalize: bool 
 
     plt.savefig(saveTo)
     return plt
+
+
+def noise_to_3c(noise: np.array):
+    noise_3c = np.zeros((noise.shape[0],noise.shape[1],3))
+    noise_3c[:, :, 0] = noise / 0.299
+    noise_3c[:, :, 1] = noise / 0.587
+    noise_3c[:, :, 2] = noise / 0.114
+
+    return noise_3c
