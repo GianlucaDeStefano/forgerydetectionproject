@@ -1,6 +1,7 @@
 import os
 
 from Datasets.Dataset import Dataset
+from Ulitities.Images import load_mask
 
 
 class RitDataset(Dataset):
@@ -40,4 +41,4 @@ class RitDataset(Dataset):
         return forged_images
 
     def get_mask_of_image(self, image_path:str):
-        return image_path.replace("tampered-realistic", "ground-truth")
+        return load_mask(image_path.replace("tampered-realistic", "ground-truth"))

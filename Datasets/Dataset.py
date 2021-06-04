@@ -38,7 +38,7 @@ class Dataset(ABC):
 
     def get_mask_of_image(self, image_path):
         """
-        Given the path of an image, return the path of its mask
+        Given the path of an image, return np array containing its binary mask
         :param image_path: the path of the image of which we want the mask of
         :return:
         """

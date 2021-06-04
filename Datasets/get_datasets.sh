@@ -8,6 +8,20 @@ unrar x ImSpliceDataset.rar ./Columbia/
 mv ./Columbia/ImSpliceDataset ./Columbia/Data
 rm ImSpliceDataset.rar
 fi
+
+echo "Preparing Columbia Dataset"
+if [ ! -d "./Columbia-uncompressed/Data" ]
+then
+wget -O 4cam_auth.tar.bz2 "https://www.dropbox.com/sh/786qv3yhvc7s9ki/AABaQvI-lPiM3Zl64RQoDCiMa/4cam_auth.tar.bz2?dl=1"
+wget -O 4cam_splc.tar.bz2 "https://www.dropbox.com/sh/786qv3yhvc7s9ki/AAAESATxO7wncDMKkl1XjyNaa/4cam_splc.tar.bz2?dl=1"
+mkdir "./Columbia-uncompressed/Data"
+tar -xvjf  4cam_auth.tar.bz2 -C ./Columbia-uncompressed/Data/
+tar -xvjf 4cam_splc.tar.bz2 -C ./Columbia-uncompressed/Data/
+rm 4cam_auth.tar.bz2
+rm 4cam_splc.tar.bz2
+fi
+
+
 echo " - Columbia Dataset is ready"
 
 #Get the Casia2 Dataset in 2 steps
