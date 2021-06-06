@@ -40,7 +40,7 @@ def get_gradient(image: np.array, mask: np.array, target_representation: np.arra
     gradients = []
 
     # variable to store the cumulative loss across all patches
-    mean_loss = 0
+    cumulative_loss = 0
 
     #image wide gradient
     image_gradient = np.zeros(image.shape)
@@ -67,9 +67,9 @@ def get_gradient(image: np.array, mask: np.array, target_representation: np.arra
             loss = tf.nn.l2_loss(target_patch_representation-patch_noiseprint)
 
             # retrieve the gradient of the patch
-            patch_gradient = np.squeeze(tape.gradient(loss, patch_noiseprint).numpy())
+            patch_gradient = np.squeeze(tape.gradient(loss, tensor_patch).numpy())
 
-            mean_loss += loss.numpy()
+            cumulative_loss += loss.numpy()
 
             # check that the retrieved gradient has the correct shape
             assert (patch_gradient.shape == patch.shape)
@@ -80,7 +80,7 @@ def get_gradient(image: np.array, mask: np.array, target_representation: np.arra
     # scale the final gradient using the computed infinity norm
     image_gradient = image_gradient / np.max(np.abs(image_gradient))
 
-    return image_gradient, mean_loss
+    return image_gradient, cumulative_loss
 
 
 def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_folder=None) -> np.array:
@@ -140,9 +140,9 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
     variance_graph_path = os.path.join(debug_folder, "Plots", "variance")
 
     # get patches of image
-    patch_size = (16, 16)
+    patch_size = (8, 8)
 
-    authentic_patches = get_authentic_patches(original_noiseprint, ground_truth, patch_size, True)
+    authentic_patches = get_authentic_patches(original_image, ground_truth, patch_size, True)
 
     #representation of the ideal patch
     target_patch = np.zeros(patch_size)
@@ -157,7 +157,9 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
 
     noiseprint_visualization(normalize_noiseprint_no_margin(target_patch), os.path.join(debug_folder, "target"))
 
-    alpha = 1
+    cumulative_gradient = np.zeros(original_image.shape)
+
+    alpha = 5
     for iteration_counter in range(steps):
 
         # save the image for debug purposes
@@ -186,11 +188,10 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
 
                 # save image
                 img_path = os.path.join(debug_folder, "{}.png".format(str(iteration_counter)))
-                adversarial_noise = noise_to_3c(attacked_image - original_image)
+                adversarial_noise = noise_to_3c(cumulative_gradient)
                 attacked_image3c = (original_image3c + adversarial_noise)
-
                 image_noiseprint_noise_heatmap_visualization(attacked_image3c, np.squeeze(attacked_noiseprint),
-                                                             attacked_image - original_image, attacked_heatmap, img_path)
+                                                             cumulative_gradient, attacked_heatmap, img_path)
 
         # compute the gradient
         image_gradient, mean_loss = get_gradient(attacked_image, ground_truth, target_patch, engine)
@@ -198,10 +199,17 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
         #append the loss values to the list
         loss_values.append(mean_loss)
 
-        # apply the gradients
-        attacked_image -= alpha * image_gradient / 255
+        # scale the gradient in the desided way
+        gradient = alpha * image_gradient / 255
+
+        # add gradient to the cumulative gradient
+        cumulative_gradient += gradient
+
+        # apply the gradient to the image
+        attacked_image -= gradient
 
         # clip image values in the valid range
         attacked_image = np.clip(attacked_image, 0, 1)
+
 
     return False

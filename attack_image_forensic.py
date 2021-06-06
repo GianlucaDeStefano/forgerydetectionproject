@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i','--inputImage', required=True, help='Input image')
 parser.add_argument('-g','--groundTruth', required=False,default=None, help='Input image')
 parser.add_argument('-q','--qualityFactor',default=None,type=int,choices=range(51,102), help='Specify the quality factor of the model to use')
-parser.add_argument('-s','--steps', default=100,type=int, help='Cap to the LOTS steps per image')
+parser.add_argument('-s','--steps', default=50,type=int, help='Cap to the LOTS steps per image')
 parser.add_argument('-d','--debug', action="store_true", help='Activate debug mode, with extensive outputs and logging')
 args = parser.parse_args()
 

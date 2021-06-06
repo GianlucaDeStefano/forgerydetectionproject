@@ -14,33 +14,8 @@ erodeKernSize = 15
 dilateKernSize = 11
 
 
-def noiseprint_visualization(noiseprint, path, should_close=True):
-    """
-    Visualize the "full noiseprint's pipeline"
-    :param image: numpy array containing the image
-    :param gt: numpy array containing the ground truth mask
-    :param noiseprint: numpy array containing the noiseprint unnormalized
-    :param heatmap: numpy array containing the heatmap
-    :param path:
-    :param should_close:
-    :return:
-    """
-    fig, axs = plt.subplots(1, 1)
-
-    axs.imshow(noiseprint, clim=[0, 1], cmap='gray')
-    axs.set_title('Noiseprint')
-
-    # remove the x and y ticks
-
-    axs.set_xticks([])
-    axs.set_yticks([])
-
-    plt.savefig(path)
-
-    if should_close:
-        plt.close(fig)
-
-    return plt
+def noiseprint_visualization(noiseprint, path):
+    return plt.imsave(fname=path, arr=noiseprint,cmap='gray', format='png')
 
 
 def image_noiseprint_heatmap_visualization(image, noiseprint, heatmap, path, should_close=True):
@@ -58,7 +33,8 @@ def image_noiseprint_heatmap_visualization(image, noiseprint, heatmap, path, sho
     return plt
 
 
-def image_noiseprint_noise_heatmap_visualization(image, noiseprint, noise, heatmap, path, should_close=True):
+def image_noiseprint_noise_heatmap_visualization(image, noiseprint, noise, heatmap, path, should_close=True,
+                                                 noise_magnification_factor=100):
     """
        Visualize the "full noiseprint's pipeline"
        :param image: numpy array containing the image
@@ -67,6 +43,7 @@ def image_noiseprint_noise_heatmap_visualization(image, noiseprint, noise, heatm
        :param heatmap: numpy array containing the heatmap
        :param path:
        :param should_close:
+        :param noise_magnification_factor:
        :return:
        """
     fig, axs = plt.subplots(1, 4, figsize=(20, 5))
@@ -77,7 +54,10 @@ def image_noiseprint_noise_heatmap_visualization(image, noiseprint, noise, heatm
     axs[1].imshow(normalize_noiseprint(noiseprint), clim=[0, 1], cmap='gray')
     axs[1].set_title('Noiseprint')
 
-    axs[2].imshow(noise)
+    magnified_noise = (noise +1)* noise_magnification_factor
+
+    magnified_noise = np.array(magnified_noise,dtype=np.int)
+    axs[2].imshow(magnified_noise, cmap='gray')
     axs[2].set_title('Adversarial noise')
 
     axs[3].imshow(heatmap, clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
