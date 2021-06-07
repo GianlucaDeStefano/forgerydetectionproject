@@ -35,7 +35,7 @@ def get_gradient(image: np.array, mask: np.array, target_representation: np.arra
 
     # divide the entire image to attack into patches
     img_patches = divide_in_patches(image, target_representation.shape, False)
-    #img_patches = get_forged_patches(image, mask, target_patch_representation.shape, False)
+    #img_patches = get_forged_patches(image, mask, target_representation.shape, False)
     # create a list to hold the gradients to apply on the image
     gradients = []
 
@@ -140,7 +140,7 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
     variance_graph_path = os.path.join(debug_folder, "Plots", "variance")
 
     # get patches of image
-    patch_size = (8, 8)
+    patch_size = (16, 16)
 
     authentic_patches = get_authentic_patches(original_image, ground_truth, patch_size, True)
 
@@ -184,7 +184,7 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
                 variance_values.append(np.var(attacked_noiseprint))
                 plot_graph(variance_values, "Variance", variance_graph_path)
 
-                plot_graph(loss_values, "Loss value", loss_graph_path)
+                plot_graph(loss_values, "Loss value", loss_graph_path,initial_value=1)
 
                 # save image
                 img_path = os.path.join(debug_folder, "{}.png".format(str(iteration_counter)))
