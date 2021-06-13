@@ -2,11 +2,13 @@ import os
 import time
 import warnings
 import csv
+from math import ceil
 
 import PIL
 import numpy as np
 from PIL.Image import Image
 from matplotlib import pyplot as plt
+from numpy import isnan
 from tqdm import tqdm
 
 from Datasets.ColumbiaUncompressed.ColumbiaUncompressedDataset import mask_2_binary
@@ -22,7 +24,7 @@ from noiseprint2.utility.utilityRead import imread2f
 from noiseprint2.utility.visualization import noiseprint_visualization, image_noiseprint_noise_heatmap_visualization
 
 
-def get_gradient(image: np.array, mask: np.array, target_representation: np.array, noiseprint_engine):
+def get_gradient(image: np.array, image_target_representation: np.array, noiseprint_engine):
     """
     Given an image, a taregt patch representation and a noiseprint model, this image compute the gradient to
     move the image towards the target representation,
@@ -33,54 +35,25 @@ def get_gradient(image: np.array, mask: np.array, target_representation: np.arra
     :return: tensor containing the gradient,loss
     """
 
-    # divide the entire image to attack into patches
-    img_patches = divide_in_patches(image, target_representation.shape, False)
-    #img_patches = get_forged_patches(image, mask, target_representation.shape, False)
-    # create a list to hold the gradients to apply on the image
-    gradients = []
+    with tf.GradientTape() as tape:
+        tensor_image = tf.convert_to_tensor(image[np.newaxis, :, :, np.newaxis])
+        tape.watch(tensor_image)
 
-    # variable to store the cumulative loss across all patches
-    cumulative_loss = 0
+        # perform feed foward pass
+        noiseprint = tf.squeeze(noiseprint_engine._model(tensor_image))
 
-    #image wide gradient
-    image_gradient = np.zeros(image.shape)
+        # compute the loss with respect to the target representation
+        loss = tf.nn.l2_loss(image_target_representation - noiseprint)
 
-    # analyze the image patch by patch
-    pbar = tqdm(img_patches)
+        # retrieve the gradient of the patch
+        image_gradient = np.squeeze(tape.gradient(loss, tensor_image).numpy())
 
-    for x_index, y_index, patch in pbar:
-        # compute the gradient on the given patch
-        with tf.GradientTape() as tape:
-            tensor_patch = tf.convert_to_tensor(patch[np.newaxis, :, :, np.newaxis])
-            tape.watch(tensor_patch)
-
-            # perform feed foward pass
-            patch_noiseprint = tf.squeeze(noiseprint_engine._model(tensor_patch))
-
-            target_patch_representation = np.copy(target_representation)
-
-            if target_patch_representation.shape != patch.shape:
-                target_patch_representation = target_patch_representation[:patch.shape[0],:patch.shape[1]]
-                continue
-
-            # compute the loss with respect to the target representation
-            loss = tf.nn.l2_loss(target_patch_representation-patch_noiseprint)
-
-            # retrieve the gradient of the patch
-            patch_gradient = np.squeeze(tape.gradient(loss, tensor_patch).numpy())
-
-            cumulative_loss += loss.numpy()
-
-            # check that the retrieved gradient has the correct shape
-            assert (patch_gradient.shape == patch.shape)
-
-            #Add the contribution of this patch to the image wide gradient
-            image_gradient += scale_patch(patch_gradient, image_gradient.shape, x_index, y_index)
+        loss = loss.numpy()
 
     # scale the final gradient using the computed infinity norm
     image_gradient = image_gradient / np.max(np.abs(image_gradient))
 
-    return image_gradient, cumulative_loss
+    return image_gradient, loss
 
 
 def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_folder=None) -> np.array:
@@ -144,23 +117,29 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
 
     authentic_patches = get_authentic_patches(original_image, ground_truth, patch_size, True)
 
-    #representation of the ideal patch
+    # representation of the ideal patch
     target_patch = np.zeros(patch_size)
+
+    # cumulative gradient
+    cumulative_gradient = np.zeros(original_image.shape)
 
     # generate authentic target representation
     print("Generating target representation...")
     for x_index, y_index, patch in tqdm(authentic_patches):
-
-        patch = np.squeeze(engine._model(patch[np.newaxis, :, :, np.newaxis]))
+        # patch = np.squeeze(engine._model(patch[np.newaxis, :, :, np.newaxis]))
 
         target_patch += patch / len(authentic_patches)
 
-    noiseprint_visualization(target_patch, os.path.join(debug_folder, "target"))
+    noiseprint_visualization(normalize_noiseprint_no_margin(target_patch), os.path.join(debug_folder, "target.png"))
 
-    cumulative_gradient = np.zeros(original_image.shape)
+    # divide the entire image to attack into patches
+    repeat_factors = (ceil(original_image.shape[0] / target_patch.shape[0]), ceil(original_image.shape[1] / target_patch.shape[1]))
+    image_target_representation = np.tile(target_patch, repeat_factors)
+    image_target_representation = image_target_representation[:original_image.shape[0], :original_image.shape[1]]
 
+    noiseprint_visualization(normalize_noiseprint_no_margin(image_target_representation), os.path.join(debug_folder, "image-target.png"))
     alpha = 5
-    for iteration_counter in range(steps):
+    for iteration_counter in tqdm(range(steps)):
 
         # save the image for debug purposes
         if debug_folder:
@@ -194,10 +173,10 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
                                                              cumulative_gradient, attacked_heatmap, img_path)
 
         # compute the gradient
-        image_gradient, mean_loss = get_gradient(attacked_image, ground_truth, target_patch, engine)
+        image_gradient, loss = get_gradient(attacked_image, image_target_representation, engine)
 
-        #append the loss values to the list
-        loss_values.append(mean_loss)
+        # append the loss values to the list
+        loss_values.append(loss)
 
         # scale the gradient in the desided way
         gradient = alpha * image_gradient / 255

@@ -1,5 +1,6 @@
+import matplotlib
 import numpy as np
-from matplotlib import pyplot as plt, gridspec
+from matplotlib import pyplot as plt, gridspec, colors
 from numpy import isnan
 from sklearn import metrics
 
@@ -10,7 +11,6 @@ from noiseprint2.utility.utilityRead import imread2f, computeMCC
 
 from scipy.ndimage.filters import maximum_filter
 from scipy.ndimage.filters import minimum_filter
-
 erodeKernSize = 15
 dilateKernSize = 11
 
@@ -30,6 +30,7 @@ def noiseprint_visualization(noiseprint, path,normalize=True):
             ax.text(i, j, "{:.2f}".format(c), va='center', ha='center')
 
     return fig.savefig(path, dpi=fig.dpi)
+
 
 
 def image_noiseprint_heatmap_visualization(image, noiseprint, heatmap, path, should_close=True):
