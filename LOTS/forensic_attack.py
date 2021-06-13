@@ -140,7 +140,7 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
     variance_graph_path = os.path.join(debug_folder, "Plots", "variance")
 
     # get patches of image
-    patch_size = (16, 16)
+    patch_size = (8, 8)
 
     authentic_patches = get_authentic_patches(original_image, ground_truth, patch_size, True)
 
@@ -155,7 +155,7 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
 
         target_patch += patch / len(authentic_patches)
 
-    noiseprint_visualization(normalize_noiseprint_no_margin(target_patch), os.path.join(debug_folder, "target"))
+    noiseprint_visualization(target_patch, os.path.join(debug_folder, "target"))
 
     cumulative_gradient = np.zeros(original_image.shape)
 

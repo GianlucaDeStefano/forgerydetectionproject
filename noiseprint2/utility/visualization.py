@@ -4,6 +4,7 @@ from numpy import isnan
 from sklearn import metrics
 
 from noiseprint2 import gen_noiseprint, normalize_noiseprint
+from noiseprint2.noiseprint import normalize_noiseprint_no_margin
 from noiseprint2.noiseprint_blind import genMappFloat, noiseprint_blind
 from noiseprint2.utility.utilityRead import imread2f, computeMCC
 
@@ -14,8 +15,21 @@ erodeKernSize = 15
 dilateKernSize = 11
 
 
-def noiseprint_visualization(noiseprint, path):
-    return plt.imsave(fname=path, arr=noiseprint,cmap='gray', format='png')
+def noiseprint_visualization(noiseprint, path,normalize=True):
+    fig, ax = plt.subplots()
+
+    noiseprint_to_visualize = noiseprint
+    if normalize:
+        noiseprint_to_visualize = normalize_noiseprint_no_margin(noiseprint_to_visualize)
+
+    ax.matshow(noiseprint_to_visualize, cmap=plt.cm.Blues)
+
+    for i in range(noiseprint.shape[0]):
+        for j in range(noiseprint.shape[1]):
+            c = noiseprint[j, i]
+            ax.text(i, j, "{:.2f}".format(c), va='center', ha='center')
+
+    return fig.savefig(path, dpi=fig.dpi)
 
 
 def image_noiseprint_heatmap_visualization(image, noiseprint, heatmap, path, should_close=True):
