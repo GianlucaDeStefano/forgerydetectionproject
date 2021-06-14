@@ -13,7 +13,6 @@
 """
 
 import numpy as np
-from numba import jit
 
 from . import gen_noiseprint
 from .post_em import EMgu_img, getSpamFromNoiseprint

@@ -5,6 +5,7 @@ import csv
 from math import ceil
 
 import PIL
+import cv2
 import numpy as np
 from PIL.Image import Image
 from matplotlib import pyplot as plt
@@ -21,7 +22,8 @@ from noiseprint2.noiseprint_blind import noiseprint_blind_post, genMappFloat, ge
 import tensorflow as tf
 
 from noiseprint2.utility.utilityRead import imread2f
-from noiseprint2.utility.visualization import noiseprint_visualization, image_noiseprint_noise_heatmap_visualization
+from noiseprint2.utility.visualization import noiseprint_visualization, image_noiseprint_noise_heatmap_visualization, \
+    plain_noiseprint_visualization
 
 
 def get_gradient(image: np.array, image_target_representation: np.array, noiseprint_engine):
@@ -112,10 +114,13 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
     variance_values = []
     variance_graph_path = os.path.join(debug_folder, "Plots", "variance")
 
+    psnr_values = []
+    psnr_graph_path = os.path.join(debug_folder, "Plots", "psnr")
+
     # get patches of image
     patch_size = (8, 8)
 
-    authentic_patches = get_authentic_patches(original_image, ground_truth, patch_size, True)
+    authentic_patches = get_authentic_patches(original_noiseprint, ground_truth, patch_size, True)
 
     # representation of the ideal patch
     target_patch = np.zeros(patch_size)
@@ -126,18 +131,16 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
     # generate authentic target representation
     print("Generating target representation...")
     for x_index, y_index, patch in tqdm(authentic_patches):
-        # patch = np.squeeze(engine._model(patch[np.newaxis, :, :, np.newaxis]))
-
         target_patch += patch / len(authentic_patches)
 
-    noiseprint_visualization(normalize_noiseprint_no_margin(target_patch), os.path.join(debug_folder, "target.png"))
-
+    noiseprint_visualization(target_patch, os.path.join(debug_folder, "target.png"))
+    plain_noiseprint_visualization(target_patch,os.path.join(debug_folder, "plain-target.png"))
     # divide the entire image to attack into patches
     repeat_factors = (ceil(original_image.shape[0] / target_patch.shape[0]), ceil(original_image.shape[1] / target_patch.shape[1]))
     image_target_representation = np.tile(target_patch, repeat_factors)
     image_target_representation = image_target_representation[:original_image.shape[0], :original_image.shape[1]]
 
-    noiseprint_visualization(normalize_noiseprint_no_margin(image_target_representation), os.path.join(debug_folder, "image-target.png"))
+    plain_noiseprint_visualization(image_target_representation, os.path.join(debug_folder, "image-target.png"))
     alpha = 5
     for iteration_counter in tqdm(range(steps)):
 
@@ -162,6 +165,9 @@ def attack_noiseprint_model(image_path, ground_truth_path, QF, steps, debug_fold
 
                 variance_values.append(np.var(attacked_noiseprint))
                 plot_graph(variance_values, "Variance", variance_graph_path)
+
+                psnr_values.append(cv2.PSNR(original_image, attacked_image))
+                plot_graph(psnr_values, "PSNR", psnr_graph_path)
 
                 plot_graph(loss_values, "Loss value", loss_graph_path,initial_value=1)
 

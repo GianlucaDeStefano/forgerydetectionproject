@@ -15,6 +15,13 @@ erodeKernSize = 15
 dilateKernSize = 11
 
 
+def plain_noiseprint_visualization(noiseprint, path,normalize=True):
+    noiseprint_to_visualize = noiseprint
+    if normalize:
+        noiseprint_to_visualize = normalize_noiseprint_no_margin(noiseprint_to_visualize)
+
+    return plt.imsave(fname=path, arr=noiseprint, cmap='gray_r', format='png')
+
 def noiseprint_visualization(noiseprint, path,normalize=True):
     fig, ax = plt.subplots()
 
@@ -70,9 +77,15 @@ def image_noiseprint_noise_heatmap_visualization(image, noiseprint, noise, heatm
     axs[1].set_title('Noiseprint')
 
     magnified_noise = (noise +1)* noise_magnification_factor
-
     magnified_noise = np.array(magnified_noise,dtype=np.int)
-    axs[2].imshow(magnified_noise, cmap='gray')
+
+    noise_3c = np.zeros((magnified_noise.shape[0],magnified_noise.shape[1],3))
+    noise_3c[:,:,:] = 125
+    noise_3c[:,:,0] = magnified_noise
+    noise_3c[:,:,1] = magnified_noise
+    noise_3c[:,:,2] = magnified_noise
+
+    axs[2].imshow(magnified_noise)
     axs[2].set_title('Adversarial noise')
 
     axs[3].imshow(heatmap, clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
