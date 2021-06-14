@@ -1,6 +1,6 @@
 import os
 
-from Datasets.Dataset import Dataset
+from Datasets.Dataset import Dataset, ImageNotFoundException
 from Ulitities.Images import load_mask
 
 
@@ -42,3 +42,18 @@ class RitDataset(Dataset):
 
     def get_mask_of_image(self, image_path:str):
         return load_mask(image_path.replace("tampered-realistic", "ground-truth"))
+
+    def get_image(self, image_name):
+
+        for folder in self.camera_folders:
+
+            folder_path = os.path.join(self.root, folder, "pristine")
+
+            for filename in os.listdir(folder_path):
+
+                if filename == image_name:
+
+                    return os.path.join(folder_path,image_name)
+
+        raise ImageNotFoundException(image_name)
+

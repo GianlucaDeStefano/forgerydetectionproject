@@ -1,8 +1,15 @@
 from abc import ABC, abstractmethod
 
+
 class NoMaskAvailableException(Exception):
     def __init__(self):
         super().__init__("This Dataset has no masks")
+
+
+class ImageNotFoundException(Exception):
+    def __init__(self, image_name):
+        super().__init__("No image found with name: {}".format(image_name))
+
 
 class Dataset(ABC):
 
@@ -13,7 +20,7 @@ class Dataset(ABC):
         :param supported_formats: list of formats to accept
         """
         if supported_formats is None:
-            supported_formats = ["jpg", "jpeg", "png", "tif"]
+            supported_formats = ["jpg", "jpeg", "png", "tif", "bmp"]
         self.supported_formats = supported_formats
         self.root = root
         self.has_masks = has_masks
@@ -33,6 +40,15 @@ class Dataset(ABC):
         Return a list of paths corresponding to all the authentic forged in the dataset
         :param target_shape: require the returned images to have this target shape
         :return: list of paths
+        """
+        raise NotImplemented
+
+    @abstractmethod
+    def get_image(self, image_name):
+        """
+        Return the path on an image, given its name
+        :param image_name: name og the image
+        :return: path to the image
         """
         raise NotImplemented
 
