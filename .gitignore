@@ -1,5 +1,8 @@
+#exclude folders containing data (e.g datasets)
 Data/
 
+#exclude folders containg debug data generted during attack runs
+Debug/
 
 .idea/
 forgerydetectionproject/

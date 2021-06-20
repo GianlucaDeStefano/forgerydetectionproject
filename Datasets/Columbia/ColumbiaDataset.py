@@ -7,7 +7,7 @@ from Datasets.Dataset import Dataset, ImageNotFoundException
 class ColumbiaDataset(Dataset):
 
     def __init__(self,root = os.path.dirname(__file__) + "/Data/"):
-        super(ColumbiaDataset, self).__init__(root, False, supported_formats=["bmp"])
+        super(ColumbiaDataset, self).__init__(root, False,"Columbia", supported_formats=["bmp"])
 
     def get_authentic_images(self, target_shape=None):
         """
