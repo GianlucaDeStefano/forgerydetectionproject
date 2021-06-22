@@ -21,22 +21,18 @@ pip install -r requirements.txt
 
 To download the datasets: 
 ```bash
-./Datasets/get_datasets.sh
+cd Datasets
+./get_datasets.sh
 ```
 
 ## Usage
-To analyze an image use the python analyze_image.py script.
+The easiest way of testing the attack is the following: 
 ```bash
-    python analyze_image.py -i <input image path> -g <ground truth image path> -q <quality factor>
+python ./attack_image.py -i canong3_canonxt_sub_13.tif
 ```
-
-Use the generate_targets.py script to generate the average target representation for each quality model
+Since this image belongs to one of the supported datasets the script automatically finds its mask and loads
+it correctly. We can also test other 3rd party images by passing the path to image and mask directly in the following way
 ```bash
-    python generate_targets.py 
-```
-
-To attack an image use the following command
-```bash
-    python attack_image.py -i <input image path> -g <ground truth path> -d
+python ./attack_image.py -i <path_to_image> -g <path_to_mask> 
 ```
 In the folder /Data/Debug/<run id>/ the script will save the final comparison and other images useful for debug purposes
