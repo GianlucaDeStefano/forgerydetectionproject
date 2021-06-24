@@ -1,21 +1,24 @@
 import argparse
+import os
 import warnings
+
+import numpy as np
+from matplotlib import pyplot as plt
+from tqdm import tqdm
+
 from Datasets import supported_datasets
-from Attacks import supported_attacks
 from Datasets.Dataset import mask_2_binary, ImageNotFoundException
-from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_img, jpeg_quality_of_file
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
 from Ulitities.Exceptions.arguments import InvalidArgumentException
+from Ulitities.Image.Picture import Picture
 
 DEBUG_ROOT = "./Data/Debug/"
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", '--image', required=True, help='Name of the input image, or its path')
 parser.add_argument("-m", '--mask', default=None, help='Path to the binary mask of the image')
 parser.add_argument("-d", '--dataset', default=None, choices=supported_datasets.keys(),
                     help='Dataset to which the image belongs')
-parser.add_argument("-a", '--attackType', choices=supported_attacks.keys(), help='Attack to perform')
 args = parser.parse_args()
 
 image_path = args.image
@@ -49,39 +52,21 @@ else:
             raise InvalidArgumentException("Impossible to find the dataset this image belongs to")
 
     image_path = dataset.get_image(args.image)
-    mask,mask_path = dataset.get_mask_of_image(image_path)
+    mask, mask_path = dataset.get_mask_of_image(image_path)
 
-# load the image as a 3 dimensional numpy array
-image, mode = imread2f(image_path, channel=3)
-# assert image and mask have compatible shapes
+IMAGE = Picture(image_path)
 
-assert (image.shape[0] == mask.shape[0] and image.shape[1] == mask.shape[1])
-assert (len(mask.shape) == 2 or mask.shape[2] == 1)
+print("SHAPE:{}".format(IMAGE.shape))
 
-attacks = None
-if not args.attackType:
-    print("\nNo specific attack has been selected, select one:")
-    i = 1
-    for key, supported_attack in supported_attacks.items():
-        print("  {}) {}".format(i, key))
-        i = i+1
-    print("  {}) {}".format(i, "All attacks in sequence"))
-    attack_number = int(input("Enter attack number:"))
+PATCHES = IMAGE.one_channel().divide_in_patches((8, 8), (32, 32, 32, 32), force_shape=False)
 
-    if attack_number == i:
-        attacks = list(supported_attacks.values())
-    else:
-        attacks = list(supported_attacks.values())[attack_number-1]
+reconstruction = np.zeros(IMAGE.one_channel().shape)
 
-else:
-    # read the attack to perform and instantiate its class
-    attacks = supported_attacks[args.attackType]
+imgplot = plt.imshow(PATCHES[1]/256)
+plt.show()
 
-if not isinstance(attacks, list):
-    attacks = [attacks]
+for patch in tqdm(PATCHES):
+    reconstruction = patch.add_to_image(reconstruction)
 
-# execute each attack sequentially
-for current_attack in attacks:
-    attack = current_attack(image, mask,image_path,mask_path)
-    attack.execute()
-
+imgplot = plt.imshow(reconstruction/256)
+plt.show()

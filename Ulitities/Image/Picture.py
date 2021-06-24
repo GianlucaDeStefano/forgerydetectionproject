@@ -1,9 +1,8 @@
 from math import ceil
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
-
-from Ulitities.Image.Patch import Patch
 
 
 class IncompatibeShapeException(Exception):
@@ -19,12 +18,21 @@ class Picture(np.ndarray):
     '''Subclass of ndarray MUST be initialized with a numpy array as first argument.
     '''
 
-    def __new__(cls, input_image):
-        input_array = Image.open(input_image)
-        obj = (np.asarray(input_array)).view(cls)
+    def __new__(cls, array: np.ndarray = None, path: str = "", *args, **kwargs):
+
+        if array is None:
+            # no preloaded image is given, let's load it
+            print(path)
+            input_array = Image.open(path).convert('RGB')
+            obj = (np.asarray(input_array, np.int)).view(cls)
+        else:
+            # a preloaded image is given
+            obj = array.view(cls)
+        obj.path = path
         return obj
 
-    def to_one_channel(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
+    @property
+    def one_channel(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
         """
         Convert the image to a one channel image, only 3 and one channel images are admitted
         :return: 1 channel version of the image
@@ -37,7 +45,8 @@ class Picture(np.ndarray):
             except:
                 raise IncompatibeShapeException("'3 to 1 channels'", self.shape)
 
-    def to_three_channel(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
+    @property
+    def three_channel(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
         """
         Given a mono-channel image, split it into 3 channels according
         :return:
@@ -48,9 +57,10 @@ class Picture(np.ndarray):
         else:
             ar = np.zeros((self.shape[0], self.shape[1], 3))
             try:
-                ar[:, :, 0] = self[:, :] / red_weight
-                ar[:, :, 0] = self[:, :] / green_weight
-                ar[:, :, 0] = self[:, :] / blue_weight
+                ar[:, :, 0] = self[:, :] * red_weight
+                ar[:, :, 0] = self[:, :] * green_weight
+                ar[:, :, 0] = self[:, :] * blue_weight
+                return ar
             except:
                 raise IncompatibeShapeException("'1 to 3 channels'", self.shape)
 
@@ -116,7 +126,7 @@ class Picture(np.ndarray):
                 else:
                     values = self[x_index: x_index_f, y_index:y_index_f, :]
 
-                patch = Patch(values, (x_index,x_index_f),(y_index, y_index_f),
+                patch = Patch(values, (x_index, x_index_f), (y_index, y_index_f),
                               (top_padding, right_padding, bottom_padding, left_padding))
 
                 if force_shape:
@@ -127,7 +137,40 @@ class Picture(np.ndarray):
 
         return patches
 
-    def __array_finalize__(self, obj) -> None:
-        if obj is None: return
-        # This attribute should be maintained!
-        self.attr = getattr(obj, 'attr', 1)
+    def get_authentic_patches(self, mask, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False):
+
+        assert (self.shape[0] == mask.shape[0])
+        assert (self.shape[1] == mask.shape[1])
+
+        # divide image and mask into patches
+        img_patches = self.divide_in_patches(patch_shape, padding, force_shape)
+        mask_patches = mask.divide_in_patches(patch_shape, padding, force_shape)
+        assert (len(img_patches) == len(mask_patches))
+
+        # disgard patches containing masked data
+        authentic_patches = []
+        for i in range(len(img_patches)):
+            if mask_patches[i].sum() == 0:
+                authentic_patches.append(img_patches[i])
+
+        return authentic_patches
+
+    def save(self, path):
+
+        if self.max() <=1 and self.min() >=0:
+            image_array = np.array(self*255, np.uint8)
+        else:
+            image_array = np.array(self, np.uint8)
+        im = Image.fromarray(image_array)
+        im.save(path)
+
+    @property
+    def to_float(self):
+        return self / 256
+
+    @property
+    def image_path(self):
+        return self._image_path
+
+
+from Ulitities.Image.Patch import Patch

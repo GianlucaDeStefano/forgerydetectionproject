@@ -11,13 +11,14 @@ from Attacks.utilities.image import three_2_one_channel, one_2_three_channel, no
 from Attacks.utilities.patches import get_authentic_patches
 from Attacks.utilities.visualization import visuallize_array_values
 from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normalize_noiseprint
+from Ulitities.Image import Picture
 
 
 class LotsNoiseprint2_a(Lots4NoiseprintBase):
 
-    def __init__(self, target_image: np.array, mask: np.array, image_path, mask_path, qf: int = None,
+    def __init__(self, target_image:Picture, mask: np.array, image_path, mask_path, qf: int = None,
                  patch_size: tuple = (8, 8),
-                 steps=50, debug_root="./Data/Debug/", alpha=5,plot_interval=1):
+                 steps=50, debug_root="./Data/Debug/", alpha=5,plot_interval=3):
         """
         Base class to implement various attacks
         :param target_image: image to attack
@@ -45,7 +46,7 @@ class LotsNoiseprint2_a(Lots4NoiseprintBase):
         :return: the target representation in the shape of a numpy array
         """
 
-        image = self.target_image
+        image = self.original_image
 
         if len(image.shape) == 3 and image.shape[2] == 3:
             image = three_2_one_channel(image)
@@ -173,7 +174,7 @@ class LotsNoiseprint2_a(Lots4NoiseprintBase):
         self.attacked_image = np.array(forged_image / 255).astype(np.float32)
 
         # recompute the adversarial noise parameter
-        self.adversarial_noise = self.attacked_image - self.target_image
+        self.adversarial_noise = self.attacked_image - self.original_image
 
     def _get_gradient_of_patch(self, patch, target):
 

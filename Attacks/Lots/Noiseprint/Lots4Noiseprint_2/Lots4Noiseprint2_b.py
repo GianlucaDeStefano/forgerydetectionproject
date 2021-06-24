@@ -11,11 +11,12 @@ from Attacks.utilities.image import three_2_one_channel, one_2_three_channel
 from Attacks.utilities.patches import get_authentic_patches
 from Attacks.utilities.visualization import visuallize_array_values
 from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normalize_noiseprint
+from Ulitities.Image import Picture
 
 
 class LotsNoiseprint2_b(Lots4NoiseprintBase):
 
-    def __init__(self, target_image: np.array, mask: np.array, image_path, mask_path, qf: int = None,
+    def __init__(self, target_image: Picture, mask: np.array, image_path, mask_path, qf: int = None,
                  patch_size: tuple = (8, 8),
                  steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=1):
         """
@@ -45,7 +46,7 @@ class LotsNoiseprint2_b(Lots4NoiseprintBase):
         :return: the target representation in the shape of a numpy array
         """
 
-        image = self.target_image
+        image = self.original_image
 
         if len(image.shape) == 3 and image.shape[2] == 3:
             image = three_2_one_channel(image)
@@ -97,9 +98,9 @@ class LotsNoiseprint2_b(Lots4NoiseprintBase):
         :return:
         """
         # get the 1 channel version of the image to attack as required by Noiseprint
-        attacked_image_1c = tf.squeeze(self.target_image)
+        attacked_image_1c = tf.squeeze(self.original_image)
         if len(attacked_image_1c.shape) > 2:
-            attacked_image_1c = three_2_one_channel(self.target_image)
+            attacked_image_1c = three_2_one_channel(self.original_image)
 
         attacked_image_1c -= self.adversarial_noise
 

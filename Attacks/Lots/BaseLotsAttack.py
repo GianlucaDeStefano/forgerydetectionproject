@@ -5,6 +5,7 @@ from PIL import Image
 from datetime import datetime
 from Attacks.BaseAttack import BaseAttack
 from Attacks.utilities.image import one_2_three_channel
+from Ulitities.Image import Picture
 
 
 class InvalidPatchSize(Exception):
@@ -35,7 +36,7 @@ def check_patch_size(patch_size):
 
 class BaseLotsAttack(BaseAttack, ABC):
 
-    def __init__(self, target_image: np.array, mask: np.array, name: str, image_path, mask_path, patch_size: tuple,
+    def __init__(self, target_image: Picture, mask: Picture, name: str, image_path, mask_path, patch_size: tuple,
                  steps=50, debug_root= "./Data/Debug/",alpha=5,plot_interval=3):
         """
         Base class to implement various attacks
@@ -64,7 +65,7 @@ class BaseLotsAttack(BaseAttack, ABC):
             self._generate_target_representation()
 
         self.write_to_logs("Patch size:{}".format(str(self.patch_size)))
-        self.write_to_logs("Image shape:{}".format(str(self.target_image.shape)))
+        self.write_to_logs("Image shape:{}".format(str(self.original_image.shape)))
         self.write_to_logs("Target representation shape:{}".format(str(self.target_representation.shape)))
         self.write_to_logs("Quality factor:{}".format(str(self.qf)))
         self.write_to_logs("Alpha:{}".format(str(self.alpha)))

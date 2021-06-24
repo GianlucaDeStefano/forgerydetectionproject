@@ -11,6 +11,7 @@ from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normali
 from Detectors.Noiseprint.Noiseprint.noiseprint_blind import noiseprint_blind_post, genMappFloat
 from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_img, jpeg_quality_of_file
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
+from Ulitities.Image.Picture import Picture
 from Ulitities.Plots import plot_graph
 
 
@@ -21,9 +22,9 @@ class MissingTargetRepresentation(Exception):
 
 class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
-    def __init__(self, target_image: np.array, mask: np.array, name: str, image_path: str, mask_path, qf: int,
-                 patch_size: tuple = (8, 8),
-                 steps=50, debug_root="./Data/Debug/", alpha=5,plot_interval= 3):
+    def __init__(self, target_image: Picture, mask: Picture, name: str, image_path: str, mask_path, qf: int,
+                 patch_size: tuple = (8, 8), steps=50,
+                 debug_root="./Data/Debug/", alpha=5, plot_interval=3):
         """
         Base class to implement various attacks
         :param target_image: image to attack
@@ -41,9 +42,8 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         # Define object to contain the patch wise target representation
         self.target_representation = None
 
-        super().__init__(target_image, mask, name, image_path, mask_path, patch_size, steps, debug_root, alpha,plot_interval)
-
-        self.adversarial_noise = np.zeros((target_image.shape[0],target_image.shape[1]))
+        super().__init__(target_image, mask, name, image_path, mask_path, patch_size, steps, debug_root, alpha,
+                         plot_interval)
 
         try:
             qf = jpeg_quality_of_file(image_path)
@@ -61,14 +61,14 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         self.min_loss = float("inf")
 
-
     @abstractmethod
     def _generate_target_representation(self):
         raise NotImplemented
 
     def _on_after_attack_step(self):
+
         # compute PSNR between intial 1 channel image and the attacked one
-        psnr = PSNR(self.target_image, self.attacked_image)
+        psnr = PSNR(self.original_image, self.attacked_image)
         self.psnr_steps.append(psnr)
 
         super()._on_after_attack_step()
@@ -78,36 +78,27 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         plot_graph(self.noiseprint_variance_steps, "Variance", os.path.join(self.debug_folder, "variance"))
 
         if self.loss_steps[-1] < self.min_loss:
-
             self.min_loss = self.loss_steps[-1]
             # save the best adversarial noise
             np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.adversarial_noise)
 
-
-
     def plot_step(self):
 
-        attacked_image_1c = self.attacked_image
-        if len(attacked_image_1c.shape) > 2:
-            attacked_image_1c = three_2_one_channel(self.attacked_image)
+        image = self.attacked_image.to_float.one_channel
 
-        noiseprint = self._engine.predict(attacked_image_1c)
+        noiseprint = self._engine.predict(image)
 
         self.noiseprint_variance_steps.append(noiseprint.var())
 
-        mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, attacked_image_1c)
+        mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image)
         attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
-        adversarial_noise = self.adversarial_noise
+        magnified_noise = normalize_noiseprint(self.adversarial_noise)
 
-        if len(adversarial_noise.shape) == 3:
-            adversarial_noise = three_2_one_channel(adversarial_noise)
-
-        adversarial_noise = normalize(adversarial_noise)
-
-        visualize_noiseprint_step(self.attacked_image, normalize_noiseprint(noiseprint), adversarial_noise,
+        visualize_noiseprint_step(self.attacked_image.to_float, normalize_noiseprint(noiseprint), magnified_noise,
                                   attacked_heatmap,
-                                  os.path.join(self.debug_folder,"Steps", str(self.attack_iteration)))
+                                  os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
+
 
     def _on_after_attack(self):
         """
@@ -118,21 +109,17 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         image_path = os.path.join(self.debug_folder, "attacked image.png")
 
         # save attacked image
-        im = Image.fromarray((self.attacked_image * 255).astype(np.uint8))
-        im.save(image_path)
+        self.attacked_image.save(image_path)
 
         # generate heatmap of the just saved image, just to be sure of the final result of the attack
-        image, mode = imread2f(image_path, channel=1)
-        noiseprint = self._engine.predict(image)
+        image = Picture(path=image_path)
+        noiseprint = self._engine.predict(image.to_float.one_channel)
 
-        mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image)
+        mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image.to_float.one_channel)
         attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
-        magnified_noise = normalize(self.adversarial_noise)
+        magnified_noise = normalize_noiseprint(image - self.original_image)
 
-        magnified_noise = np.array(magnified_noise, dtype=np.int)
-
-        image, mode = imread2f(image_path, channel=3)
         visualize_noiseprint_step(image, normalize_noiseprint(noiseprint), magnified_noise,
                                   attacked_heatmap,
                                   os.path.join(self.debug_folder, "resulting attack"))

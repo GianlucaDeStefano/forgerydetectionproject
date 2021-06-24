@@ -6,6 +6,7 @@ from Datasets.Dataset import mask_2_binary, ImageNotFoundException
 from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_img, jpeg_quality_of_file
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
 from Ulitities.Exceptions.arguments import InvalidArgumentException
+from Ulitities.Image.Picture import Picture
 
 DEBUG_ROOT = "./Data/Debug/"
 
@@ -52,9 +53,12 @@ else:
     mask,mask_path = dataset.get_mask_of_image(image_path)
 
 # load the image as a 3 dimensional numpy array
-image, mode = imread2f(image_path, channel=3)
-# assert image and mask have compatible shapes
+image = Picture(path=image_path)
 
+#load mask as a picture
+mask = Picture(mask)
+
+# assert image and mask have compatible shapes
 assert (image.shape[0] == mask.shape[0] and image.shape[1] == mask.shape[1])
 assert (len(mask.shape) == 2 or mask.shape[2] == 1)
 

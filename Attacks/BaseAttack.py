@@ -9,14 +9,16 @@ import logging
 
 from tqdm import tqdm
 
+from Ulitities.Image import Picture
+
 
 class BaseAttack(ABC):
 
-    def __init__(self, target_image: np.array, mask: np.array, name: str, image_path, mask_path, steps=50,
+    def __init__(self, original_image: Picture, mask: Picture, name: str, image_path, mask_path, steps=50,
                  debug_root="./Data/Debug/", plot_interval=3):
         """
         Base class to implement various attacks
-        :param target_image: image to attack
+        :param original_image: image to attack
         :param mask: binary mask of the image to attack, 0 = authentic, 1 = forged
         :param name: name to identify the attack
         :param steps: total number of steps of the attack
@@ -24,22 +26,19 @@ class BaseAttack(ABC):
         :param plot_interval: frequency at which printing an extensive plot of a step
         """
 
-        assert (target_image.shape[0] == mask.shape[0])
-        assert (target_image.shape[1] == mask.shape[1])
+        assert (original_image.shape[0] == mask.shape[0])
+        assert (original_image.shape[1] == mask.shape[1])
 
-        self.target_image = target_image
+        self.original_image = original_image
         self.image_path = image_path
         self.mask_path = mask_path
-        self.attacked_image = np.copy(target_image)
+        self.attacked_image = original_image
         self.mask = mask
         self.attack_iteration = 0
         self.name = name
         self.steps = steps
         self.debug_folder = debug_root
-        self.plot_interval = 1
-
-        # Define object to contain the adversarial_noise generated during the attack
-        self.adversarial_noise = np.zeros(self.attacked_image.shape)
+        self.plot_interval = plot_interval
 
         times = time.time()
         self.debug_folder = os.path.join(debug_root, str(times))
@@ -98,13 +97,10 @@ class BaseAttack(ABC):
         """
 
         # save image
-        im = Image.fromarray((self.target_image * 255).astype(np.uint8))
-        im.save(os.path.join(self.debug_folder, "image.png"))
+        self.original_image.save(os.path.join(self.debug_folder, "image.png"))
 
         # save mask
-
-        im = Image.fromarray((self.mask * 255).astype(np.uint8))
-        im.save(os.path.join(self.debug_folder, "mask.png"))
+        self.mask.save(os.path.join(self.debug_folder, "mask.png"))
 
         self.write_to_logs("Attack name: {}".format(self.name))
         self.write_to_logs("Attacking image: {}".format(self.image_path))
@@ -140,12 +136,18 @@ class BaseAttack(ABC):
         Function executed after ending the i-th attack step
         :return:
         """
+
+        # log data
         self.end_step_time = datetime.now()
         self.write_to_logs(self._log_step(), False)
         self.attack_iteration += 1
 
+        # generate plots and other visualizations
         if self.attack_iteration % self.plot_interval == 0:
             self.plot_step()
+
+        # save the attacked image
+        self.attacked_image.save(os.path.join(self.debug_folder, "attackedImage.png"))
 
     @abstractmethod
     def plot_step(self):
@@ -178,3 +180,7 @@ class BaseAttack(ABC):
     def _log_step(self) -> str:
         "Generate the logging to write at each step"
         return " {}) Duration: {}".format(self.attack_iteration, self.end_step_time - self.start_step_time)
+
+    @property
+    def adversarial_noise(self):
+        return self.attacked_image - self.original_image

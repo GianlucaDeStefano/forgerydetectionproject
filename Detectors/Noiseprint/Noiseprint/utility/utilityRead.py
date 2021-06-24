@@ -28,7 +28,7 @@ def imread2f_pil(stream, channel = 1, dtype = np.float32):
         else:
             img = img.convert('RGB')
             img = np.asarray(img).astype(dtype)
-            img = (0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2])/256.0
+            img = (0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]) / 256.0
     else:
         img = np.asarray(img).astype(dtype) / 256.0
     return img, mode

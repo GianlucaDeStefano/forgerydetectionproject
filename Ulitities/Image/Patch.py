@@ -1,9 +1,9 @@
 import numpy as np
 
-from Ulitities.Image.Picture import *
+from Ulitities.Image.Picture import Picture
 
 
-class Patch(np.ndarray):
+class Patch(Picture):
 
     def __new__(cls, array: np.array, x_indexes: tuple, y_indexes: tuple, paddings: tuple = (0, 0, 0, 0)):
         """
@@ -29,13 +29,31 @@ class Patch(np.ndarray):
 
         return obj
 
-    def no_paddings(self):
+    @property
+    def clean_shape(self):
+        """
+        Return the shape of the patch without any padding applied
+        :return: tuple
+        """
 
         if len(self.shape) == 2:
-            return self[self.paddings[3]:self.shape[0] - self.paddings[1],
+            return (self.shape[0] - self.paddings[1] - self.paddings[3],
+                    self.shape[1] - self.paddings[2] - self.paddings[0])
+        else:
+            return (self.shape[0] - self.paddings[1] - self.paddings[3],
+                    self.shape[1] - self.paddings[2] - self.paddings[0], self.shape[2])
+
+    def no_paddings(self,array = None):
+
+        if not hasattr(array, 'shape'):
+            # No array passed,
+            array = self
+
+        if len(array.shape) == 2:
+            return array[self.paddings[3]:self.shape[0] - self.paddings[1],
                    self.paddings[0]:self.shape[1] - self.paddings[2]]
         else:
-            return self[self.paddings[3]:self.shape[0] - self.paddings[1],
+            return array[self.paddings[3]:self.shape[0] - self.paddings[1],
                    self.paddings[0]:self.shape[1] - self.paddings[2], :]
 
     def enlarge(self, shape):
@@ -56,14 +74,16 @@ class Patch(np.ndarray):
         y_index_f = y_index_f - bottom_padding
 
         picture = np.zeros(shape)
-        no_paddings = self.no_paddings()
 
-        picture[x_index:x_index_f, y_index:y_index_f] = no_paddings
+        picture[x_index:x_index_f, y_index:y_index_f] = self.no_paddings()
         return picture
 
-    def add_to_image(self, image, patch: np.array = None):
-
+    def add_to_image(self, image, array: np.array = None):
         top_padding, right_padding, bottom_padding, left_padding = self.paddings
+
+        if not hasattr(array, 'shape'):
+            # No array passed,
+            array = self
 
         x_index, x_index_f = self.x_indexes
         y_index, y_index_f = self.y_indexes
@@ -74,11 +94,6 @@ class Patch(np.ndarray):
         y_index = y_index + top_padding
         y_index_f = y_index_f - bottom_padding
 
-        no_paddings = self.no_paddings()
-        image[x_index:x_index_f, y_index:y_index_f] = no_paddings
+        image[x_index:x_index_f, y_index:y_index_f] = self.no_paddings(array)
         return image
 
-    def __array_finalize__(self, obj) -> None:
-        if obj is None: return
-        # This attribute should be maintained!
-        self.attr = getattr(obj, 'attr', 1)

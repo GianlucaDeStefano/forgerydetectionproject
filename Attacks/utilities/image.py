@@ -30,7 +30,7 @@ def one_2_three_channel(image: np.array) -> np.array:
     return image_3c
 
 def normalize(noise:np.array):
-    return (noise - np.min(noise))/np.ptp(noise)
+    return (noise - np.min(noise))/np.max(np.abs(noise))
 
 def PSNR(original, compressed):
     mse = np.mean((original - compressed) ** 2)
