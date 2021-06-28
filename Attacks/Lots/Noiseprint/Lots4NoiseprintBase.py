@@ -2,7 +2,6 @@ import os.path
 from abc import ABC, abstractmethod
 from PIL import Image
 import numpy as np
-from cv2 import PSNR
 import tensorflow as tf
 from Attacks.Lots.BaseLotsAttack import BaseLotsAttack
 from Attacks.utilities.image import three_2_one_channel, one_2_three_channel, normalize
@@ -21,6 +20,10 @@ class MissingTargetRepresentation(Exception):
         super().__init__("No image found with name: {}".format(image_name))
 
 
+def PSNR(image1,image2):
+    mse = np.mean((image1.astype(np.float64) / 255 - image2.astype(np.float64) / 255) ** 2)
+    return 10 * np.log10(1. / mse)
+
 def normalize_gradient(gradient, margin=17):
     """
     Normalize the gradient cutting away the values on the borders
@@ -30,12 +33,11 @@ def normalize_gradient(gradient, margin=17):
     """
 
     # set to 0 part of the gradient too near to the border
-    gradient[0:margin, :] = 0
-    gradient[-margin:, :] = 0
-    gradient[:, 0:margin] = 0
-    gradient[:, -margin:] = 0
-
-    print(gradient.min(), gradient.max())
+    if margin > 0:
+        gradient[0:margin, :] = 0
+        gradient[-margin:, :] = 0
+        gradient[:, 0:margin] = 0
+        gradient[:, -margin:] = 0
 
     # scale the final gradient using the computed infinity norm
     gradient = gradient / np.max(np.abs(gradient))
@@ -90,10 +92,10 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
     def _on_after_attack_step(self):
 
         # compute PSNR between intial 1 channel image and the attacked one
-        psnr = PSNR(np.array(self.original_image.one_channel).astype(np.uint8), np.array(self.attacked_image.one_channel).astype(np.uint8))
+        psnr = PSNR(self.original_image,self.attacked_image)
         self.psnr_steps.append(psnr)
 
-        #compute variance on the noiseprint map
+        # compute variance on the noiseprint map
         image = self.attacked_image.to_float().one_channel
         noiseprint = self._engine.predict(image)
         self.noiseprint_variance_steps.append(noiseprint.var())
@@ -106,6 +108,9 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         if self.loss_steps[-1] < self.min_loss:
             self.min_loss = self.loss_steps[-1]
+
+            self.best_noise = self.adversarial_noise
+
             # save the best adversarial noise
             np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.adversarial_noise)
 
@@ -152,8 +157,13 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
                                   os.path.join(self.debug_folder, "resulting attack"))
 
     def _get_gradient_of_patch(self, image_patch: Patch, target):
-
-        assert(image_patch.shape[0] * image_patch.shape[1] < NoiseprintEngine.large_limit)
+        """
+        Compute gradient of the patch
+        :param image_patch:
+        :param target:
+        :return:
+        """
+        assert (image_patch.shape[0] * image_patch.shape[1] < NoiseprintEngine.large_limit)
 
         # be sure that the given patch and target are of the same shape
         with tf.GradientTape() as tape:
@@ -177,4 +187,41 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
             return patch_gradient, loss
 
-    
+    @abstractmethod
+    def _get_gradient_of_image(self, image: Picture, target: Picture):
+        """
+        Compute the gradient for the entire image
+        :param image: image for which we have to compute the gradient
+        :param target: target to use
+        :return: numpy array containing the gradient
+        """
+
+        raise NotImplemented
+
+    def _attack_step(self):
+        """
+        Perform step of the attack executing the following steps:
+
+            1) Divide the entire image into patches
+            2) Compute the gradient of each patch with respect to the patch-tirget representation
+            3) Recombine all the patch-gradients to obtain a image wide gradient
+            4) Apply the image-gradient to the image
+            5) Convert then the image to the range of values of integers [0,255] and convert it back to the range
+               [0,1]
+        :return:
+        """
+
+        # compute the gradient
+        image_gradient, loss = self._get_gradient_of_image(self.attacked_image.to_float().one_channel, self.target_representation)
+
+        # save loss value to plot it
+        self.loss_steps.append(loss)
+
+        # normalize the gradient
+        image_gradient = normalize_gradient(image_gradient,margin=0)
+
+        # scale the gradient
+        image_gradient = Picture(self.alpha * image_gradient)
+
+        # convert it back to float to perform the next attack step
+        self.attacked_image = Picture((self.attacked_image - image_gradient.three_channel).clip(0, 255))

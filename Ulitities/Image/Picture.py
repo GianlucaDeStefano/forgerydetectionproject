@@ -120,7 +120,7 @@ class Picture(np.ndarray):
                     else:
                         bottom_padding = max(bottom_padding - (y_index_f - self.shape[1]), 0)
                         y_index_f = self.shape[1]
-
+                
                 if len(self.shape) == 2 or self.shape[2] == 1:
                     values = self[x_index: x_index_f, y_index:y_index_f]
                 else:
@@ -158,14 +158,14 @@ class Picture(np.ndarray):
     def save(self, path):
 
         if self.max() <=1 and self.min() >=0:
-            image_array = np.array(self*256, np.uint8)
+            image_array = np.array(self*255, np.uint8)
         else:
             image_array = np.array(self, np.uint8)
         im = Image.fromarray(image_array)
         im.save(path)
 
     def to_float(self):
-        return Picture((self / 256).clip(0,1))
+        return Picture((self / 255).clip(0,1))
 
     def to_int(self):
         return Picture(np.rint(self)*255)

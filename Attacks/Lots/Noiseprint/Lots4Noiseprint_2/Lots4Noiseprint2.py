@@ -19,7 +19,7 @@ class LotsNoiseprint2_a(Lots4NoiseprintBase):
 
     def __init__(self, target_image:Picture, mask: np.array, image_path, mask_path, qf: int = None,
                  patch_size: tuple = (8, 8),
-                 steps=50, debug_root="./Data/Debug/", alpha=5,plot_interval=1):
+                 steps=50, debug_root="./Data/Debug/", alpha=5,plot_interval=3):
         """
         Base class to implement various attacks
         :param target_image: image to attack
@@ -96,7 +96,7 @@ class LotsNoiseprint2_a(Lots4NoiseprintBase):
 
         return image_target_representation
 
-    def _attack_step(self):
+    def _get_gradient_of_image(self, image: Picture, target: Picture):
         """
         Perform step of the attack executing the following steps:
 
@@ -106,41 +106,41 @@ class LotsNoiseprint2_a(Lots4NoiseprintBase):
             4) Apply the image-gradient to the image
         :return:
         """
-        # get the 1 channel version of the image to attack as required by Noiseprint
-        attacked_image_1c = self.attacked_image.to_float().one_channel
 
-        assert (len(attacked_image_1c.shape) == 2)
+        image
+
+        assert (len(image.shape) == 2)
 
         # variable to store the cumulative loss across all patches
         cumulative_loss = 0
 
         # image wide gradient
-        image_gradient = np.zeros(attacked_image_1c.shape)
+        image_gradient = np.zeros(image.shape)
 
-        if attacked_image_1c.shape[0] * attacked_image_1c.shape[1] < NoiseprintEngine.large_limit:
+        if image.shape[0] * image.shape[1] < NoiseprintEngine.large_limit:
             # the image can be processed as a single patch
-            image_gradient, cumulative_loss = self._get_gradient_of_patch(Patch(attacked_image_1c), self.target_representation)
-            print(image_gradient.min(),image_gradient.max())
+            image_gradient, cumulative_loss = self._get_gradient_of_patch(Patch(image), target)
+
         else:
             # the image is to big, we have to divide it in patches to process separately
             # iterate over x and y, strides = self.slide, window size = self.slide+2*self.overlap
-            for x in range(0, attacked_image_1c.shape[0], self._engine.slide):
+            for x in range(0, image.shape[0], self._engine.slide):
                 x_start = x - self._engine.overlap
                 x_end = x + self._engine.slide + self._engine.overlap
-                for y in range(0, attacked_image_1c.shape[1], self._engine.slide):
+                for y in range(0, image.shape[1], self._engine.slide):
                     y_start = y - self._engine.overlap
                     y_end = y + self._engine.slide + self._engine.overlap
 
                     # get the patch we are currently working on
-                    patch = attacked_image_1c[
-                            max(x_start, 0): min(x_end, attacked_image_1c.shape[0]),
-                            max(y_start, 0): min(y_end, attacked_image_1c.shape[1])
+                    patch = image[
+                            max(x_start, 0): min(x_end, image.shape[0]),
+                            max(y_start, 0): min(y_end, image.shape[1])
                             ]
 
                     # get the desired target representation for this patch
-                    target_patch = self.target_representation[
-                                   max(x_start, 0): min(x_end, attacked_image_1c.shape[0]),
-                                   max(y_start, 0): min(y_end, attacked_image_1c.shape[1])
+                    target_patch = target[
+                                   max(x_start, 0): min(x_end, image.shape[0]),
+                                   max(y_start, 0): min(y_end, image.shape[1])
                                    ]
 
                     patch_gradient, patch_loss = self._get_gradient_of_patch(patch,target_patch)
@@ -161,18 +161,7 @@ class LotsNoiseprint2_a(Lots4NoiseprintBase):
                     # copy data to output buffer
                     image_gradient[x: min(x + self._engine.slide, image_gradient.shape[0]), y: min(y + self._engine.slide, image_gradient.shape[1])] = patch_gradient
 
-        # save loss value to plot it
-        self.loss_steps.append(cumulative_loss)
-
-        image_gradient = normalize_gradient(image_gradient)
-
-        # scale the gradient
-        image_gradient = Picture(self.alpha * image_gradient)
-
-        print(image_gradient.min(),image_gradient.max())
-
-        # convert it back to float to perform the next attack step
-        self.attacked_image = Picture((self.attacked_image - image_gradient.three_channel).clip(0, 255))
+        return image_gradient, cumulative_loss
 
     def _on_before_attack_step(self):
         """

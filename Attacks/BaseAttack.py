@@ -40,6 +40,8 @@ class BaseAttack(ABC):
         self.debug_folder = debug_root
         self.plot_interval = plot_interval
 
+        self.best_noise = None
+
         times = time.time()
         self.debug_folder = os.path.join(debug_root, str(times))
         os.makedirs(self.debug_folder)
@@ -118,7 +120,7 @@ class BaseAttack(ABC):
         """
 
         # save the adversarial noise
-        np.save(os.path.join(self.debug_folder, 'noise.npy'), self.adversarial_noise)
+        np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.best_noise)
 
         self.plot_step()
         self.end_time = datetime.now()
@@ -147,7 +149,7 @@ class BaseAttack(ABC):
             self.plot_step()
 
         # save the attacked image
-        self.attacked_image.save(os.path.join(self.debug_folder, "attackedImage.png"))
+        self.attacked_image.save(os.path.join(self.debug_folder, "attacked image.png"))
 
     @abstractmethod
     def plot_step(self):

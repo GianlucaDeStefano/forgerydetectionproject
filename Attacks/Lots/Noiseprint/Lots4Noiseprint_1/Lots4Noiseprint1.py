@@ -17,7 +17,7 @@ class LotsNoiseprint1_a(Lots4NoiseprintBase):
 
     def __init__(self, target_image: Picture, mask: np.array, image_path, mask_path, qf: int = None,
                  patch_size: tuple = (16, 16), padding_size=(32, 32, 32, 32),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10):
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3):
         """
         Base class to implement various attacks
         :param target_image: image to attack
@@ -90,7 +90,7 @@ class LotsNoiseprint1_a(Lots4NoiseprintBase):
 
         return self.target_representation
 
-    def _attack_step(self):
+    def _get_gradient_of_image(self, image: Picture, target: Picture):
         """
         Perform step of the attack executing the following steps:
 
@@ -107,26 +107,26 @@ class LotsNoiseprint1_a(Lots4NoiseprintBase):
         cumulative_loss = 0
 
         # image wide gradient
-        image_gradient = np.zeros((self.attacked_image.shape[0:2]))
+        image_gradient = np.zeros((image.shape[0:2]))
 
         # divide the image into patches
-        img_patches = self.attacked_image.to_float().one_channel.divide_in_patches(self.patch_size, self.padding_size)
+        img_patches = image.divide_in_patches(self.patch_size, self.padding_size)
+
         # analyze the image patch by patch
         for patch in tqdm(img_patches):
 
             # check if we are on a border and therefore we have to "cut"tareget representation
-            target_patch_representation = np.copy(self.target_representation)
+            target_patch_representation = np.copy(target)
 
             # if we are on a border, cut away the "overflowing target representation"
             if target_patch_representation.shape != patch.clean_shape:
                 target_patch_representation = target_patch_representation[:patch.clean_shape[0],
                                               :patch.clean_shape[1]]
 
-            # compute the gradient
-            patch_gradient, loss = self._get_gradient_of_patch(patch, target_patch_representation)
+            patch_gradient, patch_loss = self._get_gradient_of_patch(patch,target_patch_representation)
 
-            # add the loss to the cumulative loss value
-            cumulative_loss += loss
+            # add this patch's loss contribution
+            cumulative_loss += patch_loss
 
             # check that the retrieved gradient has the correct shape
             assert (patch_gradient.shape == patch.shape)
@@ -134,16 +134,7 @@ class LotsNoiseprint1_a(Lots4NoiseprintBase):
             # Add the contribution of this patch to the image wide gradient
             image_gradient = patch.add_to_image(image_gradient, patch_gradient)
 
-        # save loss value to plot it
-        self.loss_steps.append(cumulative_loss)
-
-        image_gradient = normalize_gradient(image_gradient)
-
-        # scale the gradient
-        image_gradient = Picture(self.alpha * image_gradient)
-
-        # convert it back to float to perform the next attack step
-        self.attacked_image = Picture((self.attacked_image - image_gradient.three_channel).clip(0, 255))
+        return image_gradient, cumulative_loss
 
     def _on_before_attack_step(self):
         """
