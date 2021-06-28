@@ -5,7 +5,7 @@ from Ulitities.Image.Picture import Picture
 
 class Patch(Picture):
 
-    def __new__(cls, array: np.array, x_indexes: tuple, y_indexes: tuple, paddings: tuple = (0, 0, 0, 0)):
+    def __new__(cls, array: np.array, x_indexes: tuple = None, y_indexes: tuple = None, paddings: tuple = (0, 0, 0, 0)):
         """
         Class to manage patches extracted from a picture
         :param array: array containing the values of the pixels of the picture
@@ -16,6 +16,12 @@ class Patch(Picture):
 
         if not paddings:
             paddings = (0, 0, 0, 0)
+
+        if not x_indexes:
+            x_indexes = (0,array.shape[0])
+
+        if not y_indexes:
+            y_indexes = (0,array.shape[1])
 
         assert (len(x_indexes) == 2)
         assert (len(y_indexes) == 2)
@@ -95,5 +101,7 @@ class Patch(Picture):
         y_index_f = y_index_f - bottom_padding
 
         image[x_index:x_index_f, y_index:y_index_f] = self.no_paddings(array)
+
         return image
+
 

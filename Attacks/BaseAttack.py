@@ -100,7 +100,7 @@ class BaseAttack(ABC):
         self.original_image.save(os.path.join(self.debug_folder, "image.png"))
 
         # save mask
-        self.mask.save(os.path.join(self.debug_folder, "mask.png"))
+        self.mask.to_int().save(os.path.join(self.debug_folder, "mask.png"))
 
         self.write_to_logs("Attack name: {}".format(self.name))
         self.write_to_logs("Attacking image: {}".format(self.image_path))

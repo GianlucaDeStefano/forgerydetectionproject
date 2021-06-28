@@ -62,11 +62,11 @@ PATCHES = IMAGE.one_channel().divide_in_patches((8, 8), (32, 32, 32, 32), force_
 
 reconstruction = np.zeros(IMAGE.one_channel().shape)
 
-imgplot = plt.imshow(PATCHES[1]/256)
+imgplot = plt.imshow(PATCHES[1]/255)
 plt.show()
 
 for patch in tqdm(PATCHES):
     reconstruction = patch.add_to_image(reconstruction)
 
-imgplot = plt.imshow(reconstruction/256)
+imgplot = plt.imshow(reconstruction/255)
 plt.show()

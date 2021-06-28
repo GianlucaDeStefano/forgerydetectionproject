@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from PIL import Image
 import numpy as np
 from cv2 import PSNR
-
+import tensorflow as tf
 from Attacks.Lots.BaseLotsAttack import BaseLotsAttack
 from Attacks.utilities.image import three_2_one_channel, one_2_three_channel, normalize
 from Attacks.utilities.visualization import visualize_noiseprint_step
@@ -11,6 +11,7 @@ from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normali
 from Detectors.Noiseprint.Noiseprint.noiseprint_blind import noiseprint_blind_post, genMappFloat
 from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_img, jpeg_quality_of_file
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
+from Ulitities.Image.Patch import Patch
 from Ulitities.Image.Picture import Picture
 from Ulitities.Plots import plot_graph
 
@@ -18,6 +19,27 @@ from Ulitities.Plots import plot_graph
 class MissingTargetRepresentation(Exception):
     def __init__(self, image_name):
         super().__init__("No image found with name: {}".format(image_name))
+
+
+def normalize_gradient(gradient, margin=17):
+    """
+    Normalize the gradient cutting away the values on the borders
+    :param margin: margin to use along the bordes
+    :param gradient: gradient to normalize
+    :return: normalized gradient
+    """
+
+    # set to 0 part of the gradient too near to the border
+    gradient[0:margin, :] = 0
+    gradient[-margin:, :] = 0
+    gradient[:, 0:margin] = 0
+    gradient[:, -margin:] = 0
+
+    print(gradient.min(), gradient.max())
+
+    # scale the final gradient using the computed infinity norm
+    gradient = gradient / np.max(np.abs(gradient))
+    return gradient
 
 
 class Lots4NoiseprintBase(BaseLotsAttack, ABC):
@@ -68,8 +90,13 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
     def _on_after_attack_step(self):
 
         # compute PSNR between intial 1 channel image and the attacked one
-        psnr = PSNR(self.original_image, self.attacked_image)
+        psnr = PSNR(np.array(self.original_image.one_channel).astype(np.uint8), np.array(self.attacked_image.one_channel).astype(np.uint8))
         self.psnr_steps.append(psnr)
+
+        #compute variance on the noiseprint map
+        image = self.attacked_image.to_float().one_channel
+        noiseprint = self._engine.predict(image)
+        self.noiseprint_variance_steps.append(noiseprint.var())
 
         super()._on_after_attack_step()
 
@@ -84,7 +111,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
     def plot_step(self):
 
-        image = self.attacked_image.to_float.one_channel
+        image = self.attacked_image.to_float().one_channel
 
         noiseprint = self._engine.predict(image)
 
@@ -95,10 +122,10 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         magnified_noise = normalize_noiseprint(self.adversarial_noise)
 
-        visualize_noiseprint_step(self.attacked_image.to_float, normalize_noiseprint(noiseprint), magnified_noise,
+        visualize_noiseprint_step(self.attacked_image.to_float(), normalize_noiseprint(noiseprint),
+                                  magnified_noise,
                                   attacked_heatmap,
                                   os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
-
 
     def _on_after_attack(self):
         """
@@ -113,13 +140,41 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         # generate heatmap of the just saved image, just to be sure of the final result of the attack
         image = Picture(path=image_path)
-        noiseprint = self._engine.predict(image.to_float.one_channel)
+        noiseprint = self._engine.predict(image.to_float().one_channel)
 
-        mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image.to_float.one_channel)
+        mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image.to_float().one_channel)
         attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
         magnified_noise = normalize_noiseprint(image - self.original_image)
 
-        visualize_noiseprint_step(image, normalize_noiseprint(noiseprint), magnified_noise,
+        visualize_noiseprint_step(image.to_float(), normalize_noiseprint(noiseprint), magnified_noise,
                                   attacked_heatmap,
                                   os.path.join(self.debug_folder, "resulting attack"))
+
+    def _get_gradient_of_patch(self, image_patch: Patch, target):
+
+        assert(image_patch.shape[0] * image_patch.shape[1] < NoiseprintEngine.large_limit)
+
+        # be sure that the given patch and target are of the same shape
+        with tf.GradientTape() as tape:
+            tensor_patch = tf.convert_to_tensor(image_patch[np.newaxis, :, :, np.newaxis])
+            tape.watch(tensor_patch)
+
+            # perform feed foward pass
+            patch_noiseprint = tf.squeeze(self._engine._model(tensor_patch))
+
+            # remove the padding
+            patch_noiseprint = image_patch.no_paddings(patch_noiseprint)
+
+            # compute the loss with respect to the target representation
+            loss = tf.nn.l2_loss(target - patch_noiseprint)
+
+            # retrieve the gradient of the patch
+            patch_gradient = np.squeeze(tape.gradient(loss, tensor_patch).numpy())
+
+            # check that the retrieved gradient has the correct shape
+            assert (patch_gradient.shape == image_patch.shape)
+
+            return patch_gradient, loss
+
+    

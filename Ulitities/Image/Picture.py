@@ -41,12 +41,12 @@ class Picture(np.ndarray):
             return self
         else:
             try:
-                return red_weight * self[:, :, 0] + green_weight * self[:, :, 1] + blue_weight * self[:, :, 2]
+                return Picture(red_weight * self[:, :, 0] + green_weight * self[:, :, 1] + blue_weight * self[:, :, 2])
             except:
                 raise IncompatibeShapeException("'3 to 1 channels'", self.shape)
 
     @property
-    def three_channel(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
+    def three_channel(self, red_weight=0.299, green_weight=0.587,blue_weight =0.114):
         """
         Given a mono-channel image, split it into 3 channels according
         :return:
@@ -57,10 +57,10 @@ class Picture(np.ndarray):
         else:
             ar = np.zeros((self.shape[0], self.shape[1], 3))
             try:
-                ar[:, :, 0] = self[:, :] * red_weight
-                ar[:, :, 0] = self[:, :] * green_weight
-                ar[:, :, 0] = self[:, :] * blue_weight
-                return ar
+                ar[:, :, 0] = self[:, :] / (3 * red_weight)
+                ar[:, :, 1] = self[:, :] / (3 * green_weight)
+                ar[:, :, 2] = self[:, :] / (3 * blue_weight)
+                return Picture(ar)
             except:
                 raise IncompatibeShapeException("'1 to 3 channels'", self.shape)
 
@@ -158,15 +158,17 @@ class Picture(np.ndarray):
     def save(self, path):
 
         if self.max() <=1 and self.min() >=0:
-            image_array = np.array(self*255, np.uint8)
+            image_array = np.array(self*256, np.uint8)
         else:
             image_array = np.array(self, np.uint8)
         im = Image.fromarray(image_array)
         im.save(path)
 
-    @property
     def to_float(self):
-        return self / 256
+        return Picture((self / 256).clip(0,1))
+
+    def to_int(self):
+        return Picture(np.rint(self)*255)
 
     @property
     def image_path(self):

@@ -166,3 +166,4 @@ def normalize_noiseprint(noiseprint, margin=34):
     v_min = np.min(noiseprint[margin:-margin, margin:-margin])
     v_max = np.max(noiseprint[margin:-margin, margin:-margin])
     return ((noiseprint - v_min) / (v_max - v_min)).clip(0, 1)
+

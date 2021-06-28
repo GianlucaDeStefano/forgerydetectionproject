@@ -2,22 +2,22 @@ import logging
 import os
 
 import numpy as np
-import tensorflow as tf
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+import tensorflow as tf
 
-from Attacks.Lots.Noiseprint.Lots4NoiseprintBase import Lots4NoiseprintBase
-from Attacks.utilities.image import normalize_noiseprint_no_margins
+from Attacks.Lots.Noiseprint.Lots4NoiseprintBase import Lots4NoiseprintBase, normalize_gradient
+from Attacks.utilities.image import three_2_one_channel, normalize_noiseprint_no_margins, one_2_three_channel
+from Attacks.utilities.patches import get_authentic_patches, divide_in_patches, scale_patch
 from Attacks.utilities.visualization import visuallize_array_values
-from Detectors.Noiseprint.Noiseprint.noiseprint import normalize_noiseprint
 from Ulitities.Image.Picture import Picture
 
 
-class LotsNoiseprint1_b(Lots4NoiseprintBase):
+class LotsNoiseprint1_a(Lots4NoiseprintBase):
 
     def __init__(self, target_image: Picture, mask: np.array, image_path, mask_path, qf: int = None,
-                 patch_size: tuple = (32, 32), padding_size=(32, 32, 32, 32),
-                 steps=1, debug_root="./Data/Debug/", alpha=5, plot_interval=1):
+                 patch_size: tuple = (16, 16), padding_size=(32, 32, 32, 32),
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10):
         """
         Base class to implement various attacks
         :param target_image: image to attack
@@ -35,7 +35,10 @@ class LotsNoiseprint1_b(Lots4NoiseprintBase):
         # Define the dimension of the padding to apply to the patch before od using noiseprint
         self.padding_size = padding_size
 
-        super().__init__(target_image, mask, "LOTS4Noiseprint_1.b", image_path, mask_path, qf, patch_size, steps,
+        # convert targt image to be float
+        target_image = Picture(np.array(target_image, np.float))
+
+        super().__init__(target_image, mask, "LOTS4Noiseprint_1.a", image_path, mask_path, qf, patch_size, steps,
                          debug_root, alpha, plot_interval)
 
     def _generate_target_representation(self):
@@ -51,11 +54,14 @@ class LotsNoiseprint1_b(Lots4NoiseprintBase):
         """
 
         # exctract the authentic patches from the image
-        authentic_patches = self.original_image.to_float.one_channel.get_authentic_patches(self.mask, self.patch_size,
-                                                                                           self.padding_size,
-                                                                                           force_shape=True)
+        authentic_patches = self.original_image.to_float().one_channel.get_authentic_patches(self.mask,
+                                                                                             self.patch_size,
+                                                                                             self.padding_size,
+                                                                                             force_shape=True)
         # create target patch object
         target_patch = np.zeros(self.patch_size)
+
+        patches_map = np.zeros(self.original_image.one_channel.shape)
 
         # generate authentic target representation
         self.write_to_logs("Generating target representation...", logging.INFO)
@@ -65,6 +71,8 @@ class LotsNoiseprint1_b(Lots4NoiseprintBase):
             noiseprint_patch = np.squeeze(self._engine._model(original_patch[np.newaxis, :, :, np.newaxis]))
 
             target_patch += original_patch.no_paddings(noiseprint_patch) / len(authentic_patches)
+
+            patches_map = original_patch.add_to_image(patches_map, original_patch)
 
         self.write_to_logs("Target representation generated", logging.INFO)
         self.target_representation = target_patch
@@ -76,6 +84,10 @@ class LotsNoiseprint1_b(Lots4NoiseprintBase):
                    format='png')
 
         visuallize_array_values(self.target_representation, os.path.join(self.debug_folder, "image-target-raw.png"))
+
+        patches_map = Picture(patches_map)
+        patches_map.save(os.path.join(self.debug_folder, "patches-map.png"))
+
         return self.target_representation
 
     def _attack_step(self):
@@ -98,60 +110,40 @@ class LotsNoiseprint1_b(Lots4NoiseprintBase):
         image_gradient = np.zeros((self.attacked_image.shape[0:2]))
 
         # divide the image into patches
-        img_patches = self.attacked_image.to_float.one_channel.divide_in_patches(self.patch_size, self.padding_size)
-
+        img_patches = self.attacked_image.to_float().one_channel.divide_in_patches(self.patch_size, self.padding_size)
         # analyze the image patch by patch
         for patch in tqdm(img_patches):
 
-            # compute the gradient on the given patch
-            with tf.GradientTape() as tape:
-                tensor_patch = tf.convert_to_tensor(patch[np.newaxis, :, :, np.newaxis])
-                tape.watch(tensor_patch)
+            # check if we are on a border and therefore we have to "cut"tareget representation
+            target_patch_representation = np.copy(self.target_representation)
 
-                # perform feed foward pass
-                patch_noiseprint = tf.squeeze(self._engine._model(tensor_patch))
+            # if we are on a border, cut away the "overflowing target representation"
+            if target_patch_representation.shape != patch.clean_shape:
+                target_patch_representation = target_patch_representation[:patch.clean_shape[0],
+                                              :patch.clean_shape[1]]
 
-                # remove the padding
-                patch_noiseprint = patch.no_paddings(patch_noiseprint)
+            # compute the gradient
+            patch_gradient, loss = self._get_gradient_of_patch(patch, target_patch_representation)
 
-                # check if we are on a border and therefore we have to "cut"tareget representation
-                target_patch_representation = np.copy(self.target_representation)
+            # add the loss to the cumulative loss value
+            cumulative_loss += loss
 
-                if target_patch_representation.shape != patch_noiseprint.shape:
-                    target_patch_representation = target_patch_representation[:patch_noiseprint.shape[0],
-                                                  :patch_noiseprint.shape[1]]
+            # check that the retrieved gradient has the correct shape
+            assert (patch_gradient.shape == patch.shape)
 
-                # compute the loss with respect to the target representation
-                loss = tf.nn.l2_loss(target_patch_representation - patch_noiseprint)
-
-                # retrieve the gradient of the patch
-                patch_gradient = np.squeeze(tape.gradient(loss, tensor_patch).numpy())
-
-                cumulative_loss += loss.numpy()
-
-                # check that the retrieved gradient has the correct shape
-                assert (patch_gradient.shape == patch.shape)
-
-                # Add the contribution of this patch to the image wide gradient
-                image_gradient = patch.add_to_image(image_gradient, patch_gradient)
+            # Add the contribution of this patch to the image wide gradient
+            image_gradient = patch.add_to_image(image_gradient, patch_gradient)
 
         # save loss value to plot it
         self.loss_steps.append(cumulative_loss)
 
-        # scale the final gradient using the computed infinity norm
-        image_gradient = normalize_noiseprint(image_gradient)
+        image_gradient = normalize_gradient(image_gradient)
 
-        # scale the gradient using the given alpha parameter
-        image_gradient = self.alpha * Picture(image_gradient).three_channel
+        # scale the gradient
+        image_gradient = Picture(self.alpha * image_gradient)
 
-        # apply the noise to the image
-        attacked_image_array = np.rint(self.attacked_image - image_gradient)
-
-        #clip the image
-        self.attacked_image = Picture(np.array(attacked_image_array,np.int).clip(0, 255))
-
-        print("Adversarial noise: {} {} {}".format(self.adversarial_noise.shape, self.adversarial_noise.min(),
-                                                   self.adversarial_noise.max()))
+        # convert it back to float to perform the next attack step
+        self.attacked_image = Picture((self.attacked_image - image_gradient.three_channel).clip(0, 255))
 
     def _on_before_attack_step(self):
         """
