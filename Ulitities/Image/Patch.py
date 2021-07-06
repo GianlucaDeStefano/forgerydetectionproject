@@ -1,11 +1,8 @@
 import numpy as np
 
-from Ulitities.Image.Picture import Picture
+class Patch(np.ndarray):
 
-
-class Patch(Picture):
-
-    def __new__(cls, array: np.array, x_indexes: tuple = None, y_indexes: tuple = None, paddings: tuple = (0, 0, 0, 0)):
+    def __new__(cls, array: np.array, x_indexes: tuple = None, y_indexes: tuple = None, paddings: tuple = (0, 0, 0, 0),zero_paddings:tuple=(0,0,0,0)):
         """
         Class to manage patches extracted from a picture
         :param array: array containing the values of the pixels of the picture
@@ -14,14 +11,12 @@ class Patch(Picture):
         :param paddings: 4-d tuple containing the "paddings" of the patch along the top, right,bottom,left directions
         """
 
-        if not paddings:
-            paddings = (0, 0, 0, 0)
-
-        if not x_indexes:
+        if x_indexes is None:
             x_indexes = (0,array.shape[0])
 
-        if not y_indexes:
+        if y_indexes is None:
             y_indexes = (0,array.shape[1])
+
 
         assert (len(x_indexes) == 2)
         assert (len(y_indexes) == 2)
@@ -32,6 +27,7 @@ class Patch(Picture):
         obj.x_indexes = x_indexes
         obj.y_indexes = y_indexes
         obj.paddings = paddings
+        obj.zero_paddings = zero_paddings
 
         return obj
 
@@ -41,67 +37,81 @@ class Patch(Picture):
         Return the shape of the patch without any padding applied
         :return: tuple
         """
+        shape = self.shape
 
-        if len(self.shape) == 2:
-            return (self.shape[0] - self.paddings[1] - self.paddings[3],
-                    self.shape[1] - self.paddings[2] - self.paddings[0])
-        else:
-            return (self.shape[0] - self.paddings[1] - self.paddings[3],
-                    self.shape[1] - self.paddings[2] - self.paddings[0], self.shape[2])
+        x = self.shape[0] - self.paddings[1] - self.paddings[3]
+        y = self.shape[1] - self.paddings[2] - self.paddings[0]
 
-    def no_paddings(self,array = None):
+        return (x, y) + shape[2:]
 
-        if not hasattr(array, 'shape'):
-            # No array passed,
-            array = self
-
-        if len(array.shape) == 2:
-            return array[self.paddings[3]:self.shape[0] - self.paddings[1],
-                   self.paddings[0]:self.shape[1] - self.paddings[2]]
-        else:
-            return array[self.paddings[3]:self.shape[0] - self.paddings[1],
-                   self.paddings[0]:self.shape[1] - self.paddings[2], :]
-
-    def enlarge(self, shape):
+    def get_verticies(self, with_padding=False):
         """
-        Enlarge patch to the desired size filling gaps with zeros
-        :param shape: shape of the final patch
-        :return: patch of the desired shape
+        Return 2 tuples containing the coordinates of the 2 verticies formingthe square that contains the patch
+        in the original image
+        :return: (stat x, start y), (end x, end y)
         """
+
         top_padding, right_padding, bottom_padding, left_padding = self.paddings
+        top_0_padding, right_0_padding, bottom_0_padding, left_0_padding = self.zero_paddings
 
         x_index, x_index_f = self.x_indexes
         y_index, y_index_f = self.y_indexes
 
-        x_index = x_index + left_padding
-        x_index_f = x_index_f - right_padding
+        if with_padding:
+            x_index = x_index + left_padding - left_0_padding
+            x_index_f = x_index_f - right_padding + right_0_padding
 
-        y_index = y_index + top_padding
-        y_index_f = y_index_f - bottom_padding
+            y_index = y_index + top_padding - top_0_padding
+            y_index_f = y_index_f - bottom_padding + bottom_0_padding
 
-        picture = np.zeros(shape)
+        else:
+            x_index = x_index + left_padding
+            x_index_f = x_index_f - right_padding
 
-        picture[x_index:x_index_f, y_index:y_index_f] = self.no_paddings()
-        return picture
+            y_index = y_index + top_padding
+            y_index_f = y_index_f - bottom_padding
+
+        return (x_index, y_index), (x_index_f, y_index_f)
+
+    def no_paddings(self, array=None):
+        """
+        Return the values of the patch that are not part of the paddings
+        :param array:
+        :return:
+        """
+        if not hasattr(array, 'shape'):
+            # No array passed,
+            array = self
+
+        values = None
+        if len(array.shape) == 2:
+            values = array[self.paddings[3]:self.shape[0] - self.paddings[1],
+                     self.paddings[0]:self.shape[1] - self.paddings[2]]
+        else:
+            values = array[self.paddings[3]:self.shape[0] - self.paddings[1],
+                     self.paddings[0]:self.shape[1] - self.paddings[2], :]
+
+        (x_index, y_index), (x_index_f, y_index_f) = self.get_verticies(False)
+
+        return Patch(values, (x_index, x_index_f), (y_index, y_index_f))
 
     def add_to_image(self, image, array: np.array = None):
-        top_padding, right_padding, bottom_padding, left_padding = self.paddings
+        """
+        Given an image add a patch core data (no paddings) to the image in this patch's original coordinates.
+        :param image:
+        :param array:
+        :return:
+        """
 
-        if not hasattr(array, 'shape'):
-            # No array passed,
-            array = self
+        # if no array is given
+        if array is None:
+            # use this patch
+            array = self.no_paddings()
 
-        x_index, x_index_f = self.x_indexes
-        y_index, y_index_f = self.y_indexes
+        # get the boundaries of the core data of the patch
+        (x_index, y_index), (x_index_f, y_index_f) = self.get_verticies(True)
 
-        x_index = x_index + left_padding
-        x_index_f = x_index_f - right_padding
-
-        y_index = y_index + top_padding
-        y_index_f = y_index_f - bottom_padding
-
-        image[x_index:x_index_f, y_index:y_index_f] = self.no_paddings(array)
+        # write the patch on the image
+        image[x_index:x_index_f, y_index:y_index_f] = array
 
         return image
-
-

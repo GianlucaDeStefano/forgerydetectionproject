@@ -1,15 +1,18 @@
 import os.path
 from abc import ABC, abstractmethod
-from PIL import Image
+
+import os.path
+from abc import ABC, abstractmethod
+
+import cv2
 import numpy as np
 import tensorflow as tf
+
 from Attacks.Lots.BaseLotsAttack import BaseLotsAttack
-from Attacks.utilities.image import three_2_one_channel, one_2_three_channel, normalize
 from Attacks.utilities.visualization import visualize_noiseprint_step
 from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normalize_noiseprint
 from Detectors.Noiseprint.Noiseprint.noiseprint_blind import noiseprint_blind_post, genMappFloat
-from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_img, jpeg_quality_of_file
-from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
+from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_file
 from Ulitities.Image.Patch import Patch
 from Ulitities.Image.Picture import Picture
 from Ulitities.Plots import plot_graph
@@ -19,10 +22,6 @@ class MissingTargetRepresentation(Exception):
     def __init__(self, image_name):
         super().__init__("No image found with name: {}".format(image_name))
 
-
-def PSNR(image1,image2):
-    mse = np.mean((image1.astype(np.float64) / 255 - image2.astype(np.float64) / 255) ** 2)
-    return 10 * np.log10(1. / mse)
 
 def normalize_gradient(gradient, margin=17):
     """
@@ -46,13 +45,14 @@ def normalize_gradient(gradient, margin=17):
 
 class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
-    def __init__(self, target_image: Picture, mask: Picture, name: str, image_path: str, mask_path, qf: int,
-                 patch_size: tuple = (8, 8), steps=50,
+    def __init__(self,name: str, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
+                 target_representation_mask: Picture = None, qf: int = None,
+                 patch_size: tuple = (16, 16), steps=50,
                  debug_root="./Data/Debug/", alpha=5, plot_interval=3):
         """
         Base class to implement various attacks
-        :param target_image: image to attack
-        :param mask: binary mask of the image to attack, 0 = authentic, 1 = forged
+        :param objective_image: image to attack
+        :param objective_mask: binary mask of the image to attack, 0 = authentic, 1 = forged
         :param name: name to identify the attack
         :param qf: quality factor to use
         :param patch_size: size of the patch ot use to generate the target representation
@@ -66,13 +66,15 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         # Define object to contain the patch wise target representation
         self.target_representation = None
 
-        super().__init__(target_image, mask, name, image_path, mask_path, patch_size, steps, debug_root, alpha,
+        super().__init__(name,objective_image, objective_mask, target_representation_image, target_representation_mask,
+                         patch_size, steps, debug_root, alpha,
                          plot_interval)
 
-        try:
-            qf = jpeg_quality_of_file(image_path)
-        except:
-            qf = 101
+        if not qf or  qf < 51 or qf > 101:
+            try:
+                qf = jpeg_quality_of_file(objective_image.path)
+            except:
+                qf = 101
 
         # save the parameters of noiseprint
         self.qf = qf
@@ -85,18 +87,14 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         self.min_loss = float("inf")
 
-    @abstractmethod
-    def _generate_target_representation(self):
-        raise NotImplemented
-
     def _on_after_attack_step(self):
 
         # compute PSNR between intial 1 channel image and the attacked one
-        psnr = PSNR(self.original_image,self.attacked_image)
+        psnr = cv2.PSNR(self.objective_image.one_channel, self.attacked_image_one_channel)
         self.psnr_steps.append(psnr)
 
         # compute variance on the noiseprint map
-        image = self.attacked_image.to_float().one_channel
+        image = self.objective_image.to_float().one_channel + self.adversarial_noise
         noiseprint = self._engine.predict(image)
         self.noiseprint_variance_steps.append(noiseprint.var())
 
@@ -111,12 +109,16 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
             self.best_noise = self.adversarial_noise
 
+            # Log
+            self.write_to_logs(
+                "New optimal noise found, saving it to :{}".format(os.path.join(self.debug_folder, 'best-noise.npy')))
+
             # save the best adversarial noise
             np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.adversarial_noise)
 
     def plot_step(self):
 
-        image = self.attacked_image.to_float().one_channel
+        image = self.attacked_image_one_channel.to_float()
 
         noiseprint = self._engine.predict(image)
 
@@ -125,7 +127,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image)
         attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
-        magnified_noise = normalize_noiseprint(self.adversarial_noise)
+        magnified_noise = normalize_gradient(self.adversarial_noise.three_channel, 0)
 
         visualize_noiseprint_step(self.attacked_image.to_float(), normalize_noiseprint(noiseprint),
                                   magnified_noise,
@@ -137,6 +139,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         Function executed after finishing the attack pipeline
         :return:
         """
+
         super()._on_after_attack()
         image_path = os.path.join(self.debug_folder, "attacked image.png")
 
@@ -150,7 +153,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image.to_float().one_channel)
         attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
-        magnified_noise = normalize_noiseprint(image - self.original_image)
+        magnified_noise = normalize_noiseprint(image - self.objective_image)
 
         visualize_noiseprint_step(image.to_float(), normalize_noiseprint(noiseprint), magnified_noise,
                                   attacked_heatmap,
@@ -165,6 +168,8 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         """
         assert (image_patch.shape[0] * image_patch.shape[1] < NoiseprintEngine.large_limit)
 
+        assert (image_patch.shape == target.shape)
+
         # be sure that the given patch and target are of the same shape
         with tf.GradientTape() as tape:
             tensor_patch = tf.convert_to_tensor(image_patch[np.newaxis, :, :, np.newaxis])
@@ -172,9 +177,6 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
             # perform feed foward pass
             patch_noiseprint = tf.squeeze(self._engine._model(tensor_patch))
-
-            # remove the padding
-            patch_noiseprint = image_patch.no_paddings(patch_noiseprint)
 
             # compute the loss with respect to the target representation
             loss = tf.nn.l2_loss(target - patch_noiseprint)
@@ -210,18 +212,28 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
                [0,1]
         :return:
         """
-
         # compute the gradient
-        image_gradient, loss = self._get_gradient_of_image(self.attacked_image.to_float().one_channel, self.target_representation)
+        image_gradient, loss = self._get_gradient_of_image(self.attacked_image_one_channel.to_float(),
+                                                           self.target_representation)
 
         # save loss value to plot it
         self.loss_steps.append(loss)
 
         # normalize the gradient
-        image_gradient = normalize_gradient(image_gradient,margin=0)
+        image_gradient = normalize_gradient(image_gradient, 0)
 
         # scale the gradient
-        image_gradient = Picture(self.alpha * image_gradient)
+        image_gradient = self.alpha * image_gradient
 
-        # convert it back to float to perform the next attack step
-        self.attacked_image = Picture((self.attacked_image - image_gradient.three_channel).clip(0, 255))
+        # add noise
+        self.adversarial_noise_array += image_gradient
+
+    def _log_step(self) -> str:
+        "Generate the logging to write at each step"
+        return " {}) Duration: {} Loss:{} BestLoss:{}".format(self.attack_iteration,
+                                                              self.end_step_time - self.start_step_time,
+                                                              self.loss_steps[-1], min(self.loss_steps))
+
+    @abstractmethod
+    def _generate_target_representation(self, image: Picture, mask: Picture):
+        raise NotImplemented

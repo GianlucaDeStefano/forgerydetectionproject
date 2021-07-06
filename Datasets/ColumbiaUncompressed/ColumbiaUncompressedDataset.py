@@ -13,12 +13,12 @@ def mask_2_binary(mask:np.array):
     :return: binary mask
     """
 
-    mask = np.asarray(mask, dtype="int32")
+    mask = np.asarray(mask, dtype="float")
 
     # transform the mask into a binary mask:
 
     mask = mask[:, :, 0]
-    return np.where(mask != 0, 0, 1)
+    return np.where(mask >= 200, 0, 1)
 
 class ColumbiaUncompressedDataset(Dataset):
 
@@ -54,12 +54,19 @@ class ColumbiaUncompressedDataset(Dataset):
         return paths
 
     def get_mask_of_image(self, image_path: str):
+        image_name = os.path.basename(image_path)
+        image_name = os.path.splitext(image_name)[0] + "_edgemask.jpg"
 
-        filename = os.path.basename(image_path)
-        filename = os.path.splitext(filename)[0] + "_edgemask.jpg"
+        path = None
 
-        image_path = Path(image_path)
-        path = os.path.join(self.root,"4cam_splc", 'edgemask', filename)
+        if Path(os.path.join(self.root,"4cam_splc", 'edgemask', image_name)).exists():
+            path =  str(os.path.join(self.root,"4cam_splc", 'edgemask', image_name))
+
+        elif Path(os.path.join(self.root,"4cam_auth", 'edgemask', image_name)).exists():
+            path =  str(os.path.join(self.root,"4cam_auth", 'edgemask', image_name))
+        else:
+            raise ImageNotFoundException(image_name)
+
         mask = Image.open(path)
         mask.load()
         mask = np.array(mask)
@@ -67,8 +74,9 @@ class ColumbiaUncompressedDataset(Dataset):
 
     def get_image(self, image_name):
 
-        path = Path(os.path.join(self.root, "4cam_splc",image_name))
         if Path(os.path.join(self.root, "4cam_splc",image_name)).exists():
-            return str(path)
+            return str(os.path.join(self.root, "4cam_splc",image_name))
+        elif Path(os.path.join(self.root, "4cam_auth",image_name)).exists():
+            return str(os.path.join(self.root, "4cam_auth",image_name))
         else:
             raise ImageNotFoundException(image_name)

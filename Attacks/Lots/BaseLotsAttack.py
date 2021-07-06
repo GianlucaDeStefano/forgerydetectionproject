@@ -1,11 +1,6 @@
-import os.path
 from abc import ABC, abstractmethod
-import numpy as np
-from PIL import Image
-from datetime import datetime
 from Attacks.BaseAttack import BaseAttack
-from Attacks.utilities.image import one_2_three_channel
-from Ulitities.Image import Picture
+from Ulitities.Image.Picture import Picture
 
 
 class InvalidPatchSize(Exception):
@@ -36,12 +31,14 @@ def check_patch_size(patch_size):
 
 class BaseLotsAttack(BaseAttack, ABC):
 
-    def __init__(self, target_image: Picture, mask: Picture, name: str, image_path, mask_path, patch_size: tuple,
-                 steps=50, debug_root= "./Data/Debug/",alpha=5,plot_interval=3):
+    def __init__(self, name: str, objective_image: Picture, objective_mask: Picture,
+                 target_representation_image: Picture = None,
+                 target_representation_mask: Picture = None, patch_size: tuple = (8, 8),
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3):
         """
         Base class to implement various attacks
-        :param target_image: image to attack
-        :param mask: binary mask of the image to attack, 0 = authentic, 1 = forged
+        :param objective_image: image to attack
+        :param objective_mask: binary mask of the image to attack, 0 = authentic, 1 = forged
         :param name: name to identify the attack
         :param patch_size: size of the patch ot use to generate the target representation
         :param steps: total number of steps of the attack
@@ -55,22 +52,43 @@ class BaseLotsAttack(BaseAttack, ABC):
         self.target_representation = None
 
         self.alpha = alpha
-        super().__init__(target_image, mask, name, image_path, mask_path, steps, debug_root,plot_interval)
+
+        # bydefault, use the objective image and its mask mto generate the target representation
+        self.target_representation_image = target_representation_image
+        self.target_representation_mask = target_representation_mask
+
+        # if not external image to generate the target representation is given use the objective image
+        if self.target_representation_image is None:
+            self.target_representation_image = objective_image
+            self.target_representation_mask = objective_mask
+
+        # if an external image is given without a proper mask, raise an exception
+        elif self.target_representation_mask is None:
+            raise Exception("Missing mask for external target representation image")
+
+        super().__init__(name, objective_image, objective_mask, steps, debug_root, plot_interval)
 
     def _on_before_attack(self):
         super()._on_before_attack()
 
         # Before beginning the attack, generate the target representation
         if self.target_representation is None:
-            self._generate_target_representation()
+            # log infos
+            self.write_to_logs(
+                "Image used to generate the target representation:{}".format(self.target_representation_image.path))
+            self.write_to_logs(
+                "Mask used to generate the target representation:{}".format(self.target_representation_mask.path))
+
+            # get images
+            image = self.target_representation_image.one_channel.to_float()
+            mask = self.target_representation_mask
+
+            # generate taregt representation
+            self.target_representation = self._generate_target_representation(image, mask)
 
         self.write_to_logs("Patch size:{}".format(str(self.patch_size)))
-        self.write_to_logs("Image shape:{}".format(str(self.original_image.shape)))
-        self.write_to_logs("Target representation shape:{}".format(str(self.target_representation.shape)))
-        self.write_to_logs("Quality factor:{}".format(str(self.qf)))
         self.write_to_logs("Alpha:{}".format(str(self.alpha)))
 
     @abstractmethod
-    def _generate_target_representation(self):
+    def _generate_target_representation(self, image: Picture, mask: Picture):
         raise NotImplemented
-

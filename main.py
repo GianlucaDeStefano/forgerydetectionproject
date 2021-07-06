@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from Datasets import supported_datasets
+from Datasets import supported_datasets, find_dataset_of_image
 from Datasets.Dataset import mask_2_binary, ImageNotFoundException
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
 from Ulitities.Exceptions.arguments import InvalidArgumentException
@@ -39,15 +39,7 @@ else:
         dataset = supported_datasets[args.dataset]
     else:
         # select the first dataset having an image with the corresponding name
-        for key, candidate_dataset in supported_datasets.items():
-            try:
-                print("{},{}".format(image_path, key))
-                if candidate_dataset().get_image(image_path):
-                    dataset = candidate_dataset()
-                    print("Dataset found: {}".format(key))
-                    break
-            except ImageNotFoundException as e:
-                continue
+        dataset = find_dataset_of_image(image_path)
         if not dataset:
             raise InvalidArgumentException("Impossible to find the dataset this image belongs to")
 
