@@ -7,8 +7,10 @@ from abc import ABC, abstractmethod
 import cv2
 import numpy as np
 import tensorflow as tf
+from matplotlib import pyplot as plt
 
 from Attacks.Lots.BaseLotsAttack import BaseLotsAttack
+from Attacks.utilities.image import normalize_noiseprint_no_margins
 from Attacks.utilities.visualization import visualize_noiseprint_step
 from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normalize_noiseprint
 from Detectors.Noiseprint.Noiseprint.noiseprint_blind import noiseprint_blind_post, genMappFloat
@@ -47,7 +49,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
     def __init__(self,name: str, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
-                 patch_size: tuple = (16, 16), steps=50,
+                 patch_size: tuple = (8, 8), steps=50,
                  debug_root="./Data/Debug/", alpha=5, plot_interval=3):
         """
         Base class to implement various attacks
@@ -62,9 +64,6 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         # check the passe patch is not too wide for be handled by noiseprint
         assert (patch_size[0] * patch_size[1] < NoiseprintEngine.large_limit)
-
-        # Define object to contain the patch wise target representation
-        self.target_representation = None
 
         super().__init__(name,objective_image, objective_mask, target_representation_image, target_representation_mask,
                          patch_size, steps, debug_root, alpha,
@@ -116,9 +115,9 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
             # save the best adversarial noise
             np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.adversarial_noise)
 
-    def plot_step(self):
 
-        image = self.attacked_image_one_channel.to_float()
+
+    def plot_step(self,image):
 
         noiseprint = self._engine.predict(image)
 
@@ -141,10 +140,10 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         """
 
         super()._on_after_attack()
-        image_path = os.path.join(self.debug_folder, "attacked image.png")
+        image_path = os.path.join(self.debug_folder, "attacked image best noise.png")
 
-        # save attacked image
-        self.attacked_image.save(image_path)
+        best_attacked_image = Picture((self.objective_image - Picture(self.best_noise).three_channel).clip(0,255))
+        best_attacked_image.save(image_path)
 
         # generate heatmap of the just saved image, just to be sure of the final result of the attack
         image = Picture(path=image_path)
@@ -156,8 +155,8 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         magnified_noise = normalize_noiseprint(image - self.objective_image)
 
         visualize_noiseprint_step(image.to_float(), normalize_noiseprint(noiseprint), magnified_noise,
-                                  attacked_heatmap,
-                                  os.path.join(self.debug_folder, "resulting attack"))
+                                  attacked_heatmap, os.path.join(self.debug_folder, "final attack"))
+
 
     def _get_gradient_of_patch(self, image_patch: Patch, target):
         """
@@ -166,7 +165,6 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         :param target:
         :return:
         """
-        assert (image_patch.shape[0] * image_patch.shape[1] < NoiseprintEngine.large_limit)
 
         assert (image_patch.shape == target.shape)
 
@@ -220,7 +218,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         self.loss_steps.append(loss)
 
         # normalize the gradient
-        image_gradient = normalize_gradient(image_gradient, 0)
+        image_gradient = normalize_gradient(image_gradient, 8)
 
         # scale the gradient
         image_gradient = self.alpha * image_gradient

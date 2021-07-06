@@ -1,5 +1,11 @@
+import os
 from abc import ABC, abstractmethod
+
+from matplotlib import pyplot as plt
+
 from Attacks.BaseAttack import BaseAttack
+from Attacks.utilities.image import normalize_noiseprint_no_margins
+from Attacks.utilities.visualization import visuallize_array_values
 from Ulitities.Image.Picture import Picture
 
 
@@ -69,6 +75,7 @@ class BaseLotsAttack(BaseAttack, ABC):
         super().__init__(name, objective_image, objective_mask, steps, debug_root, plot_interval)
 
     def _on_before_attack(self):
+
         super()._on_before_attack()
 
         # Before beginning the attack, generate the target representation

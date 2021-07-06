@@ -109,7 +109,8 @@ class BaseAttack(ABC):
         self.start_time = datetime.now()
         self.write_to_logs("Attack started at: {}".format(self.start_time))
 
-        self.plot_step()
+        self.plot_step(self.attacked_image_one_channel.to_float())
+
 
     def _on_after_attack(self):
         """
@@ -120,7 +121,7 @@ class BaseAttack(ABC):
         # save the adversarial noise
         np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.best_noise)
 
-        self.plot_step()
+        self.plot_step(self.attacked_image_one_channel.to_float())
         self.end_time = datetime.now()
 
     def _on_before_attack_step(self):
@@ -144,13 +145,13 @@ class BaseAttack(ABC):
 
         # generate plots and other visualizations
         if self.attack_iteration % self.plot_interval == 0:
-            self.plot_step()
+            self.plot_step(self.attacked_image_one_channel.to_float())
 
         # save the attacked image
         self.attacked_image.save(os.path.join(self.debug_folder, "attacked image.png"))
 
     @abstractmethod
-    def plot_step(self):
+    def plot_step(self,image):
         """
         Print for debug purposes the state of the attack
         :return:
@@ -187,8 +188,8 @@ class BaseAttack(ABC):
 
     @property
     def attacked_image_one_channel(self):
-        return Picture.Picture(self.objective_image.one_channel - self.adversarial_noise,"").clip(0, 255)
+        return Picture.Picture(self.objective_image.one_channel - self.adversarial_noise).clip(0, 255)
 
     @property
     def attacked_image(self):
-        return Picture.Picture(self.objective_image - Picture.Picture(self.adversarial_noise,"").three_channel).clip(0, 255)
+        return Picture.Picture(self.objective_image - Picture.Picture(self.adversarial_noise).three_channel).clip(0, 255)
