@@ -79,7 +79,6 @@ class Dataset(ABC):
         """
         raise NotImplemented
 
-
     def get_mask_of_image(self, image_path):
         """
         Given the path of an image, return np array containing its binary mask

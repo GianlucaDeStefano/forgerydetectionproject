@@ -1,25 +1,26 @@
 import numpy as np
 from matplotlib import pyplot as plt, gridspec
+from scipy.ndimage.filters import maximum_filter
+from scipy.ndimage.filters import minimum_filter
 from sklearn import metrics
 
 from Detectors.Noiseprint.Noiseprint.noiseprint import normalize_noiseprint
 from Detectors.Noiseprint.Noiseprint.noiseprint_blind import genMappFloat, noiseprint_blind
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f, computeMCC
 
-from scipy.ndimage.filters import maximum_filter
-from scipy.ndimage.filters import minimum_filter
 erodeKernSize = 15
 dilateKernSize = 11
 
 
-def plain_noiseprint_visualization(noiseprint, path,normalize=True):
+def plain_noiseprint_visualization(noiseprint, path, normalize=True):
     noiseprint_to_visualize = noiseprint
     if normalize:
         noiseprint_to_visualize = normalize_noiseprint_no_margin(noiseprint_to_visualize)
 
     return plt.imsave(fname=path, arr=noiseprint, cmap='gray_r', format='png')
 
-def noiseprint_visualization(noiseprint, path,normalize=True):
+
+def noiseprint_visualization(noiseprint, path, normalize=True):
     fig, ax = plt.subplots()
 
     noiseprint_to_visualize = noiseprint
@@ -34,7 +35,6 @@ def noiseprint_visualization(noiseprint, path,normalize=True):
             ax.text(i, j, "{:.2f}".format(c), va='center', ha='center')
 
     return fig.savefig(path, dpi=fig.dpi)
-
 
 
 def image_noiseprint_heatmap_visualization(image, noiseprint, heatmap, path, should_close=True):
@@ -67,20 +67,20 @@ def image_noiseprint_noise_heatmap_visualization(image, noiseprint, noise, heatm
        """
     fig, axs = plt.subplots(1, 4, figsize=(20, 5))
 
-    axs[0].imshow(image.clip(0,1))
+    axs[0].imshow(image.clip(0, 1))
     axs[0].set_title('Image')
 
     axs[1].imshow(normalize_noiseprint(noiseprint), clim=[0, 1], cmap='gray')
     axs[1].set_title('Noiseprint')
 
-    magnified_noise = (noise +1)* noise_magnification_factor
-    magnified_noise = np.array(magnified_noise,dtype=np.int)
+    magnified_noise = (noise + 1) * noise_magnification_factor
+    magnified_noise = np.array(magnified_noise, dtype=np.int)
 
-    noise_3c = np.zeros((magnified_noise.shape[0],magnified_noise.shape[1],3))
-    noise_3c[:,:,:] = 125
-    noise_3c[:,:,0] = magnified_noise
-    noise_3c[:,:,1] = magnified_noise
-    noise_3c[:,:,2] = magnified_noise
+    noise_3c = np.zeros((magnified_noise.shape[0], magnified_noise.shape[1], 3))
+    noise_3c[:, :, :] = 125
+    noise_3c[:, :, 0] = magnified_noise
+    noise_3c[:, :, 1] = magnified_noise
+    noise_3c[:, :, 2] = magnified_noise
 
     axs[2].imshow(magnified_noise)
     axs[2].set_title('Adversarial noise')
@@ -93,7 +93,7 @@ def image_noiseprint_noise_heatmap_visualization(image, noiseprint, noise, heatm
         ax.set_xticks([])
         ax.set_yticks([])
 
-    plt.savefig(path,bbox_inches='tight', dpi=300)
+    plt.savefig(path, bbox_inches='tight', dpi=300)
 
     if should_close:
         plt.close(fig)

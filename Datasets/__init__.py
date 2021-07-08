@@ -8,7 +8,7 @@ supported_datasets = dict(columbia=ColumbiaDataset, rit=RitDataset, columbiaUnco
                           , dso=DsoDatasetDataset)
 
 
-def find_dataset_of_image(image_name):
+def find_dataset_of_image(datasets_root,image_name):
     """
     Look for an image with a specific name inside each dataset, return the first dataset found containing an image with
     the  corresponding name
@@ -17,8 +17,8 @@ def find_dataset_of_image(image_name):
 
     for key, candidate_dataset in supported_datasets.items():
         try:
-            if candidate_dataset().get_image(image_name):
-                return candidate_dataset()
+            if candidate_dataset(datasets_root).get_image(image_name):
+                return candidate_dataset
         except ImageNotFoundException as e:
             continue
 

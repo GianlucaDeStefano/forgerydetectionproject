@@ -1,20 +1,17 @@
+import logging
 import os
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
+
 import numpy as np
-from PIL import Image
-
-import logging
-
-from tqdm import tqdm
 
 from Ulitities.Image import Picture
 
 
 class BaseAttack(ABC):
 
-    def __init__(self,name: str, objective_image: Picture, objective_mask: Picture,steps=50,
+    def __init__(self, name: str, objective_image: Picture, objective_mask: Picture, steps=50,
                  debug_root="./Data/Debug/", plot_interval=3):
         """
         Base class to implement various attacks
@@ -44,6 +41,11 @@ class BaseAttack(ABC):
         self.debug_folder = os.path.join(debug_root, str(times))
         os.makedirs(self.debug_folder)
         os.makedirs(os.path.join(self.debug_folder, "Steps"))
+
+        # Remove all handlers associated with the root logger object.
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+
         logging.basicConfig(format='%(message)s', filename=os.path.join(self.debug_folder, "logs.txt"),
                             level=logging.DEBUG)
 
@@ -111,7 +113,6 @@ class BaseAttack(ABC):
 
         self.plot_step(self.attacked_image_one_channel.to_float())
 
-
     def _on_after_attack(self):
         """
         Function executed after finishing the attack pipeline
@@ -151,7 +152,7 @@ class BaseAttack(ABC):
         self.attacked_image.save(os.path.join(self.debug_folder, "attacked image.png"))
 
     @abstractmethod
-    def plot_step(self,image):
+    def plot_step(self, image):
         """
         Print for debug purposes the state of the attack
         :return:
@@ -184,7 +185,7 @@ class BaseAttack(ABC):
 
     @property
     def adversarial_noise(self):
-        return Picture.Picture(self.adversarial_noise_array,"")
+        return Picture.Picture(self.adversarial_noise_array, "")
 
     @property
     def attacked_image_one_channel(self):
@@ -192,4 +193,5 @@ class BaseAttack(ABC):
 
     @property
     def attacked_image(self):
-        return Picture.Picture(self.objective_image - Picture.Picture(self.adversarial_noise).three_channel).clip(0, 255)
+        return Picture.Picture(self.objective_image - Picture.Picture(self.adversarial_noise).three_channel).clip(0,
+                                                                                                                  255)

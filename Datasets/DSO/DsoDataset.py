@@ -9,8 +9,8 @@ from Datasets.Dataset import Dataset, ImageNotFoundException, mask_2_binary
 
 class DsoDatasetDataset(Dataset):
 
-    def __init__(self, root=os.path.dirname(__file__) + "/Data/"):
-        super(DsoDatasetDataset, self).__init__(root, False,"DSO dataset", ["png"])
+    def __init__(self, root):
+        super(DsoDatasetDataset, self).__init__(os.path.join(root,"DSO"), False, "DSO dataset", ["png"])
 
     def get_authentic_images(self, target_shape=None):
         """
@@ -51,16 +51,16 @@ class DsoDatasetDataset(Dataset):
             image = np.array(image)
             return np.zeros(image.shape)
 
-        #return the mask
-        path = os.path.join(self.root,"masks", filename)
+        # return the mask
+        path = os.path.join(self.root, "masks", filename)
         mask = Image.open(path)
         mask.load()
-        mask = np.squeeze(np.array(mask))[:,:,0]
-        return mask_2_binary(mask,flip=True), path
+        mask = np.squeeze(np.array(mask))[:, :, 0]
+        return mask_2_binary(mask, flip=True), path
 
     def get_image(self, image_name):
 
-        path = Path(os.path.join(self.root, "images",image_name))
+        path = Path(os.path.join(self.root, "images", image_name))
         if path.exists():
             return str(path)
         else:

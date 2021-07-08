@@ -1,5 +1,7 @@
-import numpy as np
 from math import log10, sqrt
+
+import numpy as np
+
 
 def three_2_one_channel(image: np.array) -> np.array:
     """
@@ -29,19 +31,22 @@ def one_2_three_channel(image: np.array) -> np.array:
 
     return image_3c
 
-def normalize(noise:np.array):
-    return (noise - np.min(noise))/np.max(np.abs(noise))
+
+def normalize(noise: np.array):
+    return (noise - np.min(noise)) / np.max(np.abs(noise))
+
 
 def PSNR(original, compressed):
     mse = np.mean((original - compressed) ** 2)
-    if(mse == 0):  # MSE is zero means no noise is present in the signal .
-                  # Therefore PSNR have no importance.
+    if (mse == 0):  # MSE is zero means no noise is present in the signal .
+        # Therefore PSNR have no importance.
         return 100
     max_pixel = 255.0
     psnr = 20 * log10(max_pixel / sqrt(mse))
     return psnr
 
+
 def normalize_noiseprint_no_margins(noiseprint):
-        v_min = np.min(noiseprint)
-        v_max = np.max(noiseprint)
-        return ((noiseprint - v_min) / (v_max - v_min)).clip(0, 1)
+    v_min = np.min(noiseprint)
+    v_max = np.max(noiseprint)
+    return ((noiseprint - v_min) / (v_max - v_min)).clip(0, 1)

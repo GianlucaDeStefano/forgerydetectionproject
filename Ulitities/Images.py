@@ -1,9 +1,5 @@
 import numpy as np
 from PIL import Image
-from matplotlib import pyplot as plt
-
-from Detectors.Noiseprint.Noiseprint.noiseprint import normalize_noiseprint
-from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
 
 
 def get_shape_of_image(path: str):
@@ -29,8 +25,3 @@ def drop_borders(img: np.array, borders_size: tuple = (1, 1, 1, 1)):
     bottom_index = img.shape[1] - borders_size[2]
     left_index = borders_size[3]
     return img[top_index:bottom_index, right_index:left_index]
-
-
-
-
-

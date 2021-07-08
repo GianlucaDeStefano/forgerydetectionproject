@@ -5,8 +5,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from Attacks.Lots.Noiseprint.Lots4NoiseprintBase import Lots4NoiseprintBase, normalize_gradient
-from Attacks.utilities.image import three_2_one_channel, normalize_noiseprint_no_margins, one_2_three_channel
+from Attacks.Lots.Noiseprint.Lots4NoiseprintBase import Lots4NoiseprintBase
+from Attacks.utilities.image import normalize_noiseprint_no_margins
 from Attacks.utilities.visualization import visuallize_array_values
 from Ulitities.Image.Picture import Picture
 
@@ -15,7 +15,7 @@ class LotsNoiseprint1(Lots4NoiseprintBase):
 
     def __init__(self, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
-                 patch_size: tuple = (8, 8), padding_size=(32, 32, 32, 32),
+                 patch_size: tuple = (16, 16), padding_size=(0, 0, 0, 0),
                  steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3):
         """
         Base class to implement various attacks

@@ -6,7 +6,8 @@ from PIL import Image
 
 from Datasets.Dataset import Dataset, ImageNotFoundException
 
-def mask_2_binary(mask:np.array):
+
+def mask_2_binary(mask: np.array):
     """
     Convert a mask of the Columbia Uncompressed dataset to a Binary mask
     :param mask:
@@ -20,10 +21,11 @@ def mask_2_binary(mask:np.array):
     mask = mask[:, :, 0]
     return np.where(mask >= 200, 0, 1)
 
+
 class ColumbiaUncompressedDataset(Dataset):
 
-    def __init__(self, root=os.path.dirname(__file__) + "/Data/"):
-        super(ColumbiaUncompressedDataset, self).__init__(root, False,"Columbia uncompressed", ["tif"])
+    def __init__(self, root):
+        super(ColumbiaUncompressedDataset, self).__init__(os.path.join(root,"ColumbiaUncompressed"), False, "Columbia uncompressed", ["tif"])
 
     def get_authentic_images(self, target_shape=None):
         """
@@ -59,24 +61,24 @@ class ColumbiaUncompressedDataset(Dataset):
 
         path = None
 
-        if Path(os.path.join(self.root,"4cam_splc", 'edgemask', image_name)).exists():
-            path =  str(os.path.join(self.root,"4cam_splc", 'edgemask', image_name))
+        if Path(os.path.join(self.root, "4cam_splc", 'edgemask', image_name)).exists():
+            path = str(os.path.join(self.root, "4cam_splc", 'edgemask', image_name))
 
-        elif Path(os.path.join(self.root,"4cam_auth", 'edgemask', image_name)).exists():
-            path =  str(os.path.join(self.root,"4cam_auth", 'edgemask', image_name))
+        elif Path(os.path.join(self.root, "4cam_auth", 'edgemask', image_name)).exists():
+            path = str(os.path.join(self.root, "4cam_auth", 'edgemask', image_name))
         else:
             raise ImageNotFoundException(image_name)
 
         mask = Image.open(path)
         mask.load()
         mask = np.array(mask)
-        return mask_2_binary(mask) , path
+        return mask_2_binary(mask), path
 
     def get_image(self, image_name):
 
-        if Path(os.path.join(self.root, "4cam_splc",image_name)).exists():
-            return str(os.path.join(self.root, "4cam_splc",image_name))
-        elif Path(os.path.join(self.root, "4cam_auth",image_name)).exists():
-            return str(os.path.join(self.root, "4cam_auth",image_name))
+        if Path(os.path.join(self.root, "4cam_splc", image_name)).exists():
+            return str(os.path.join(self.root, "4cam_splc", image_name))
+        elif Path(os.path.join(self.root, "4cam_auth", image_name)).exists():
+            return str(os.path.join(self.root, "4cam_auth", image_name))
         else:
             raise ImageNotFoundException(image_name)

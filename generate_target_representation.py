@@ -1,9 +1,9 @@
 import argparse
 import warnings
-from Datasets import supported_datasets
+
 from Attacks import supported_attacks
+from Datasets import supported_datasets
 from Datasets.Dataset import mask_2_binary, ImageNotFoundException
-from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_img, jpeg_quality_of_file
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
 from Ulitities.Exceptions.arguments import InvalidArgumentException
 from Ulitities.Image.Picture import Picture

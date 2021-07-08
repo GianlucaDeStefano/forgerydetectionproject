@@ -1,8 +1,10 @@
 import numpy as np
 
+
 class Patch(np.ndarray):
 
-    def __new__(cls, array: np.array, x_indexes: tuple = None, y_indexes: tuple = None, paddings: tuple = (0, 0, 0, 0),zero_paddings:tuple=(0,0,0,0)):
+    def __new__(cls, array: np.array, x_indexes: tuple = None, y_indexes: tuple = None, paddings: tuple = (0, 0, 0, 0),
+                zero_paddings: tuple = (0, 0, 0, 0)):
         """
         Class to manage patches extracted from a picture
         :param array: array containing the values of the pixels of the picture
@@ -12,11 +14,10 @@ class Patch(np.ndarray):
         """
 
         if x_indexes is None:
-            x_indexes = (0,array.shape[0])
+            x_indexes = (0, array.shape[0])
 
         if y_indexes is None:
-            y_indexes = (0,array.shape[1])
-
+            y_indexes = (0, array.shape[1])
 
         assert (len(x_indexes) == 2)
         assert (len(y_indexes) == 2)

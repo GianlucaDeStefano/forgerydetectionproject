@@ -1,16 +1,18 @@
 import os.path
-from abc import ABC, abstractmethod
-
 import os.path
 from abc import ABC, abstractmethod
 
 import cv2
 import numpy as np
 import tensorflow as tf
-from matplotlib import pyplot as plt
+
+# setup tensorflow session conf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+    tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024 * 5)
 
 from Attacks.Lots.BaseLotsAttack import BaseLotsAttack
-from Attacks.utilities.image import normalize_noiseprint_no_margins
 from Attacks.utilities.visualization import visualize_noiseprint_step
 from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normalize_noiseprint
 from Detectors.Noiseprint.Noiseprint.noiseprint_blind import noiseprint_blind_post, genMappFloat
@@ -47,7 +49,8 @@ def normalize_gradient(gradient, margin=17):
 
 class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
-    def __init__(self,name: str, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
+    def __init__(self, name: str, objective_image: Picture, objective_mask: Picture,
+                 target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
                  patch_size: tuple = (8, 8), steps=50,
                  debug_root="./Data/Debug/", alpha=5, plot_interval=3):
@@ -65,11 +68,11 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         # check the passe patch is not too wide for be handled by noiseprint
         assert (patch_size[0] * patch_size[1] < NoiseprintEngine.large_limit)
 
-        super().__init__(name,objective_image, objective_mask, target_representation_image, target_representation_mask,
+        super().__init__(name, objective_image, objective_mask, target_representation_image, target_representation_mask,
                          patch_size, steps, debug_root, alpha,
                          plot_interval)
 
-        if not qf or  qf < 51 or qf > 101:
+        if not qf or qf < 51 or qf > 101:
             try:
                 qf = jpeg_quality_of_file(objective_image.path)
             except:
@@ -115,9 +118,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
             # save the best adversarial noise
             np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.adversarial_noise)
 
-
-
-    def plot_step(self,image):
+    def plot_step(self, image):
 
         noiseprint = self._engine.predict(image)
 
@@ -142,7 +143,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         super()._on_after_attack()
         image_path = os.path.join(self.debug_folder, "attacked image best noise.png")
 
-        best_attacked_image = Picture((self.objective_image - Picture(self.best_noise).three_channel).clip(0,255))
+        best_attacked_image = Picture((self.objective_image - Picture(self.best_noise).three_channel).clip(0, 255))
         best_attacked_image.save(image_path)
 
         # generate heatmap of the just saved image, just to be sure of the final result of the attack
@@ -156,7 +157,6 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         visualize_noiseprint_step(image.to_float(), normalize_noiseprint(noiseprint), magnified_noise,
                                   attacked_heatmap, os.path.join(self.debug_folder, "final attack"))
-
 
     def _get_gradient_of_patch(self, image_patch: Patch, target):
         """

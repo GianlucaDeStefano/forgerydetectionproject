@@ -1,5 +1,4 @@
 import argparse
-import os
 import warnings
 
 import numpy as np
@@ -7,7 +6,7 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from Datasets import supported_datasets, find_dataset_of_image
-from Datasets.Dataset import mask_2_binary, ImageNotFoundException
+from Datasets.Dataset import mask_2_binary
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
 from Ulitities.Exceptions.arguments import InvalidArgumentException
 from Ulitities.Image.Picture import Picture
@@ -54,11 +53,11 @@ PATCHES = IMAGE.one_channel().divide_in_patches((8, 8), (32, 32, 32, 32), force_
 
 reconstruction = np.zeros(IMAGE.one_channel().shape)
 
-imgplot = plt.imshow(PATCHES[1]/255)
+imgplot = plt.imshow(PATCHES[1] / 255)
 plt.show()
 
 for patch in tqdm(PATCHES):
     reconstruction = patch.add_to_image(reconstruction)
 
-imgplot = plt.imshow(reconstruction/255)
+imgplot = plt.imshow(reconstruction / 255)
 plt.show()

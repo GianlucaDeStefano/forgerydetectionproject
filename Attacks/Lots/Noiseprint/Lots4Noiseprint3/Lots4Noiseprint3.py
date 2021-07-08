@@ -3,13 +3,9 @@ import os
 from math import ceil
 
 import numpy as np
-from matplotlib import pyplot as plt
 from tqdm import tqdm
-import tensorflow as tf
 
 from Attacks.Lots.Noiseprint.Lots4NoiseprintBase import Lots4NoiseprintBase, normalize_gradient
-from Attacks.utilities.image import three_2_one_channel, one_2_three_channel, normalize
-from Attacks.utilities.patches import get_authentic_patches
 from Attacks.utilities.visualization import visuallize_array_values
 from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normalize_noiseprint
 from Ulitities.Image.Patch import Patch
@@ -20,7 +16,7 @@ class LotsNoiseprint3(Lots4NoiseprintBase):
 
     def __init__(self, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
-                 patch_size: tuple = (8, 8),padding_size=(32, 32, 32, 32),
+                 patch_size: tuple = (8, 8), padding_size=(0, 0, 0, 0),
                  steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3):
         """
         Base class to implement various attacks
@@ -36,10 +32,11 @@ class LotsNoiseprint3(Lots4NoiseprintBase):
 
         self.padding_size = padding_size
 
-        super().__init__("LOTS4Noiseprint_2",objective_image, objective_mask, target_representation_image, target_representation_mask, qf, patch_size, steps,
+        super().__init__("LOTS4Noiseprint_3", objective_image, objective_mask, target_representation_image,
+                         target_representation_mask, qf, patch_size, steps,
                          debug_root, alpha, plot_interval)
 
-    def _generate_target_representation(self,image: Picture, mask: Picture):
+    def _generate_target_representation(self, image: Picture, mask: Picture):
         """
         Generate the target representation executing the following steps:
 
@@ -87,13 +84,13 @@ class LotsNoiseprint3(Lots4NoiseprintBase):
         # cut away "overflowing" margins
         image_target_representation = image_target_representation[:image.shape[0], :image.shape[1]]
 
-        #save tile visualization
+        # save tile visualization
         visuallize_array_values(target_patch, os.path.join(self.debug_folder, "image-target-raw.png"))
 
         patches_map = Picture(normalize_noiseprint(patches_map))
         patches_map.save(os.path.join(self.debug_folder, "patches-map.png"))
 
-        image_wide_representation = Picture(normalize_gradient(image_target_representation,margin=0))
+        image_wide_representation = Picture(normalize_gradient(image_target_representation, margin=0))
         image_wide_representation.save(os.path.join(self.debug_folder, "image-wide-target-map.png"))
 
         return image_target_representation
@@ -143,8 +140,8 @@ class LotsNoiseprint3(Lots4NoiseprintBase):
                                    max(y_start, 0): min(y_end, image.shape[1])
                                    ]
 
-                    print(patch.shape,target_patch.shape)
-                    patch_gradient, patch_loss = self._get_gradient_of_patch(patch,target_patch)
+                    print(patch.shape, target_patch.shape)
+                    patch_gradient, patch_loss = self._get_gradient_of_patch(patch, target_patch)
 
                     # discard initial overlap if not the row or first column
                     if x > 0:
@@ -157,10 +154,12 @@ class LotsNoiseprint3(Lots4NoiseprintBase):
 
                     # add this patch's gradient to the image gradient
                     # discard data beyond image size
-                    patch_gradient = patch_gradient[:min(self._engine.slide, patch.shape[0]), :min(self._engine.slide, patch.shape[1])]
+                    patch_gradient = patch_gradient[:min(self._engine.slide, patch.shape[0]),
+                                     :min(self._engine.slide, patch.shape[1])]
 
                     # copy data to output buffer
-                    image_gradient[x: min(x + self._engine.slide, image_gradient.shape[0]), y: min(y + self._engine.slide, image_gradient.shape[1])] = patch_gradient
+                    image_gradient[x: min(x + self._engine.slide, image_gradient.shape[0]),
+                    y: min(y + self._engine.slide, image_gradient.shape[1])] = patch_gradient
 
         return image_gradient, cumulative_loss
 

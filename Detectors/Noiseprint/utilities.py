@@ -27,7 +27,7 @@ def plot_noiseprint(noiseprint: np.array, saveTo: str = None, toNormalize: bool 
 
 
 def noise_to_3c(noise: np.array):
-    noise_3c = np.zeros((noise.shape[0],noise.shape[1],3))
+    noise_3c = np.zeros((noise.shape[0], noise.shape[1], 3))
     noise_3c[:, :, 0] = noise / 0.299
     noise_3c[:, :, 1] = noise / 0.587
     noise_3c[:, :, 2] = noise / 0.114

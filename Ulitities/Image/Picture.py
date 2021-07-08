@@ -1,6 +1,7 @@
-from Ulitities.Image.Patch import Patch
 import numpy as np
 from PIL import Image
+
+from Ulitities.Image.Patch import Patch
 
 
 class IncompatibeShapeException(Exception):
@@ -172,7 +173,7 @@ class Picture(Patch):
                 values[left_0_padding:t1, top_0_padding:t2] = self[x_start: x_end, y_start:y_end]
 
                 # create patch object
-                patch = Picture(values,"", (x_start, x_end), (y_start, y_end),
+                patch = Picture(values, "", (x_start, x_end), (y_start, y_end),
                                 (top_padding + top_0_padding, right_padding + right_0_padding,
                                  bottom_padding + bottom_0_padding, left_padding + left_0_padding),
                                 (top_0_padding, right_0_padding, bottom_0_padding, left_0_padding))
@@ -258,16 +259,16 @@ class Picture(Patch):
         im.save(path)
 
     def to_float(self):
-        return Picture((self / 255).clip(0, 1),self.path)
+        return Picture((self / 255).clip(0, 1), self.path)
 
     def to_int(self):
-        return Picture(np.rint(self) * 255,self.path)
+        return Picture(np.rint(self) * 255, self.path)
 
-    def astype(self,dtype, order='K', casting='unsafe', subok=True, copy=True):
-        return Picture(np.array(self).astype(dtype, order, casting, subok, copy),self.path)
+    def astype(self, dtype, order='K', casting='unsafe', subok=True, copy=True):
+        return Picture(np.array(self).astype(dtype, order, casting, subok, copy), self.path)
 
     @property
     def path(self):
-        if hasattr(self,"_path") and self._path:
+        if hasattr(self, "_path") and self._path:
             return self._path
         return ""

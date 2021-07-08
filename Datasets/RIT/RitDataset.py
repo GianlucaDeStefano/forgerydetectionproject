@@ -1,15 +1,13 @@
 import os
 
-import numpy as np
-
 from Datasets.Dataset import Dataset, ImageNotFoundException, mask_2_binary
 from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
 
 
 class RitDataset(Dataset):
 
-    def __init__(self, root=os.path.dirname(__file__) + "/Data/"):
-        super(RitDataset, self).__init__(root, True,"Realistic image tampering")
+    def __init__(self, root):
+        super(RitDataset, self).__init__(os.path.join(root,"RIT"), True, "Realistic image tampering")
 
         self.camera_folders = ["Canon_60D", "Nikon_D90", "Nikon_D7000", "Sony_A57"]
 
@@ -42,10 +40,10 @@ class RitDataset(Dataset):
 
         return forged_images
 
-    def get_mask_of_image(self, image_path:str):
+    def get_mask_of_image(self, image_path: str):
         path = image_path.replace("tampered-realistic", "ground-truth")
         mask, mode = imread2f()
-        return mask_2_binary(mask,0.5),path
+        return mask_2_binary(mask, 0.5), path
 
     def get_image(self, image_name):
 
@@ -56,8 +54,6 @@ class RitDataset(Dataset):
             for filename in os.listdir(folder_path):
 
                 if filename == image_name:
-
-                    return os.path.join(folder_path,image_name)
+                    return os.path.join(folder_path, image_name)
 
         raise ImageNotFoundException(image_name)
-

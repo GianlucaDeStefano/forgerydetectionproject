@@ -1,13 +1,11 @@
 import logging
+import os
 
+import numpy as np
+import tensorflow as tf
 from PIL import Image
 from tensorflow.python.keras.layers import Conv2D, BatchNormalization, Activation
-
-import os
-import tensorflow as tf
-import numpy as np
 from tensorflow.python.keras.models import Model
-
 
 # Bias layer necessary because noiseprint applies bias after batch-normalization.
 from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_file
@@ -51,6 +49,7 @@ def setup_session():
     """
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
+    config.gpu_options.per_process_gpu_memory_fraction = 0.2
     session = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(session)
 
@@ -166,4 +165,3 @@ def normalize_noiseprint(noiseprint, margin=34):
     v_min = np.min(noiseprint[margin:-margin, margin:-margin])
     v_max = np.max(noiseprint[margin:-margin, margin:-margin])
     return ((noiseprint - v_min) / (v_max - v_min)).clip(0, 1)
-

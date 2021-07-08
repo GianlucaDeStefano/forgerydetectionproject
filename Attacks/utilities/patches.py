@@ -1,6 +1,5 @@
-from math import floor, ceil
+from math import ceil
 
-import numpy
 import numpy as np
 
 
@@ -74,6 +73,7 @@ def get_authentic_patches(img: np.array, mask: np.array, patch_shape: tuple, for
 
     return authentic_patches
 
+
 def get_forged_patches(img: np.array, mask: np.array, patch_shape: tuple, force_shape=False):
     """
     Given an image and its relative mask ,return a list of batches containing elements that are not highlighted in
@@ -99,7 +99,8 @@ def get_forged_patches(img: np.array, mask: np.array, patch_shape: tuple, force_
 
     return authentic_patches
 
-def scale_patch(patch, target_shape, x_index, y_index,mode="constant", constant=0):
+
+def scale_patch(patch, target_shape, x_index, y_index, mode="constant", constant=0):
     """
     Add a 0-padding around a patch's gradient to scale it to the desired shape while positioning the gradient in the
     correct position
@@ -110,12 +111,13 @@ def scale_patch(patch, target_shape, x_index, y_index,mode="constant", constant=
     :return:
     """
     left_padding = x_index
-    right_padding = target_shape[0] - x_index-patch.shape[0]
+    right_padding = target_shape[0] - x_index - patch.shape[0]
     top_padding = y_index
-    bottom_padding = target_shape[1] - y_index-patch.shape[1]
+    bottom_padding = target_shape[1] - y_index - patch.shape[1]
 
-    gradient = np.pad(patch,((left_padding,right_padding),(top_padding,bottom_padding)),mode=mode,constant_values=constant)
+    gradient = np.pad(patch, ((left_padding, right_padding), (top_padding, bottom_padding)), mode=mode,
+                      constant_values=constant)
 
-    assert(gradient.shape == target_shape)
+    assert (gradient.shape == target_shape)
 
     return gradient
