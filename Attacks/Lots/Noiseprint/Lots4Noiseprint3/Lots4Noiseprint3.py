@@ -17,7 +17,7 @@ class LotsNoiseprint3(Lots4NoiseprintBase):
     def __init__(self, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
                  patch_size: tuple = (8, 8), padding_size=(0, 0, 0, 0),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3):
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10):
         """
         Base class to implement various attacks
         :param objective_image: image to attack

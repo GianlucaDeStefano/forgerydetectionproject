@@ -42,7 +42,7 @@ class RitDataset(Dataset):
 
     def get_mask_of_image(self, image_path: str):
         path = image_path.replace("tampered-realistic", "ground-truth")
-        mask, mode = imread2f()
+        mask, mode = imread2f(path)
         return mask_2_binary(mask, 0.5), path
 
     def get_image(self, image_name):

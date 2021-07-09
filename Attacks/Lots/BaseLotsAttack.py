@@ -88,6 +88,9 @@ class BaseLotsAttack(BaseAttack, ABC):
             # generate taregt representation
             self.target_representation = self._generate_target_representation(image, mask)
 
+            #save target representation
+
+
         self.write_to_logs("Patch size:{}".format(str(self.patch_size)))
         self.write_to_logs("Alpha:{}".format(str(self.alpha)))
 

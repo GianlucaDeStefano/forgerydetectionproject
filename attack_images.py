@@ -1,15 +1,30 @@
+import os
+
 from Attacks import supported_attacks
+from Datasets import find_dataset_of_image
 from attack_image import attack_image
 
+DEBUG_ROOT = os.path.abspath("./Data/Debug/")
+DATASETS_ROOT = os.path.abspath("./Data/Datasets/")
+"""
+"canong3_canonxt_sub_13.tif", #canong3
+      "canonxt_kodakdcs330_sub_01.tif", #canonxt
+      "nikond70_kodakdcs330_sub_22.tif", #nikond70
+      "splicing-70.png",
+      """
 #images to try to attack
-images = []
+images = [
 
-#select an attack to perform on all the images
-print("\nSelect the attack to perform:")
-for key, supported_attack in supported_attacks.items():
-    print("  {}) {}".format(i, key))
-    i = i + 1
-attack_type = supported_attacks.keys[int(input("Enter attack number:"))]
+          "DPP0122.TIF", # Canon60D
+          "r1be2a3d5t.TIF", # NikonD90
+          "r09696ba3t.TIF", # Nikon D7000
+          "DSC05635.TIF", # Sony A57
+          ]
 
-for image in images:
-    attack_image(image,attack_type=attack_type)
+
+attacks =  [list(supported_attacks.keys())[0]]
+
+for attack_type in attacks:
+    for image in images:
+        attack_image(image,attack_type=attack_type)
+        

@@ -15,8 +15,8 @@ class LotsNoiseprint1(Lots4NoiseprintBase):
 
     def __init__(self, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
-                 patch_size: tuple = (16, 16), padding_size=(0, 0, 0, 0),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3):
+                 patch_size: tuple = (8, 8), padding_size=(32, 32, 32, 32),
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -33,6 +33,8 @@ class LotsNoiseprint1(Lots4NoiseprintBase):
 
         # Define the dimension of the padding to apply to the patch before od using noiseprint
         self.padding_size = padding_size
+
+        self.write_to_logs("Padding patches on each dimension by:{}")
 
         # convert targt image to be float
         objective_image = objective_image.astype(np.float)

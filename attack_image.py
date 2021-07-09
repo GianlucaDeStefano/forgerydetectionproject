@@ -12,8 +12,8 @@ from Ulitities.Image.Picture import Picture
 DEBUG_ROOT = os.path.abspath("./Data/Debug/")
 DATASETS_ROOT = os.path.abspath("./Data/Datasets/")
 
-def attack_image(image_path,mask_path = None,dataset=None,attack_type = None):
 
+def attack_image(image_path, mask_path=None, dataset=None, attack_type=None):
     # if both the mask and the dataset are provided, say that it is useless and then use the mask directly
     if mask_path:
         if dataset:
@@ -28,9 +28,11 @@ def attack_image(image_path,mask_path = None,dataset=None,attack_type = None):
             dataset = supported_datasets[dataset](DATASETS_ROOT)
         else:
             # select the first dataset having an image with the corresponding name
-            dataset = find_dataset_of_image(DATASETS_ROOT, image_path)(DATASETS_ROOT)
+            dataset = find_dataset_of_image(DATASETS_ROOT, image_path)
             if not dataset:
                 raise InvalidArgumentException("Impossible to find the dataset this image belongs to")
+
+            dataset = dataset(DATASETS_ROOT)
 
         image_path = dataset.get_image(image_path)
         mask, mask_path = dataset.get_mask_of_image(image_path)
@@ -72,6 +74,7 @@ def attack_image(image_path,mask_path = None,dataset=None,attack_type = None):
         attack = current_attack(image, mask)
         attack.execute()
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", '--image', required=True, help='Name of the input image, or its path')
@@ -84,6 +87,6 @@ if __name__ == "__main__":
     image_path = args.image
     mask_path = args.mask
     dataset = args.dataset
-    attack_type = args.attack_type
+    attack_type = args.attackType
 
-    attack_image(image_path,mask_path,dataset,attack_type)
+    attack_image(image_path, mask_path, dataset, attack_type)
