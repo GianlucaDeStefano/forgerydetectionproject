@@ -32,8 +32,8 @@ class LotsNoiseprint1B(LotsNoiseprint1):
         objective_image = objective_image.astype(np.float)
 
         super().__init__(objective_image, objective_mask, target_representation_image,
-                         target_representation_mask,
-                         qf, patch_size, steps,
-                         debug_root, alpha, plot_interval)
+                 target_representation_mask, qf,
+                 patch_size,padding_size,
+                 steps, debug_root, alpha, plot_interval)
 
 

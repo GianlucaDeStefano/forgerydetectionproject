@@ -49,7 +49,7 @@ class Picture(Patch):
             return Picture(red_weight * self[:, :, 0] + green_weight * self[:, :, 1] + blue_weight * self[:, :, 2])
 
     @property
-    def three_channel(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
+    def three_channels(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
         """
         Given a single channel numpy array, convert into a 3 channel array according to the given weights (the default weights
         are the one used to produce the luminance from an RGB image) :return:

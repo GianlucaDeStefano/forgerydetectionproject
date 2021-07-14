@@ -41,15 +41,18 @@ class RitDataset(Dataset):
         return forged_images
 
     def get_mask_of_image(self, image_path: str):
-        path = image_path.replace("tampered-realistic", "ground-truth")
+        path = image_path.replace("tampered-realistic", "ground-truth").replace("TIF","PNG")
         mask, mode = imread2f(path)
+
+        print("MASK:",mask.min(),mask.max(),path)
+
         return mask_2_binary(mask, 0.5), path
 
     def get_image(self, image_name):
 
         for folder in self.camera_folders:
 
-            folder_path = os.path.join(self.root, folder, "pristine")
+            folder_path = os.path.join(self.root, folder, "tampered-realistic")
 
             for filename in os.listdir(folder_path):
 

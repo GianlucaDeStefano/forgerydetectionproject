@@ -1,16 +1,16 @@
 import os.path
 import os.path
 from abc import ABC, abstractmethod
-
 import cv2
 import numpy as np
 import tensorflow as tf
 
 # setup tensorflow session conf
-gpus = tf.config.experimental.list_physical_devices('GPU')
-for gpu in gpus:
-    tf.config.experimental.set_memory_growth(gpu, True)
-    tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024 * 5)
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+config.gpu_options.per_process_gpu_memory_fraction = 1
+session = tf.compat.v1.Session(config=config)
+tf.compat.v1.keras.backend.set_session(session)
 
 from Attacks.Lots.BaseLotsAttack import BaseLotsAttack
 from Attacks.utilities.visualization import visualize_noiseprint_step
@@ -96,7 +96,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         self.psnr_steps.append(psnr)
 
         # compute variance on the noiseprint map
-        image = self.objective_image.to_float().one_channel + self.adversarial_noise
+        image = self.attacked_image_one_channel.to_float()
         noiseprint = self._engine.predict(image)
         self.noiseprint_variance_steps.append(noiseprint.var())
 
@@ -118,7 +118,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
             # save the best adversarial noise
             np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.adversarial_noise)
 
-    def plot_step(self, image):
+    def plot_step(self, image, path):
 
         noiseprint = self._engine.predict(image)
 
@@ -127,12 +127,10 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image)
         attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
-        magnified_noise = normalize_gradient(self.adversarial_noise.three_channel, 0)
+        noise = Picture(1 - np.abs((self.objective_image.one_channel.to_float() - image)*100))
 
-        visualize_noiseprint_step(self.attacked_image.to_float(), normalize_noiseprint(noiseprint),
-                                  magnified_noise,
-                                  attacked_heatmap,
-                                  os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
+        visualize_noiseprint_step(image, normalize_noiseprint(noiseprint),
+                                  noise.clip(0,1),attacked_heatmap, path)
 
     def _on_after_attack(self):
         """
@@ -143,20 +141,12 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         super()._on_after_attack()
         image_path = os.path.join(self.debug_folder, "attacked image best noise.png")
 
-        best_attacked_image = Picture((self.objective_image - Picture(self.best_noise).three_channel).clip(0, 255))
+        best_attacked_image = Picture((self.objective_image - Picture(self.best_noise).three_channels).clip(0, 255))
         best_attacked_image.save(image_path)
 
         # generate heatmap of the just saved image, just to be sure of the final result of the attack
         image = Picture(path=image_path)
-        noiseprint = self._engine.predict(image.to_float().one_channel)
-
-        mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image.to_float().one_channel)
-        attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
-
-        magnified_noise = normalize_noiseprint(image - self.objective_image)
-
-        visualize_noiseprint_step(image.to_float(), normalize_noiseprint(noiseprint), magnified_noise,
-                                  attacked_heatmap, os.path.join(self.debug_folder, "final attack"))
+        self.plot_step(image.one_channel.to_float(), os.path.join(self.debug_folder, "final attack"))
 
     def _get_gradient_of_patch(self, image_patch: Patch, target):
         """

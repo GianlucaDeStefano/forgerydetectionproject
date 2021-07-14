@@ -39,7 +39,7 @@ def visualize_noiseprint_step(image, internal_representation, noise, heatmap, pa
     axs[1].imshow(internal_representation, clim=[0, 1], cmap='gray')
     axs[1].set_title('Noiseprint')
 
-    axs[2].imshow(noise)
+    axs[2].imshow(noise, clim=[0, 1], cmap='gray')
     axs[2].set_title('Adversarial noise')
 
     axs[3].imshow(heatmap, clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
@@ -56,3 +56,20 @@ def visualize_noiseprint_step(image, internal_representation, noise, heatmap, pa
         plt.close(fig)
 
     return plt
+
+def visualize_noise(noise,path, should_close=True):
+        fig, axs = plt.subplots(1, 1, figsize=(5, 5))
+
+        axs.imshow(noise, clim=[0, 1], cmap='gray')
+        axs.set_title('Adversarial noise')
+
+        # remove the x and y ticks
+        axs.set_xticks([])
+        axs.set_yticks([])
+
+        plt.savefig(path, bbox_inches='tight', dpi=300)
+
+        if should_close:
+            plt.close(fig)
+
+        return plt
