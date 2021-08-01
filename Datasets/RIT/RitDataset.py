@@ -1,7 +1,7 @@
 import os
 
 from Datasets.Dataset import Dataset, ImageNotFoundException, mask_2_binary
-from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
+from Detectors.Noiseprint.utility.utilityRead import imread2f
 
 
 class RitDataset(Dataset):

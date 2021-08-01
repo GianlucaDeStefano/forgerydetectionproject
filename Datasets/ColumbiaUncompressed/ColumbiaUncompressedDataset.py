@@ -19,7 +19,7 @@ def mask_2_binary(mask: np.array):
     # transform the mask into a binary mask:
 
     mask = mask[:, :, 0]
-    return np.where(mask >= 200, 0, 1)
+    return np.array(np.where(mask >= 200, 0, 1),int)
 
 
 class ColumbiaUncompressedDataset(Dataset):
@@ -51,7 +51,7 @@ class ColumbiaUncompressedDataset(Dataset):
         paths = []
 
         for image_format in self.supported_formats:
-            Path(os.path.join(self.root, "4cam_splc")).glob("*.{}".format(image_format))
+            paths += Path(os.path.join(self.root, "4cam_splc")).glob("*.{}".format(image_format))
 
         return paths
 

@@ -59,3 +59,17 @@ rm -r ./tifs-database/
 rm -r ./__MACOSX/
 rm ./tifs-database.zip
 fi
+
+echo "Preparing Detectors"
+
+if [ ! -f "./Detectors/Exif/ckpt" ]
+then
+echo "Downloading exif_final.zip"
+  # Google Drive link to exif_final.zip
+  gdown https://drive.google.com/uc?id=1X6b55rwZzU68Mz1m68WIX_G2idsEw3Qh
+
+  mkdir -p ./Detectors/Exif/ckpt/
+  unzip exif_final.zip -d ./Detectors/Exif/ckpt/
+
+  rm exif_final.zip
+fi

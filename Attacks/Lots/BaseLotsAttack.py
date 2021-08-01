@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import Type
 
 from Attacks.BaseAttack import BaseAttack
 from Ulitities.Image.Picture import Picture
+from Ulitities.Visualizers.BaseVisualizer import BaseVisualizer
 
 
 class InvalidPatchSize(Exception):
@@ -35,7 +37,7 @@ class BaseLotsAttack(BaseAttack, ABC):
     def __init__(self, name: str, objective_image: Picture, objective_mask: Picture,
                  target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, patch_size: tuple = (8, 8),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3):
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3,verbose=True,visualizer: BaseVisualizer = None):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -67,7 +69,7 @@ class BaseLotsAttack(BaseAttack, ABC):
         elif self.target_representation_mask is None:
             raise Exception("Missing mask for external target representation image")
 
-        super().__init__(name, objective_image, objective_mask, steps, debug_root, plot_interval)
+        super().__init__(name, objective_image, objective_mask, steps, debug_root, plot_interval,verbose,visualizer)
 
     def _on_before_attack(self):
 
@@ -82,14 +84,11 @@ class BaseLotsAttack(BaseAttack, ABC):
                 "Mask used to generate the target representation:{}".format(self.target_representation_mask.path))
 
             # get images
-            image = self.target_representation_image.one_channel.to_float()
+            image = self.target_representation_image.one_channel().to_float()
             mask = self.target_representation_mask
 
             # generate taregt representation
             self.target_representation = self._generate_target_representation(image, mask)
-
-            #save target representation
-
 
         self.write_to_logs("Patch size:{}".format(str(self.patch_size)))
         self.write_to_logs("Alpha:{}".format(str(self.alpha)))

@@ -14,7 +14,7 @@ class Picture(Patch):
     Class used to standardize operations on images
     """
 
-    def __new__(cls, value: np.ndarray = None, path: str = "", *args, **kwargs):
+    def __new__(cls, value = None, path: str = "", *args, **kwargs):
 
         if value is not None and type(value) is str:
             path = str(value)
@@ -36,7 +36,6 @@ class Picture(Patch):
 
         return obj
 
-    @property
     def one_channel(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
         """
         Convert the image to a one channel image
@@ -45,10 +44,8 @@ class Picture(Patch):
         if len(self.shape) == 2 or (len(self.shape) == 3 and self.shape[2] == 1):
             return self
         else:
-
             return Picture(red_weight * self[:, :, 0] + green_weight * self[:, :, 1] + blue_weight * self[:, :, 2])
 
-    @property
     def three_channels(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
         """
         Given a single channel numpy array, convert into a 3 channel array according to the given weights (the default weights
@@ -205,7 +202,7 @@ class Picture(Patch):
         mask_patches = mask.divide_in_patches(patch_shape, padding, force_shape, zero_padding)
         assert (len(img_patches) == len(mask_patches))
 
-        recomposed_mask = np.zeros(self.one_channel.shape)
+        recomposed_mask = np.zeros(self.one_channel().shape)
 
         # disgard patches containing masked data
         authentic_patches = []
@@ -237,7 +234,7 @@ class Picture(Patch):
         mask_patches = mask.divide_in_patches(patch_shape, padding, force_shape, zero_padding)
         assert (len(img_patches) == len(mask_patches))
 
-        recomposed_mask = np.zeros(self.one_channel.shape)
+        recomposed_mask = np.zeros(self.one_channel().shape)
 
         # disgard patches containing true data
         forged_patches = []
@@ -262,6 +259,7 @@ class Picture(Patch):
         return Picture((self / 255).clip(0, 1), self.path)
 
     def to_int(self):
+
         return Picture(np.rint(self) * 255, self.path)
 
     def astype(self, dtype, order='K', casting='unsafe', subok=True, copy=True):
@@ -272,3 +270,18 @@ class Picture(Patch):
         if hasattr(self, "_path") and self._path:
             return self._path
         return ""
+
+    def pad(self, pad_width, mode='constant', **kwargs):
+        if mode == "cut&copy":
+            vertical_pad, horizontal_pad = pad_width
+            array = np.zeros((self.shape[0] + horizontal_pad[0]+horizontal_pad[1],self.shape[1] + vertical_pad[0]+vertical_pad[1]))
+
+            array[:vertical_pad[0]] = self[:vertical_pad[0]]
+            array[-vertical_pad[1]:] = self[-vertical_pad[1]:]
+
+            array[:,vertical_pad[0]] = self[:vertical_pad[0]]
+            array[:,-horizontal_pad[1]:] = self[-horizontal_pad[1]:]
+            array[vertical_pad[0]:-vertical_pad[1],horizontal_pad[0],horizontal_pad[1]] = self
+            return Picture(array)
+
+        return Picture(np.pad(self, pad_width, mode, **kwargs))

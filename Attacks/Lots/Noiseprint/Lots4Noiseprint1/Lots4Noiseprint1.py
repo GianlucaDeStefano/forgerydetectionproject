@@ -6,9 +6,13 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from Attacks.Lots.Noiseprint.Lots4NoiseprintBase import Lots4NoiseprintBase
-from Attacks.utilities.image import normalize_noiseprint_no_margins
 from Attacks.utilities.visualization import visuallize_array_values
 from Ulitities.Image.Picture import Picture
+
+def normalize_noiseprint_no_margins(noiseprint):
+    v_min = np.min(noiseprint)
+    v_max = np.max(noiseprint)
+    return ((noiseprint - v_min) / (v_max - v_min)).clip(0, 1)
 
 
 class LotsNoiseprint1(Lots4NoiseprintBase):
@@ -16,7 +20,7 @@ class LotsNoiseprint1(Lots4NoiseprintBase):
     def __init__(self, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
                  patch_size: tuple = (16, 16), padding_size=(32, 32, 32, 32),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10):
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10,verbose=True):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -41,7 +45,7 @@ class LotsNoiseprint1(Lots4NoiseprintBase):
         super().__init__("LOTS4Noiseprint_1", objective_image, objective_mask, target_representation_image,
                          target_representation_mask,
                          qf, patch_size, steps,
-                         debug_root, alpha, plot_interval)
+                         debug_root, alpha, plot_interval,verbose)
 
     def _on_before_attack(self):
         super(LotsNoiseprint1, self)._on_before_attack()

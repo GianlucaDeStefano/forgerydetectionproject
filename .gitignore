@@ -1,6 +1,9 @@
 #exclude folders containing data (e.g datasets)
 Data/
 
+#excluding folder containing the Exif-sc models
+ckpt/
+
 #exclude folders containg debug data generted during attack runs
 Debug/
 

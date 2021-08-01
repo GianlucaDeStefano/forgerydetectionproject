@@ -6,20 +6,19 @@ import numpy as np
 import tensorflow as tf
 
 # setup tensorflow session conf
+from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
+
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.per_process_gpu_memory_fraction = 1
+config.gpu_options.per_process_gpu_memory_fraction = 0.5
 session = tf.compat.v1.Session(config=config)
 tf.compat.v1.keras.backend.set_session(session)
 
 from Attacks.Lots.BaseLotsAttack import BaseLotsAttack
-from Attacks.utilities.visualization import visualize_noiseprint_step
-from Detectors.Noiseprint.Noiseprint.noiseprint import NoiseprintEngine, normalize_noiseprint
-from Detectors.Noiseprint.Noiseprint.noiseprint_blind import noiseprint_blind_post, genMappFloat
-from Detectors.Noiseprint.Noiseprint.utility.utility import jpeg_quality_of_file
+from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine
+from Detectors.Noiseprint.utility import jpeg_quality_of_file
 from Ulitities.Image.Patch import Patch
 from Ulitities.Image.Picture import Picture
-from Ulitities.Plots import plot_graph
 
 
 class MissingTargetRepresentation(Exception):
@@ -53,7 +52,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
                  target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
                  patch_size: tuple = (8, 8), steps=50,
-                 debug_root="./Data/Debug/", alpha=5, plot_interval=3):
+                 debug_root="./Data/Debug/", alpha=5, plot_interval=3, verbose=True):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -70,7 +69,8 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         super().__init__(name, objective_image, objective_mask, target_representation_image, target_representation_mask,
                          patch_size, steps, debug_root, alpha,
-                         plot_interval)
+                         plot_interval, verbose, None)
+
 
         if not qf or qf < 51 or qf > 101:
             try:
@@ -89,10 +89,12 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         self.min_loss = float("inf")
 
+        self.visualizer = NoiseprintVisualizer(self.qf)
+
     def _on_after_attack_step(self):
 
         # compute PSNR between intial 1 channel image and the attacked one
-        psnr = cv2.PSNR(self.objective_image.one_channel, self.attacked_image_one_channel)
+        psnr = cv2.PSNR(self.objective_image.one_channel(), self.attacked_image_one_channel)
         self.psnr_steps.append(psnr)
 
         # compute variance on the noiseprint map
@@ -102,9 +104,9 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         super()._on_after_attack_step()
 
-        plot_graph(self.loss_steps, "Loss", os.path.join(self.debug_folder, "loss"))
-        plot_graph(self.psnr_steps, "PSNR", os.path.join(self.debug_folder, "psnr"))
-        plot_graph(self.noiseprint_variance_steps, "Variance", os.path.join(self.debug_folder, "variance"))
+        self.visualizer.plot_graph(self.loss_steps, "Loss","Attack iteration", os.path.join(self.debug_folder, "loss"))
+        self.visualizer.plot_graph(self.psnr_steps, "PSNR","Attack iteration", os.path.join(self.debug_folder, "psnr"))
+        self.visualizer.plot_graph(self.noiseprint_variance_steps,"Attack iteration", "Variance", os.path.join(self.debug_folder, "variance"))
 
         if self.loss_steps[-1] < self.min_loss:
             self.min_loss = self.loss_steps[-1]
@@ -117,36 +119,6 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
             # save the best adversarial noise
             np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.adversarial_noise)
-
-    def plot_step(self, image, path):
-
-        noiseprint = self._engine.predict(image)
-
-        self.noiseprint_variance_steps.append(noiseprint.var())
-
-        mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image)
-        attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
-
-        noise = Picture(1 - np.abs((self.objective_image.one_channel.to_float() - image)*100))
-
-        visualize_noiseprint_step(image, normalize_noiseprint(noiseprint),
-                                  noise.clip(0,1),attacked_heatmap, path)
-
-    def _on_after_attack(self):
-        """
-        Function executed after finishing the attack pipeline
-        :return:
-        """
-
-        super()._on_after_attack()
-        image_path = os.path.join(self.debug_folder, "attacked image best noise.png")
-
-        best_attacked_image = Picture((self.objective_image - Picture(self.best_noise).three_channels).clip(0, 255))
-        best_attacked_image.save(image_path)
-
-        # generate heatmap of the just saved image, just to be sure of the final result of the attack
-        image = Picture(path=image_path)
-        self.plot_step(image.one_channel.to_float(), os.path.join(self.debug_folder, "final attack"))
 
     def _get_gradient_of_patch(self, image_patch: Patch, target):
         """
@@ -208,7 +180,7 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         self.loss_steps.append(loss)
 
         # normalize the gradient
-        image_gradient = normalize_gradient(image_gradient, 8)
+        image_gradient = normalize_gradient(image_gradient, 0)
 
         # scale the gradient
         image_gradient = self.alpha * image_gradient

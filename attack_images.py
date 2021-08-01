@@ -1,11 +1,9 @@
 import os
 
-from Attacks import supported_attacks
-from Datasets import find_dataset_of_image
 from attack_image import attack_image
 
-DEBUG_ROOT = os.path.abspath("./Data/Debug/")
-DATASETS_ROOT = os.path.abspath("./Data/Datasets/")
+DEBUG_ROOT = os.path.abspath("Data/Debug/")
+DATASETS_ROOT = os.path.abspath("Data/Datasets/")
 
 # images to try to attack
 images = [
@@ -19,8 +17,11 @@ images = [
     "DSC05635.TIF",  # Sony A57
 ]
 
-attacks = ["Lots4Noiseprint.2","Lots4Noiseprint.3"]
 
-for attack_type in attacks:
-    for image in images:
-        attack_image(image, attack_type=attack_type)
+if __name__ == "__man__":
+
+    attacks = ["Lots4Noiseprint.2","Lots4Noiseprint.3"]
+
+    for attack_type in attacks:
+        for image in images:
+            attack_image(image, attack_type=attack_type)

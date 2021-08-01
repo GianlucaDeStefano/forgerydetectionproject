@@ -3,16 +3,18 @@ import os
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import Type
 
 import numpy as np
 
 from Ulitities.Image import Picture
+from Ulitities.Visualizers.BaseVisualizer import BaseVisualizer
 
 
 class BaseAttack(ABC):
 
     def __init__(self, name: str, objective_image: Picture, objective_mask: Picture, steps=50,
-                 debug_root="./Data/Debug/", plot_interval=3):
+                 debug_root="./Data/Debug/", plot_interval=3, verbose=True, visualizer: BaseVisualizer = None):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -34,8 +36,8 @@ class BaseAttack(ABC):
         self.debug_folder = debug_root
         self.plot_interval = plot_interval
 
-        self.best_noise = np.zeros(self.objective_image.one_channel.shape)
-        self.adversarial_noise_array = np.zeros(self.objective_image.one_channel.shape)
+        self.best_noise = np.zeros(self.objective_image.one_channel().shape)
+        self.adversarial_noise_array = np.zeros(self.objective_image.one_channel().shape)
 
         times = time.time()
         self.debug_folder = os.path.join(debug_root, str(times))
@@ -51,6 +53,12 @@ class BaseAttack(ABC):
 
         for name in logging.root.manager.loggerDict:
             logging.getLogger(name).disabled = True
+
+        self.verbose = verbose
+
+        self.visualizer = None
+        if visualizer:
+            self.visualizer = visualizer
 
     def attack_one_step(self):
         """
@@ -111,7 +119,7 @@ class BaseAttack(ABC):
         self.start_time = datetime.now()
         self.write_to_logs("Attack started at: {}".format(self.start_time))
 
-        self.plot_step(self.attacked_image_one_channel.to_float(),os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
+        self.plot_step(self.attacked_image, os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
 
     def _on_after_attack(self):
         """
@@ -122,7 +130,16 @@ class BaseAttack(ABC):
         # save the adversarial noise
         np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.best_noise)
 
-        self.plot_step(self.attacked_image_one_channel.to_float(),os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
+        image_path = os.path.join(self.debug_folder, "attacked image best noise.png")
+
+        best_attacked_image = Picture.Picture(
+            (self.objective_image - Picture.Picture(self.best_noise).three_channels(1/3,1/3,1/3)).clip(0, 255))
+        best_attacked_image.save(image_path)
+
+        # generate heatmap of the just saved image, just to be sure of the final result of the attack
+        image = Picture.Picture(path=image_path)
+        self.plot_step(image, os.path.join(self.debug_folder, "final attack"))
+
         self.end_time = datetime.now()
 
     def _on_before_attack_step(self):
@@ -145,34 +162,33 @@ class BaseAttack(ABC):
         self.attack_iteration += 1
 
         # generate plots and other visualizations
-        if self.attack_iteration % self.plot_interval == 0:
-            self.plot_step(self.attacked_image_one_channel.to_float(),os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
+        if self.plot_interval > 0 and self.attack_iteration % self.plot_interval == 0:
+            self.plot_step(self.attacked_image, os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
 
         # save the attacked image
         self.attacked_image.save(os.path.join(self.debug_folder, "attacked image.png"))
 
-    @abstractmethod
-    def plot_step(self, image,path):
+    def plot_step(self, image, path):
         """
         Print for debug purposes the state of the attack
         :return:
         """
 
-        if not self.debug_folder:
+        if not self.debug_folder or not self.visualizer:
             return
 
-        raise NotImplemented
+        self.visualizer.show(image.one_channel().to_float(), path,original_image=self.objective_image.one_channel().to_float())
 
-    def write_to_logs(self, message, should_print=True):
+    def write_to_logs(self, message, force_print=True):
         """
         Add a new line to this attack's log file IF it exists
         :param message: message to write to the file
         :param level: level of importance of the attack
-        :param should_print: should this message be also printed into the console?
+        :param should_print: should this message be even if ,verbose = False
         :return:
         """
 
-        if should_print:
+        if force_print or self.verbose:
             print(message)
 
         if not self.debug_folder:
@@ -190,9 +206,11 @@ class BaseAttack(ABC):
 
     @property
     def attacked_image_one_channel(self):
-        return Picture.Picture(self.objective_image.one_channel - self.adversarial_noise).clip(0, 255)
+        return Picture.Picture(self.objective_image.one_channel() - self.adversarial_noise).clip(0, 255)
 
     @property
     def attacked_image(self):
-        return Picture.Picture(self.objective_image - Picture.Picture(self.adversarial_noise).three_channels).clip(0,
-                                                                                                                   255)
+        res = Picture.Picture(
+            self.objective_image - Picture.Picture(self.adversarial_noise).three_channels(1 / 3, 1 / 3, 1 / 3)).clip(0,
+                                                                                                                     255)
+        return res

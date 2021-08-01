@@ -5,12 +5,12 @@ import warnings
 from Attacks import supported_attacks
 from Datasets import supported_datasets, find_dataset_of_image
 from Datasets.Dataset import mask_2_binary
-from Detectors.Noiseprint.Noiseprint.utility.utilityRead import imread2f
+from Detectors.Noiseprint.utility import imread2f
 from Ulitities.Exceptions.arguments import InvalidArgumentException
 from Ulitities.Image.Picture import Picture
 
-DEBUG_ROOT = os.path.abspath("./Data/Debug/")
-DATASETS_ROOT = os.path.abspath("./Data/Datasets/")
+DEBUG_ROOT = os.path.abspath("Data/Debug/")
+DATASETS_ROOT = os.path.abspath("Data/Datasets/")
 
 
 def attack_image(image_path, mask_path=None, dataset=None, attack_type=None):
@@ -71,7 +71,7 @@ def attack_image(image_path, mask_path=None, dataset=None, attack_type=None):
 
     # execute each attack sequentially
     for current_attack in attacks:
-        attack = current_attack(image, mask)
+        attack = current_attack(image, mask,steps=50,plot_interval=5)
         attack.execute()
 
 
