@@ -7,8 +7,8 @@ import numpy as np
 from Attacks import LotsNoiseprint1B, LotsNoiseprint2, LotsNoiseprint1
 from Datasets.RIT.RitDataset import RitDataset
 from Ulitities.Image.Picture import Picture
+from Ulitities.io.folders import create_debug_folder
 
-DEBUG_ROOT = os.path.abspath("Data/Debug/")
 DATASETS_ROOT = os.path.abspath("Data/Datasets/")
 
 # number of images to use to generate the average adversarial noise
@@ -17,7 +17,7 @@ N_IMAGES_TO_USE = 5
 attack_to_use = LotsNoiseprint1B
 
 times = time.time()
-debug_folder = os.path.join(DEBUG_ROOT, str(times))
+debug_folder = create_debug_folder()
 os.makedirs(os.path.join(debug_folder, "Individual attacks"))
 
 if __name__ == "__main__":
@@ -53,4 +53,5 @@ if __name__ == "__main__":
         # read the generated adversarial noise
         noise += attack.adversarial_noise / N_IMAGES_TO_USE
 
+        # save the noise
         np.save(os.path.join(debug_folder, "average_noise_{}_{}".format(attack.name,N_IMAGES_TO_USE)), noise)

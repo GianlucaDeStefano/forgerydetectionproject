@@ -256,7 +256,7 @@ class Picture(Patch):
         im.save(path)
 
     def to_float(self):
-        return Picture((self / 255).clip(0, 1), self.path)
+        return Picture((self / 256).clip(0, 1), self.path)
 
     def to_int(self):
 

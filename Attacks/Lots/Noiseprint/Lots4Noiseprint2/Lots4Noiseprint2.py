@@ -5,18 +5,19 @@ import numpy as np
 from tqdm import tqdm
 
 from Attacks.Lots.Noiseprint.Lots4NoiseprintBase import Lots4NoiseprintBase
-from Attacks.utilities.visualization import visuallize_array_values
+from Attacks.utilities.visualization import visuallize_matrix_values
 from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine, normalize_noiseprint
 from Ulitities.Image.Patch import Patch
 from Ulitities.Image.Picture import Picture
 
 
 class LotsNoiseprint2(Lots4NoiseprintBase):
+    name = "LOTS4Noiseprint_2"
 
     def __init__(self, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
                  patch_size: tuple = (8, 8),padding_size = (0,0,0,0),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10,verbose=True):
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3,verbose=True):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -32,7 +33,7 @@ class LotsNoiseprint2(Lots4NoiseprintBase):
 
         self.padding_size = padding_size
 
-        super().__init__("LOTS4Noiseprint_2", objective_image, objective_mask, target_representation_image,
+        super().__init__(objective_image, objective_mask, target_representation_image,
                          target_representation_mask, qf, patch_size, steps,
                          debug_root, alpha, plot_interval,verbose)
 
@@ -85,7 +86,7 @@ class LotsNoiseprint2(Lots4NoiseprintBase):
         image_target_representation = image_target_representation[:image.shape[0], :image.shape[1]]
 
         # save tile visualization
-        visuallize_array_values(target_patch, os.path.join(self.debug_folder, "image-target-raw.png"))
+        visuallize_matrix_values(target_patch, os.path.join(self.debug_folder, "image-target-raw.png"))
 
         patches_map = Picture(normalize_noiseprint(patches_map))
         patches_map.save(os.path.join(self.debug_folder, "patches-map.png"))
@@ -103,11 +104,12 @@ class LotsNoiseprint2(Lots4NoiseprintBase):
         :return: image_gradient, cumulative_loss
         """
 
+        assert (len(image.shape) == 2)
+
         pad_size = ((self.padding_size[0], self.padding_size[2]), (self.padding_size[3], self.padding_size[1]))
 
         image = image.pad(pad_size,mode="reflect")
         target = target.pad(pad_size,mode="reflect")
-        assert (len(image.shape) == 2)
 
         # variable to store the cumulative loss across all patches
         cumulative_loss = 0
@@ -160,16 +162,16 @@ class LotsNoiseprint2(Lots4NoiseprintBase):
                     image_gradient[x: min(x + self._engine.slide, image_gradient.shape[0]),
                     y: min(y + self._engine.slide, image_gradient.shape[1])] = patch_gradient
 
-        return image_gradient[self.padding_size[0]:-self.padding_size[2],self.padding_size[1]:-self.padding_size[3]], cumulative_loss
+        if self.padding_size[0] > 0:
+            image_gradient = image_gradient[self.padding_size[0]:,:]
 
-    def _on_before_attack_step(self):
-        """
-        Check that the attack can be executed, if not, generate a target representation
-        and execute it
-        :return:
-        """
-        # if no target representation is present, generate it
-        if self.target_representation is None:
-            self._generate_target_representation()
+        if self.padding_size[1] > 0:
+            image_gradient = image_gradient[:,self.padding_size[1]]
 
-        super()._on_before_attack_step()
+        if self.padding_size[2] > 0:
+            image_gradient = image_gradient[:-self.padding_size[2],:]
+
+        if self.padding_size[3] > 0:
+            image_gradient = image_gradient[:,:-self.padding_size[3]]
+
+        return image_gradient, cumulative_loss

@@ -16,27 +16,27 @@ class BaseVisualizer:
     using different Detectors
     """
 
-    def __init__(self,engine:DetectorEngine,name):
+    def __init__(self, engine: DetectorEngine, name):
         self._engine = engine
         self.name = name
 
     @abstractmethod
-    def predict(self,image:Picture,path = None):
+    def predict(self, image: Picture, path=None):
         """
         Function to predict the output map of an image and save it to the specified path
         """
         raise NotImplementedError
 
     @abstractmethod
-    def prediction_pipeline(self,image:Picture,path=None,original_picture = None,note=""):
+    def prediction_pipeline(self, image: Picture, path=None, original_picture=None, note="", mask=None, debug=False,adversarial_noise=None):
         """
         Function to print the output map of an image, together with every intermediate ste[, and save the final image
         it to the specified path
         """
         raise NotImplementedError
 
-    def compute_difference(self,original_image,image,enhance_factor=100):
-        return Picture(1 - np.abs(original_image - image)*enhance_factor).clip(0,1).one_channel()
+    def compute_difference(self, original_image, image, enhance_factor=100):
+        return Picture(1 - np.abs(original_image - image) * enhance_factor).clip(0, 1).one_channel()
 
     def plot_graph(self, data, label_y, label_x="", path=None, min_range_value=1, initial_value=1):
         """
@@ -62,5 +62,3 @@ class BaseVisualizer:
             plt.savefig(path)
 
         plt.close()
-
-

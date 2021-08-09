@@ -1,20 +1,29 @@
+import argparse
 import logging
 import os
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
+from pathlib import Path
 from typing import Type
 
 import numpy as np
+from cv2 import PSNR
 
-from Ulitities.Image import Picture
+from Datasets import get_image_and_mask
+from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file
+from Ulitities.Image.Picture import Picture
 from Ulitities.Visualizers.BaseVisualizer import BaseVisualizer
+from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
+from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
+from Ulitities.io.folders import create_debug_folder
 
 
 class BaseAttack(ABC):
+    name = "BAseAttack"
 
-    def __init__(self, name: str, objective_image: Picture, objective_mask: Picture, steps=50,
-                 debug_root="./Data/Debug/", plot_interval=3, verbose=True, visualizer: BaseVisualizer = None):
+    def __init__(self, objective_image: Picture, objective_mask: Picture,
+                 debug_root="./Data/Debug/", verbose=True):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -28,21 +37,16 @@ class BaseAttack(ABC):
         assert (objective_image.shape[0] == objective_mask.shape[0])
         assert (objective_image.shape[1] == objective_mask.shape[1])
 
-        self.objective_image = objective_image
+        self.original_objective_image = objective_image
         self.objective_image_mask = objective_mask
+
+        self.noise = np.zeros(objective_image.one_channel().shape)
+
         self.attack_iteration = 0
-        self.name = name
-        self.steps = steps
         self.debug_folder = debug_root
-        self.plot_interval = plot_interval
 
-        self.best_noise = np.zeros(self.objective_image.one_channel().shape)
-        self.adversarial_noise_array = np.zeros(self.objective_image.one_channel().shape)
-
-        times = time.time()
-        self.debug_folder = os.path.join(debug_root, str(times))
-        os.makedirs(self.debug_folder)
-        os.makedirs(os.path.join(self.debug_folder, "Steps"))
+        # create debug folder
+        self.debug_folder = create_debug_folder()
 
         # Remove all handlers associated with the root logger object.
         for handler in logging.root.handlers[:]:
@@ -56,22 +60,6 @@ class BaseAttack(ABC):
 
         self.verbose = verbose
 
-        self.visualizer = None
-        if visualizer:
-            self.visualizer = visualizer
-
-    def attack_one_step(self):
-        """
-        Perform one step of the attack
-        :return:
-        """
-
-        self._on_before_attack_step()
-        self._attack_step()
-        self._on_after_attack_step()
-
-        return self.attacked_image
-
     def execute(self):
         """
         Launch the entire attack pipeline
@@ -82,19 +70,16 @@ class BaseAttack(ABC):
 
         self._on_before_attack()
 
-        for self.attack_iteration in range(self.steps):
-            print("### Step: {} ###".format(self.attack_iteration))
-            self.attack_one_step()
+        self._attack()
 
         self._on_after_attack()
 
         end_time = datetime.now()
         timedelta = end_time - start_time
-        self.write_to_logs(
-            "Attack pipeline terminated in {}".format(timedelta))
+        self.write_to_logs("Attack pipeline terminated in {}".format(timedelta))
 
     @abstractmethod
-    def _attack_step(self):
+    def _attack(self):
         """
         Performs a step of the attack
         """
@@ -107,19 +92,17 @@ class BaseAttack(ABC):
         """
 
         # save image
-        self.objective_image.save(os.path.join(self.debug_folder, "image.png"))
+        self.original_objective_image.save(os.path.join(self.debug_folder, "image.png"))
 
         # save mask
         self.objective_image_mask.to_int().save(os.path.join(self.debug_folder, "mask.png"))
 
         self.write_to_logs("Attack name: {}".format(self.name))
-        self.write_to_logs("Attacking image: {}".format(self.objective_image.path))
+        self.write_to_logs("Attacking image: {}".format(self.original_objective_image.path))
         self.write_to_logs("Mask: {}".format(self.objective_image_mask.path))
 
         self.start_time = datetime.now()
         self.write_to_logs("Attack started at: {}".format(self.start_time))
-
-        self.plot_step(self.attacked_image, os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
 
     def _on_after_attack(self):
         """
@@ -127,57 +110,43 @@ class BaseAttack(ABC):
         :return:
         """
 
-        # save the adversarial noise
-        np.save(os.path.join(self.debug_folder, 'best-noise.npy'), self.best_noise)
+        image_path = os.path.join(self.debug_folder, "attacked image.png")
 
-        image_path = os.path.join(self.debug_folder, "attacked image best noise.png")
-
-        best_attacked_image = Picture.Picture(
-            (self.objective_image - Picture.Picture(self.best_noise).three_channels(1/3,1/3,1/3)).clip(0, 255))
+        best_attacked_image = Picture(self.attacked_image)
         best_attacked_image.save(image_path)
 
         # generate heatmap of the just saved image, just to be sure of the final result of the attack
-        image = Picture.Picture(path=image_path)
-        self.plot_step(image, os.path.join(self.debug_folder, "final attack"))
+        image = Picture(path=image_path)
+
+        psnr = PSNR(self.original_objective_image.one_channel(), image.one_channel())
+
+        note = "PSNR:{:.2f}".format(psnr)
+
+        self.write_to_logs(note)
+
+        # test the final result against noiseprint
+        try:
+            qf = jpeg_quality_of_file(self.original_objective_image.path)
+        except:
+            qf = 101
+
+        if hasattr(self, "qf"):
+            qf = self.qf
+        NoiseprintVisualizer(qf).prediction_pipeline(image.to_float(),
+                                                     os.path.join(self.debug_folder, "attacked image noiseprint.png"),
+                                                     original_picture=self.original_objective_image.one_channel().to_float(),
+                                                     note=note, omask=self.objective_image_mask,
+                                                     debug=False,
+                                                     adversarial_noise=self.noise)
+
+        # test the final result against Exif
+        ExifVisualizer().prediction_pipeline(image.to_float(),
+                                             os.path.join(self.debug_folder, "attacked image exif.png"),
+                                             original_picture=self.original_objective_image.one_channel().to_float(),
+                                             note=note)
 
         self.end_time = datetime.now()
 
-    def _on_before_attack_step(self):
-        """
-        Function executed before starting the i-th attack step
-        :return:
-        """
-
-        self.start_step_time = datetime.now()
-
-    def _on_after_attack_step(self):
-        """
-        Function executed after ending the i-th attack step
-        :return:
-        """
-
-        # log data
-        self.end_step_time = datetime.now()
-        self.write_to_logs(self._log_step(), False)
-        self.attack_iteration += 1
-
-        # generate plots and other visualizations
-        if self.plot_interval > 0 and self.attack_iteration % self.plot_interval == 0:
-            self.plot_step(self.attacked_image, os.path.join(self.debug_folder, "Steps", str(self.attack_iteration)))
-
-        # save the attacked image
-        self.attacked_image.save(os.path.join(self.debug_folder, "attacked image.png"))
-
-    def plot_step(self, image, path):
-        """
-        Print for debug purposes the state of the attack
-        :return:
-        """
-
-        if not self.debug_folder or not self.visualizer:
-            return
-
-        self.visualizer.show(image.one_channel().to_float(), path,original_image=self.objective_image.one_channel().to_float())
 
     def write_to_logs(self, message, force_print=True):
         """
@@ -196,21 +165,51 @@ class BaseAttack(ABC):
 
         logging.info(message)
 
-    def _log_step(self) -> str:
-        "Generate the logging to write at each step"
-        return " {}) Duration: {}".format(self.attack_iteration, self.end_step_time - self.start_step_time)
-
-    @property
-    def adversarial_noise(self):
-        return Picture.Picture(self.adversarial_noise_array, "")
-
-    @property
-    def attacked_image_one_channel(self):
-        return Picture.Picture(self.objective_image.one_channel() - self.adversarial_noise).clip(0, 255)
-
     @property
     def attacked_image(self):
-        res = Picture.Picture(
-            self.objective_image - Picture.Picture(self.adversarial_noise).three_channels(1 / 3, 1 / 3, 1 / 3)).clip(0,
-                                                                                                                     255)
-        return res
+        """
+        Compute the attacked image using the original image and the cumulative noise to reduce
+        rounding artifacts caused by translating the noise from one to 3 channels and vie versa multiple times,
+        still this operation here is done once so some rounding error is still present.
+        Use attacked_image_monochannel to get the one channel version of the image withoud rounding errors
+        :return:
+        """
+        return Picture((self.original_objective_image - Picture(self.noise).three_channels()).clip(0,255))
+
+    @property
+    def attacked_image_monochannel(self):
+        """
+        Compute the attacked image using the original image and the compulative noise to reduce
+        rounding artifacts caused by translating the nosie from one to 3 channels and vie versa multiple times
+        :return:
+        """
+        return Picture((self.original_objective_image.one_channel() - self.noise).clip(0,255))
+
+    @staticmethod
+    def read_arguments(dataset_root) -> dict:
+        """
+        Read arguments from the command line or ask for them if they are not present, validate them raising
+        an exception if they are invalid, it is called by the launcher script
+        :param args: args dictionary containing the arguments passed while launching the program
+        :return: kwargs to pass to the attack
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-i", '--image', required=True, help='Name of the input image, or its path')
+        parser.add_argument("-m", '--mask', default=None, help='Path to the binary mask of the image')
+        parser.add_argument("-s", '--steps', default=50, type=int, help='Number of attack steps to perform')
+        args = parser.parse_known_args()[0]
+
+        image_path = args.image
+        if not image_path:
+            image_path = str(input("Input a reference of the image to attack (path or name)"))
+
+        mask_path = args.mask
+        if Path(image_path).exists() and not mask_path:
+            mask_path = str(input("Input the path to the mask of the image"))
+
+        image, mask = get_image_and_mask(dataset_root, image_path, mask_path)
+
+        kwarg = dict()
+        kwarg["objective_image"] = image
+        kwarg["objective_mask"] = mask
+        return kwarg

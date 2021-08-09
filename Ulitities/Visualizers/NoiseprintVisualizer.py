@@ -33,8 +33,7 @@ class NoiseprintVisualizer(BaseVisualizer):
         self._engine = NoiseprintEngine()
         self._engine.load_quality(qf)
 
-    def prediction_pipeline(self, image: Picture, path=None,original_picture = None,note="",mask=None):
-
+    def prediction_pipeline(self, image: Picture, path=None,original_picture = None,note="",omask=None,debug=False,adversarial_noise=None):
 
         n_cols = 4
 
@@ -42,42 +41,73 @@ class NoiseprintVisualizer(BaseVisualizer):
 
         if original_picture is not None:
             n_cols += 1
+        else:
+            debug = False
+
+        if debug:
+            fig, axs = plt.subplots(2, n_cols, figsize=(n_cols * 5, 5))
+
+            axs0,axs1 = axs[0],axs[1]
+        else:
+            fig, axs0 = plt.subplots(1, n_cols, figsize=(n_cols * 5, 5))
 
         noiseprint = self._engine.predict(image_one_channel)
 
         heatmap = self._engine.detect(image_one_channel)
 
         #this is the first computation, compute the best f1 threshold initially
-        threshold = find_best_theshold(heatmap, mask)
+        threshold = find_best_theshold(heatmap, omask)
 
         mask = np.array(heatmap > threshold, int).clip(0,1)
 
-        fig, axs = plt.subplots(1, n_cols,figsize=(n_cols*5, 5))
+        axs0[0].imshow(image)
+        axs0[0].set_title('Image')
 
-        axs[0].imshow(image)
-        axs[0].set_title('Image')
+        axs0[1].imshow(normalize_noiseprint(noiseprint), clim=[0, 1], cmap='gray')
+        axs0[1].set_title('Noiseprint')
 
-        axs[1].imshow(normalize_noiseprint(noiseprint), clim=[0, 1], cmap='gray')
-        axs[1].set_title('Noiseprint')
+        axs0[2].imshow(heatmap, clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
+        axs0[2].set_title('Heatmap')
 
-        axs[2].imshow(heatmap, clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
-        axs[2].set_title('Heatmap')
+        axs0[3].imshow(mask, clim=[0, 1], cmap='gray')
+        axs0[3].set_title('Mask')
 
-        axs[3].imshow(mask, clim=[0, 1], cmap='gray')
-        axs[3].set_title('Mask')
+        # remove the x and y ticks
+        for ax in axs0:
+            ax.set_xticks([])
+            ax.set_yticks([])
+
 
         if original_picture is not None:
             noise = self.compute_difference(original_picture.one_channel(),image_one_channel)
-            axs[4].imshow(noise, clim=[0, 1], cmap='gray')
-            axs[4].set_title('Adversarial noise')
+            axs0[4].imshow(noise, clim=[0, 1], cmap='gray')
+            axs0[4].set_title('Adversarial noise')
+
+        if debug:
+            original_noiseprint = self._engine.predict(original_picture.one_channel())
+            axs1[0].imshow(original_picture)
+            axs1[0].set_title('Original Image')
+
+            axs1[1].imshow(normalize_noiseprint(original_noiseprint), clim=[0, 1], cmap='gray')
+            axs1[1].set_title('Original Noiseprint')
+
+            axs1[2].imshow(omask, clim=[0, 1], cmap='gray')
+            axs1[2].set_title('Original Mask')
+
+            noise = self.compute_difference(noiseprint, original_noiseprint,enhance_factor=100)
+            axs1[3].imshow(noise, cmap='gray')
+            axs1[3].set_title('Noiseprint differences')
+
+            axs1[4].imshow(np.where(np.abs(adversarial_noise) > 0, 1, 0),clim=[0, 1], cmap='gray')
+            axs1[4].set_title('Gradient')
+
+            # remove the x and y ticks
+            for ax in axs1:
+                ax.set_xticks([])
+                ax.set_yticks([])
 
         if note:
             fig.text(0.9, 0.2, note,size=14, horizontalalignment='right', verticalalignment='top')
-
-        # remove the x and y ticks
-        for ax in axs:
-            ax.set_xticks([])
-            ax.set_yticks([])
 
         if path:
             plt.savefig(path,bbox_inches='tight')

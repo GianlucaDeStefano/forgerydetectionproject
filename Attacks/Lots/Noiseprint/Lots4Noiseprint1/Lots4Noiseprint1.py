@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from Attacks.Lots.Noiseprint.Lots4NoiseprintBase import Lots4NoiseprintBase
-from Attacks.utilities.visualization import visuallize_array_values
+from Attacks.utilities.visualization import visuallize_matrix_values
 from Ulitities.Image.Picture import Picture
 
 def normalize_noiseprint_no_margins(noiseprint):
@@ -17,10 +17,12 @@ def normalize_noiseprint_no_margins(noiseprint):
 
 class LotsNoiseprint1(Lots4NoiseprintBase):
 
+    name = "LOTS4Noiseprint1"
+
     def __init__(self, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
                  patch_size: tuple = (16, 16), padding_size=(32, 32, 32, 32),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10,verbose=True):
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3,verbose=True):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -42,7 +44,7 @@ class LotsNoiseprint1(Lots4NoiseprintBase):
         # convert targt image to be float
         objective_image = objective_image.astype(np.float)
 
-        super().__init__("LOTS4Noiseprint_1", objective_image, objective_mask, target_representation_image,
+        super().__init__(objective_image, objective_mask, target_representation_image,
                          target_representation_mask,
                          qf, patch_size, steps,
                          debug_root, alpha, plot_interval,verbose)
@@ -96,7 +98,7 @@ class LotsNoiseprint1(Lots4NoiseprintBase):
         plt.imsave(fname=os.path.join(self.debug_folder, "image-target.png"), arr=normalized_noiseprint, cmap='gray',
                    format='png')
 
-        visuallize_array_values(t_no_padding, os.path.join(self.debug_folder, "image-target-raw.png"))
+        visuallize_matrix_values(t_no_padding, os.path.join(self.debug_folder, "image-target-raw.png"))
 
         patches_map = Picture(patches_map)
         patches_map.save(os.path.join(self.debug_folder, "patches-map.png"))
@@ -110,7 +112,7 @@ class LotsNoiseprint1(Lots4NoiseprintBase):
                 for y in range(0, t_no_padding.shape[1], 8):
                     patch_8 += t_no_padding[x:x + 8, y:y + 8] / n_patches8
 
-            visuallize_array_values(patch_8, os.path.join(self.debug_folder, "clean_target_patch.png"))
+            visuallize_matrix_values(patch_8, os.path.join(self.debug_folder, "clean_target_patch.png"))
 
         return target_patch
 

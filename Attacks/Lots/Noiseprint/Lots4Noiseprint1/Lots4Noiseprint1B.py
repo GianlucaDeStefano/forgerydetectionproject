@@ -6,11 +6,12 @@ from Ulitities.Image.Picture import Picture
 
 
 class LotsNoiseprint1B(LotsNoiseprint1):
+    name = "LOTS4Noiseprint1B"
 
     def __init__(self, objective_image: Picture, objective_mask: Picture, target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, qf: int = None,
                  patch_size: tuple = (16, 16), padding_size=(0, 0, 0, 0),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=10,verbose=True):
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3,verbose=True):
         """
         Base class to implement various attacks
         :param objective_image: image to attack

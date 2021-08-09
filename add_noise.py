@@ -12,6 +12,7 @@ from Ulitities.Exceptions.arguments import InvalidArgumentException
 from Ulitities.Image.Picture import Picture
 from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
 from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
+from Ulitities.io.folders import create_debug_folder
 
 
 def add_noise_blind(image, noise: np.ndarray, margin=8):
@@ -68,7 +69,7 @@ if __name__ == "__main__":
         # create debug folder
         print(visualizer_class)
         # create debug folder
-        debug_folder = os.path.join(DEBUG_ROOT,str(start_time),visualizer_class().name)
+        debug_folder = os.path.join(create_debug_folder(),visualizer_class().name)
         os.makedirs(debug_folder)
 
         for image_path in images:

@@ -1,7 +1,9 @@
+import argparse
 from abc import ABC, abstractmethod
 from typing import Type
 
 from Attacks.BaseAttack import BaseAttack
+from Attacks.BaseIterativeAttack import BaseIterativeAttack
 from Ulitities.Image.Picture import Picture
 from Ulitities.Visualizers.BaseVisualizer import BaseVisualizer
 
@@ -32,12 +34,14 @@ def check_patch_size(patch_size):
     return True
 
 
-class BaseLotsAttack(BaseAttack, ABC):
+class BaseLotsAttack(BaseIterativeAttack, ABC):
+    name = "BaseLotsAttack"
 
-    def __init__(self, name: str, objective_image: Picture, objective_mask: Picture,
+    def __init__(self, objective_image: Picture, objective_mask: Picture,
                  target_representation_image: Picture = None,
                  target_representation_mask: Picture = None, patch_size: tuple = (8, 8),
-                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3,verbose=True,visualizer: BaseVisualizer = None):
+                 steps=50, debug_root="./Data/Debug/", alpha=5, plot_interval=3, verbose=True,
+                 visualizer: BaseVisualizer = None):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -69,7 +73,7 @@ class BaseLotsAttack(BaseAttack, ABC):
         elif self.target_representation_mask is None:
             raise Exception("Missing mask for external target representation image")
 
-        super().__init__(name, objective_image, objective_mask, steps, debug_root, plot_interval,verbose,visualizer)
+        super().__init__(objective_image, objective_mask, steps, debug_root, plot_interval, verbose, visualizer)
 
     def _on_before_attack(self):
 
@@ -96,3 +100,19 @@ class BaseLotsAttack(BaseAttack, ABC):
     @abstractmethod
     def _generate_target_representation(self, image: Picture, mask: Picture):
         raise NotImplemented
+
+    @staticmethod
+    def read_arguments(dataset_root) -> dict:
+        """
+        Read arguments from the command line or ask for them if they are not present, validate them raising
+        an exception if they are invalid, it is called by the launcher script
+        :param args: args dictionary containing the arguments passed while launching the program
+        :return: kwargs to pass to the attack
+        """
+        kwarg = BaseAttack.read_arguments(dataset_root)
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-a", '--alpha', default=5, type=float, help='Alpha parameter of the attack')
+        args = parser.parse_known_args()[0]
+        kwarg["alpha"] = args.alpha
+        return kwarg
