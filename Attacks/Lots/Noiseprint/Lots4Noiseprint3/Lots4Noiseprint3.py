@@ -48,9 +48,7 @@ class LotsNoiseprint3(LotsNoiseprint2):
 
         # generate an image wise noiseprint representation on the entire image
         original_noiseprint = Picture(self._engine.predict(image))
-        original_noiseprint = np.flip(original_noiseprint,0)
-        original_noiseprint = np.flip(original_noiseprint,1)
-        return Picture(original_noiseprint)
+        return original_noiseprint
 
     @staticmethod
     def read_arguments(dataset_root) -> dict:
