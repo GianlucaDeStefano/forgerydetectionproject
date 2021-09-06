@@ -1,27 +1,41 @@
 import os
+from os.path import basename
+from Attacks.AdversarialAttacks.GaussianNoiseAddition import GaussianNoiseAdditionAttack
+from Attacks.AdversarialAttacks.JpegCompression import JpegCompressionAttack
+from Datasets import get_image_and_mask
+from Ulitities.io.folders import create_debug_folder
+import tensorflow as tf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+  try:
+    tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024*6)])
+  except RuntimeError as e:
+    print(e)
 
-from attack_image import attack_image
 
 DEBUG_ROOT = os.path.abspath("Data/Debug/")
 DATASETS_ROOT = os.path.abspath("Data/Datasets/")
 
 # images to try to attack
 images = [
-    "canong3_canonxt_sub_13.tif",  # canong3
-    "canonxt_kodakdcs330_sub_01.tif",  # canonxt
-    "nikond70_kodakdcs330_sub_22.tif",  # nikond70
-    "splicing-70.png",
-    "DPP0122.TIF",  # Canon60D
-    "r1be2a3d5t.TIF",  # NikonD90
-    "r09696ba3t.TIF",  # Nikon D7000
-    "DSC05635.TIF",  # Sony A57
+    "pristine/r1be2a3d5t.TIF"
 ]
 
 
-if __name__ == "__man__":
+if __name__ == "__main__":
 
-    attacks = ["Lots4Noiseprint.2","Lots4Noiseprint.3"]
+    debug_folder = os.path.join(create_debug_folder(DEBUG_ROOT), "images")
+    os.makedirs(debug_folder)
 
-    for attack_type in attacks:
-        for image in images:
-            attack_image(image, attack_type=attack_type)
+    for image_path in images:
+
+        debug_folder_image = os.path.join(debug_folder, basename(image_path))
+        os.makedirs(debug_folder_image)
+
+        quality = 2
+
+        image, mask = get_image_and_mask(DATASETS_ROOT, image_path)
+
+        attack = GaussianNoiseAdditionAttack(image,mask,debug_root=debug_folder_image,mean=0,standard_deviation=quality)
+
+        attack.execute()

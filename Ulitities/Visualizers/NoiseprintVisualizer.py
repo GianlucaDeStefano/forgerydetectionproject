@@ -51,14 +51,11 @@ class NoiseprintVisualizer(BaseVisualizer):
         else:
             fig, axs0 = plt.subplots(1, n_cols, figsize=(n_cols * 5, 5))
 
-        noiseprint = self._engine.predict(image_one_channel)
+        noiseprint = self.get_noiseprint(image_one_channel)
 
         heatmap = self._engine.detect(image_one_channel)
 
         #this is the first computation, compute the best f1 threshold initially
-        threshold = find_best_theshold(heatmap, omask)
-
-        mask = np.array(heatmap > threshold, int).clip(0,1)
 
         axs0[0].imshow(image)
         axs0[0].set_title('Image')
@@ -69,8 +66,12 @@ class NoiseprintVisualizer(BaseVisualizer):
         axs0[2].imshow(heatmap, clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
         axs0[2].set_title('Heatmap')
 
-        axs0[3].imshow(mask, clim=[0, 1], cmap='gray')
-        axs0[3].set_title('Mask')
+        if omask is not None:
+            threshold = find_best_theshold(heatmap, omask)
+            mask = np.array(heatmap > threshold, int).clip(0,1)
+
+            axs0[3].imshow(mask, clim=[0, 1], cmap='gray')
+            axs0[3].set_title('Mask')
 
         # remove the x and y ticks
         for ax in axs0:
@@ -114,6 +115,9 @@ class NoiseprintVisualizer(BaseVisualizer):
             plt.close()
         else:
             return plt
+
+    def get_noiseprint(self,image):
+        return self._engine.predict(image)
 
     def predict(self, image: Picture, path = None):
 

@@ -45,11 +45,12 @@ class DsoDatasetDataset(Dataset):
         filename = os.path.basename(image_path)
 
         if "normal" in filename:
+            path = os.path.join(self.root, "images", filename)
             # the image is an authentic one, return an all 0 mask
-            image = Image.open(image_path)
+            image = Image.open(path)
             image.load()
             image = np.array(image)
-            return np.zeros(image.shape)
+            return np.zeros((image.shape[0],image.shape[1])),""
 
         # return the mask
         path = os.path.join(self.root, "masks", filename)

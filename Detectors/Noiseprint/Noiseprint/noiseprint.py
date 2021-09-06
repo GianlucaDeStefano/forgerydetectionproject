@@ -150,6 +150,7 @@ def gen_noiseprint(image, quality=None):
     else:
         if quality is None:
             quality = 101
+
     engine = NoiseprintEngine()
     engine.load_quality(quality)
     return engine.predict(image)

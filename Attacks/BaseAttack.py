@@ -43,10 +43,9 @@ class BaseAttack(ABC):
         self.noise = np.zeros(objective_image.one_channel().shape)
 
         self.attack_iteration = 0
-        self.debug_folder = debug_root
 
         # create debug folder
-        self.debug_folder = create_debug_folder()
+        self.debug_folder = create_debug_folder(debug_root)
 
         # Remove all handlers associated with the root logger object.
         for handler in logging.root.handlers[:]:
@@ -59,6 +58,9 @@ class BaseAttack(ABC):
             logging.getLogger(name).disabled = True
 
         self.verbose = verbose
+
+        #quality factor to use for the noiseprint visualizer, if none it will be infered from the image
+        self.qf = None
 
     def execute(self):
         """
@@ -104,6 +106,15 @@ class BaseAttack(ABC):
         self.start_time = datetime.now()
         self.write_to_logs("Attack started at: {}".format(self.start_time))
 
+        try:
+            qf = jpeg_quality_of_file(self.original_objective_image.path)
+        except:
+            qf = 101
+
+        if hasattr(self, "qf"):
+            if self.qf is not None:
+                qf = self.qf
+
     def _on_after_attack(self):
         """
         Function executed after finishing the attack pipeline
@@ -112,7 +123,7 @@ class BaseAttack(ABC):
 
         image_path = os.path.join(self.debug_folder, "attacked image.png")
 
-        best_attacked_image = Picture(self.attacked_image)
+        best_attacked_image = Picture(np.rint(self.attacked_image))
         best_attacked_image.save(image_path)
 
         # generate heatmap of the just saved image, just to be sure of the final result of the attack
@@ -125,13 +136,17 @@ class BaseAttack(ABC):
         self.write_to_logs(note)
 
         # test the final result against noiseprint
+
         try:
             qf = jpeg_quality_of_file(self.original_objective_image.path)
         except:
             qf = 101
 
         if hasattr(self, "qf"):
-            qf = self.qf
+            if self.qf is not None:
+                qf = self.qf
+
+        print("QF visualizer is equal to:{}".format(qf))
         NoiseprintVisualizer(qf).prediction_pipeline(image.to_float(),
                                                      os.path.join(self.debug_folder, "attacked image noiseprint.png"),
                                                      original_picture=self.original_objective_image.one_channel().to_float(),
@@ -140,10 +155,10 @@ class BaseAttack(ABC):
                                                      adversarial_noise=self.noise)
 
         # test the final result against Exif
-        ExifVisualizer().prediction_pipeline(image.to_float(),
-                                             os.path.join(self.debug_folder, "attacked image exif.png"),
-                                             original_picture=self.original_objective_image.one_channel().to_float(),
-                                             note=note)
+        #ExifVisualizer().prediction_pipeline(image.to_float(),
+        #                                     os.path.join(self.debug_folder, "attacked image exif.png"),
+        #                                     original_picture=self.original_objective_image.one_channel().to_float(),
+        #                                     note=note)
 
         self.end_time = datetime.now()
 
@@ -174,7 +189,7 @@ class BaseAttack(ABC):
         Use attacked_image_monochannel to get the one channel version of the image withoud rounding errors
         :return:
         """
-        return Picture((self.original_objective_image - Picture(self.noise).three_channels()).clip(0,255))
+        return Picture((self.original_objective_image - Picture(self.noise).three_channels(1/3,1/3,1/3)).clip(0,255))
 
     @property
     def attacked_image_monochannel(self):

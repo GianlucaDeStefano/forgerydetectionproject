@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def initialize_exif(ckpt='', init=True, use_gpu=0):
     from Detectors.Exif.models.exif import exif_net, exif_solver
-    tf.compat.v1.reset_default_graph()
+
     net_args = {'num_classes': 80 + 3,
                 'is_training': False,
                 'train_classifcation': True,

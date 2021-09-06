@@ -67,8 +67,6 @@ if __name__ == "__main__":
 
     for visualizer_class in visualizers:
         # create debug folder
-        print(visualizer_class)
-        # create debug folder
         debug_folder = os.path.join(create_debug_folder(),visualizer_class().name)
         os.makedirs(debug_folder)
 

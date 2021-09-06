@@ -109,7 +109,7 @@ class BaseLotsAttack(BaseIterativeAttack, ABC):
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        kwarg = BaseAttack.read_arguments(dataset_root)
+        kwarg = BaseIterativeAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
         parser.add_argument("-a", '--alpha', default=5, type=float, help='Alpha parameter of the attack')

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from Datasets.Dataset import Dataset, ImageNotFoundException, mask_2_binary
 from Detectors.Noiseprint.utility.utilityRead import imread2f
@@ -41,22 +42,25 @@ class RitDataset(Dataset):
         return forged_images
 
     def get_mask_of_image(self, image_path: str):
-        path = image_path.replace("tampered-realistic", "ground-truth").replace("TIF","PNG")
-        mask, mode = imread2f(path)
+        path = image_path.replace("tampered-realistic", "ground-truth").replace("pristine", "ground-truth").replace("TIF","PNG")
 
-        print("MASK:",mask.min(),mask.max(),path)
+        for folder in self.camera_folders:
 
-        return mask_2_binary(mask, 0.5), path
+            file_path = os.path.join(self.root, folder, path)
+
+            if Path(file_path).exists():
+
+                mask, mode = imread2f(file_path)
+
+                return mask_2_binary(mask, 0.5), path
 
     def get_image(self, image_name):
 
         for folder in self.camera_folders:
 
-            folder_path = os.path.join(self.root, folder, "tampered-realistic")
+            file_path = os.path.join(self.root, folder,image_name)
 
-            for filename in os.listdir(folder_path):
-
-                if filename == image_name:
-                    return os.path.join(folder_path, image_name)
+            if Path(file_path).exists():
+                return file_path
 
         raise ImageNotFoundException(image_name)

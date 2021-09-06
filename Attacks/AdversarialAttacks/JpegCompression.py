@@ -1,20 +1,23 @@
 import argparse
+import os
 from abc import ABC, abstractmethod
 from typing import Type
 import io
 
 import imageio
+import numpy as np
+from PIL import Image
 
 from Attacks.BaseAttack import BaseAttack
 from Ulitities.Image.Picture import Picture
 from Ulitities.Visualizers.BaseVisualizer import BaseVisualizer
 
-class JpegCompressionAttack(BaseAttack):
 
+class JpegCompressionAttack(BaseAttack):
     name = "BaseLotsAttack"
 
     def __init__(self, objective_image: Picture, objective_mask: Picture,
-                debug_root="./Data/Debug/",verbose=True,quality=100):
+                 debug_root="./Data/Debug/", verbose=True, quality=100):
         """
         Base class to implement various attacks
         :param objective_image: image to attack
@@ -26,8 +29,12 @@ class JpegCompressionAttack(BaseAttack):
         """
 
         self.quality = quality
+
         self.compressed_image = None
-        super().__init__(objective_image, objective_mask, debug_root,verbose)
+        super().__init__(objective_image, objective_mask, debug_root, verbose)
+
+        # use the right noiseprint model closes to the used quality factor
+        self.qf = max(51, min(101, quality))
 
     def _on_before_attack(self):
         super()._on_before_attack()
@@ -44,10 +51,10 @@ class JpegCompressionAttack(BaseAttack):
         kwarg = BaseAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
-        parser.add_argument("-q", '--quality', default=None,type=int, help='Quality of the jpeg '
-                                                                                        'compression to 1pply, '
-                                                                                        '100 best quality, '
-                                                                                        '0 worst quality')
+        parser.add_argument("-q", '--quality', default=None, type=int, help='Quality of the jpeg '
+                                                                            'compression to pply, '
+                                                                            '100 best quality, '
+                                                                            '0 worst quality')
 
         args = parser.parse_known_args()[0]
 
@@ -58,10 +65,10 @@ class JpegCompressionAttack(BaseAttack):
         return kwarg
 
     def _attack(self):
-        buf = io.BytesIO()
-        imageio.imwrite(buf, self.original_objective_image, format='jpeg', quality=self.quality, subsampling=0)
-        s = buf.getbuffer()
-        self.compressed_image = Picture(imageio.imread(s, format='jpeg'))
+        path = os.path.join(self.debug_folder, 'compressed_image.jpg')
+        img = Image.fromarray(np.array(self.original_objective_image, np.uint8))
+        img.save(path, quality=self.quality)
+        self.compressed_image = Picture(path=path)
         self.noise = self.original_objective_image - self.attacked_image
 
     @property

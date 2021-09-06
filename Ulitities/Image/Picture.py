@@ -247,7 +247,6 @@ class Picture(Patch):
         return forged_patches
 
     def save(self, path):
-
         if self.max() <= 1 and self.min() >= 0:
             image_array = np.array(self * 255, np.uint8)
         else:
@@ -256,11 +255,10 @@ class Picture(Patch):
         im.save(path)
 
     def to_float(self):
-        return Picture((self / 256).clip(0, 1), self.path)
+        return Picture(np.array(self,np.float) / 256).clip(0, 1)
 
     def to_int(self):
-
-        return Picture(np.rint(self) * 255, self.path)
+        return Picture(np.rint(self) * 256, self.path)
 
     def astype(self, dtype, order='K', casting='unsafe', subok=True, copy=True):
         return Picture(np.array(self).astype(dtype, order, casting, subok, copy), self.path)

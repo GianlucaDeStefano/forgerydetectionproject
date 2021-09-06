@@ -112,4 +112,4 @@ class LotsNoiseprint3(LotsNoiseprint2):
         self.moving_avg_gradient = self.moving_avg_gradient * 0.9 + 0.1 * image_gradient
 
         # add this iteration contribution to the cumulative noise
-        self.noise += self.moving_avg_gradient
+        self.noise += self.moving_avg_gradient / (1-0.5**(1+self.attack_iteration))

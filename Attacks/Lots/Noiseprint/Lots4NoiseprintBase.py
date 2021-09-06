@@ -78,12 +78,14 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
 
         if not qf or qf < 51 or qf > 101:
             try:
+                print(objective_image.path)
                 qf = jpeg_quality_of_file(objective_image.path)
             except:
                 qf = 101
 
         # save the parameters of noiseprint
         self.qf = qf
+
         self._engine = NoiseprintEngine()
         self._engine.load_quality(qf)
 
@@ -92,7 +94,6 @@ class Lots4NoiseprintBase(BaseLotsAttack, ABC):
         self.noiseprint_variance_steps = []
 
         self.min_loss = float("inf")
-
         self.visualizer = NoiseprintVisualizer(self.qf)
 
     def _on_after_attack_step(self):

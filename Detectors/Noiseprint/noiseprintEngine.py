@@ -32,7 +32,7 @@ class NoiseprintEngine(DeterctorEngine):
         if self.setup_on_init:
             setup_session()
 
-    def detect(self, image: Picture, mask: Picture = None):
+    def detect(self, image: Picture):
 
         # check that the image has only one channel
         assert (len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1))
@@ -46,12 +46,23 @@ class NoiseprintEngine(DeterctorEngine):
 
         return attacked_heatmap
 
+    def get_mask(self,image: Picture,gtmask):
+
+        heatmap = self.detect(image)
+
+        threshold = find_best_theshold(heatmap, gtmask)
+        predicted_mask = np.array(heatmap > threshold, int).clip(0, 1)
+
+
+        return predicted_mask
+
     def load_quality(self, quality):
         """
         Loads a quality level for the next noiseprint predictions.
         Quality level can be obtained by the file quantization table.
         :param quality: Quality level, int between 51 and 101 (included)
         """
+        print("100")
         if quality < 51 or quality > 101:
             raise ValueError("Quality must be between 51 and 101 (included). Provided quality: %d" % quality)
         if quality == self._loaded_quality:

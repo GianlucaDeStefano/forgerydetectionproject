@@ -19,7 +19,6 @@ from Ulitities.io.folders import create_debug_folder
 
 
 class BaseIterativeAttack(BaseAttack, ABC):
-
     name = "BaseIterativveAttack"
 
     def __init__(self, objective_image: Picture, objective_mask: Picture, steps=50, debug_root="./Data/Debug/",
@@ -49,6 +48,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         self.verbose = verbose
 
         self.visualizer = None
+
         if step_visualizer:
             self.visualizer = step_visualizer
 
@@ -127,14 +127,14 @@ class BaseIterativeAttack(BaseAttack, ABC):
 
         note = "Step:{}".format(self.attack_iteration)
         self.visualizer.prediction_pipeline(image.to_float(), path,
-                                            original_picture=self.original_objective_image.one_channel().to_float(), note=note,
+                                            original_picture=self.original_objective_image.one_channel().to_float(),
+                                            note=note,
                                             omask=self.objective_image_mask, debug=False,
                                             adversarial_noise=self.noise)
 
     def _log_step(self) -> str:
         "Generate the logging to write at each step"
         return " {}) Duration: {}".format(self.attack_iteration, self.end_step_time - self.start_step_time)
-
 
     def read_arguments(dataset_root) -> dict:
         """
@@ -143,10 +143,11 @@ class BaseIterativeAttack(BaseAttack, ABC):
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
+        kwarg = BaseAttack.read_arguments(dataset_root)
         parser = argparse.ArgumentParser()
-        parser.add_argument("-s", '--steps', default=50,type=int, help='Number of attack steps to perform')
+        parser.add_argument("-s", '--steps', default=50, type=int, help='Number of attack steps to perform')
         args = parser.parse_known_args()[0]
 
-        kwarg = dict()
+
         kwarg["steps"] = int(args.steps)
         return kwarg
