@@ -11,6 +11,16 @@ from Ulitities.Image.Picture import Picture
 supported_datasets = dict(columbia=ColumbiaDataset, rit=RitDataset, columbiaUncompressed=ColumbiaUncompressedDataset
                           , dso=DsoDatasetDataset)
 
+class ImageNotFoundError(Exception):
+    """Exception raised when no image by a given nme has been found in the datasets
+
+    Attributes:
+        name -- name we are using to find the image
+    """
+
+    def __init__(self, name):
+        super().__init__("No image by name {} has been found".format(name))
+
 
 def find_dataset_of_image(datasets_root, image_name):
     """
@@ -42,12 +52,12 @@ def get_image_and_mask(dataset_root,image_reference, mask_path=None):
         if image_reference is None or not Path(image_reference).exists():
             raise Exception("Provided a valid mask path but an invalid image path")
 
-        return Picture(image_reference), Picture(mask_2_binary(imread2f(mask_path)), mask_path)
+        return Picture(image_reference), Picture(mask_2_binary(Picture(mask_path)), mask_path)
 
     # select the first dataset having an image with the corresponding name
     dataset = find_dataset_of_image(dataset_root, image_reference)
     if not dataset:
-        raise Exception("Impossible to find the dataset this image belongs to")
+        raise ImageNotFoundError(image_reference)
 
     dataset = dataset(dataset_root)
 

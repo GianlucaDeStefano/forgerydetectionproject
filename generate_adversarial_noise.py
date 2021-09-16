@@ -1,10 +1,9 @@
 import os
-import random
 import time
 
 import numpy as np
 
-from Attacks import LotsNoiseprint1B, LotsNoiseprint2, LotsNoiseprint1
+from Attacks import LotsNoiseprint1B
 from Datasets.RIT.RitDataset import RitDataset
 from Ulitities.Image.Picture import Picture
 from Ulitities.io.folders import create_debug_folder

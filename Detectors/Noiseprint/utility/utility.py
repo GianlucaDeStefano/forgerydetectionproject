@@ -77,3 +77,18 @@ def jpeg_quality_of_img(image, tnum=0, force_baseline=None):
 
 def jpeg_quality_of_file(stream, tnum=0, force_baseline=None):
     return jpeg_quality_of_img(Image.open(stream), tnum=tnum, force_baseline=force_baseline)
+
+
+def prepare_image_noiseprint(image):
+    if image.max() > 1:
+        image = image.to_float()
+
+    if len(image.shape) > 2 and image.shape[2] == 3:
+        image = image.one_channel()
+    return image
+
+def normalize_noiseprint_no_margins(noiseprint):
+    v_min = np.min(noiseprint)
+    v_max = np.max(noiseprint)
+    return ((noiseprint - v_min) / (v_max - v_min)).clip(0, 1)
+

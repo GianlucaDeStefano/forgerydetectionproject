@@ -23,7 +23,10 @@ def mask_2_binary(mask: np.array, threshold: float = 0.5, flip=False):
     """
 
     # convert the mask to a binary mask
-    mask = np.where(mask < threshold, 0, 1)
+    if len(mask.shape) == 2:
+        mask = np.where(mask < threshold, 0, 1)
+    else:
+        mask = np.where(np.all(mask == (0, 0, 0), axis=-1), 0, 1)
 
     if flip:
         mask = 1 - mask

@@ -10,7 +10,7 @@ from Detectors.Exif.ExifEngine import ExifEngine
 
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.per_process_gpu_memory_fraction = 0.5
+config.gpu_options.per_process_gpu_memory_fraction = 1
 session = tf.compat.v1.Session(config=config)
 tf.compat.v1.keras.backend.set_session(session)
 
@@ -29,7 +29,7 @@ class ExifVisualizer(BaseVisualizer):
 
 
 
-    def prediction_pipeline(self, image: Picture, path=None, original_picture=None, note="",threshold=None):
+    def prediction_pipeline(self, image: Picture, path=None, original_picture=None,omask=None, note="",threshold=None):
 
         n_cols = 3
 

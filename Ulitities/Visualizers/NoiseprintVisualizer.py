@@ -4,15 +4,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine, normalize_noiseprint, find_best_theshold
+from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
 from Ulitities.Image.Picture import Picture
 from Ulitities.Visualizers.BaseVisualizer import BaseVisualizer
 import tensorflow as tf
 
-config = tf.compat.v1.ConfigProto()
-config.gpu_options.allow_growth = True
-config.gpu_options.per_process_gpu_memory_fraction = 0.5
-session = tf.compat.v1.Session(config=config)
-tf.compat.v1.keras.backend.set_session(session)
 
 class InvalidImageShape(Exception):
     def __init__(self, function_name, given_shape):
@@ -35,9 +31,17 @@ class NoiseprintVisualizer(BaseVisualizer):
 
     def prediction_pipeline(self, image: Picture, path=None,original_picture = None,note="",omask=None,debug=False,adversarial_noise=None):
 
-        n_cols = 4
+        if image.max()> 1:
+            image = image.to_float()
 
-        image_one_channel = image.one_channel()
+        image_one_channel = image
+        if len(image_one_channel.shape) > 2 and image_one_channel.shape[2] == 3:
+            image_one_channel = image.one_channel()
+
+        if original_picture is not None:
+            original_picture = prepare_image_noiseprint(original_picture)
+
+        n_cols = 4
 
         if original_picture is not None:
             n_cols += 1

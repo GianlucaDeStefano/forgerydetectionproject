@@ -49,7 +49,7 @@ def setup_session():
     """
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.2
+    config.gpu_options.per_process_gpu_memory_fraction = 1
     session = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(session)
 
@@ -77,7 +77,7 @@ class NoiseprintEngine:
             raise ValueError("Quality must be between 51 and 101 (included). Provided quality: %d" % quality)
         if quality == self._loaded_quality:
             return
-        logging.info("Loading checkpoint quality %d" % quality)
+        print("Loading checkpoint quality %d" % quality)
         checkpoint = self._save_path % quality
         self._model.load_weights(checkpoint)
         self._loaded_quality = quality
