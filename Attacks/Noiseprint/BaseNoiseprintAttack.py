@@ -9,26 +9,6 @@ from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file, prepare_i
 from Ulitities.Image.Picture import Picture
 
 
-def normalize_gradient(gradient, margin=17):
-    """
-    Normalize the gradient cutting away the values on the borders
-    :param margin: margin to use along the bordes
-    :param gradient: gradient to normalize
-    :return: normalized gradient
-    """
-
-    # set to 0 part of the gradient too near to the border
-    if margin > 0:
-        gradient[0:margin, :] = 0
-        gradient[-margin:, :] = 0
-        gradient[:, 0:margin] = 0
-        gradient[:, -margin:] = 0
-
-    # scale the final gradient using the computed infinity norm
-    gradient = gradient / np.max(np.abs(gradient))
-    return gradient
-
-
 class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
     """
         This class in used as a base to implement white box attacks on the noiseprint"
@@ -38,7 +18,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
                  source_image_mask: Picture, steps: int, alpha: float, quality_factor=None,
-                 regularization_weight=0.05,plot_interval=5,debug_root: str = "./Data/Debug/", verbose: bool = True):
+                 regularization_weight=0.05, plot_interval=5, debug_root: str = "./Data/Debug/", test: bool = True):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -51,11 +31,12 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
-        :param verbose: verbosity of the logs printed in the console
+        :param test: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
+            faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, source_image, source_image_mask, "Noiseprint", steps, alpha,regularization_weight,
-                         plot_interval,False, debug_root, verbose)
+        super().__init__(target_image, target_image_mask, source_image, source_image_mask, "Noiseprint", steps, alpha,
+                         0.9, regularization_weight, plot_interval, False, debug_root, test)
 
         # compute and save the quality factor to use if it has not been specifier or if it is invalid
         self.inferred = False
@@ -88,7 +69,8 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
 
         super()._on_before_attack()
 
-        self.write_to_logs("Quality factor to be used: {} {}".format(self.quality_factor,"(inferred)" if self.inferred else ""))
+        self.write_to_logs(
+            "Quality factor to be used: {} {}".format(self.quality_factor, "(inferred)" if self.inferred else ""))
 
     def loss(self, y_pred, y_true):
         """
@@ -98,7 +80,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         :param y_true: target representation
         :return: loss value
         """
-        return tf.norm(y_pred-y_true,2)
+        return tf.reduce_mean(tf.square(tf.subtract(y_pred, y_true)))
 
     def attack(self, image_to_attack: Picture, *args, **kwargs):
         """
@@ -110,40 +92,12 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
             (5) -> return the image
         :return: attacked image
         """
+
         # compute the attacked image using the original image and the compulative noise to reduce
         # rounding artifacts caused by translating the noise from one to 3 channels and vice versa multiple times
-        image_one_channel = prepare_image_noiseprint(image_to_attack) - self.noise
+        image_one_channel = Picture((image_to_attack.one_channel() - self.noise).clip(0, 255))
 
-        # compute the gradient
-        image_gradient, loss = self._get_gradient_of_image(image_one_channel, self.target_representation)
-
-        # save loss value to plot it
-        self.loss_steps.append(loss)
-
-        # normalize the gradient
-        image_gradient = normalize_gradient(image_gradient, 0)
-
-        # scale the gradient
-        image_gradient = self.alpha * image_gradient
-
-        # update the moving average
-        self.moving_avg_gradient = self.moving_avg_gradient * 0.9 + 0.1 * image_gradient
-
-        # add this iteration contribution to the cumulative noise
-        self.noise += self.moving_avg_gradient / (1 - 0.75 ** (1 + self.step_counter))
-
-        return self.attacked_image
-
-    @abstractmethod
-    def _get_gradient_of_image(self, image: Picture, target: Picture):
-        """
-        Compute the gradient for the entire image
-        :param image: image for which we have to compute the gradient
-        :param target: target to use
-        :return: numpy array containing the gradient
-        """
-
-        raise NotImplemented
+        return super(BaseNoiseprintAttack, self).attack(image_one_channel, args, kwargs)
 
     def _get_gradient_of_patch(self, image: Picture, target: Picture, regularization_value=0):
         """
@@ -154,7 +108,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         previously computed
         :return: gradient,loss
         """
-        
+
         # check that input image and target rerpresentation have the same shape
         assert (image.shape == target.shape)
 
@@ -178,6 +132,88 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
 
             return gradient, loss
 
+    def _get_gradient_of_image(self, image: Picture, target: Picture, old_perturbation: Picture = None):
+        """
+        Perform step of the attack executing the following steps:
+
+            1) Divide the entire image into patches
+            2) Compute the gradient of each patch with respect to the patch-tirget representation
+            3) Recombine all the patch-gradients to obtain a image wide gradient
+            4) Apply the image-gradient to the image
+        :return: image_gradient, cumulative_loss
+        """
+
+        assert (len(image.shape) == 2)
+
+        # variable to store the cumulative loss across all patches
+        cumulative_loss = 0
+
+        # image wide gradient
+        image_gradient = np.zeros(image.shape)
+
+        if image.shape[0] * image.shape[1] < NoiseprintEngine.large_limit:
+            # the image can be processed as a single patch
+
+            regularization_value = 0
+            if old_perturbation is not None:
+                regularization_value = np.linalg.norm(old_perturbation) * self.regularization_weight
+
+            image_gradient, cumulative_loss = self._get_gradient_of_patch(image, target, regularization_value)
+
+        else:
+            # the image is too big, we have to divide it in patches to process separately
+            # iterate over x and y, strides = self.slide, window size = self.slide+2*self.overlap
+            for x in range(0, image.shape[0], self._engine.slide):
+                x_start = x - self._engine.overlap
+                x_end = x + self._engine.slide + self._engine.overlap
+                for y in range(0, image.shape[1], self._engine.slide):
+                    y_start = y - self._engine.overlap
+                    y_end = y + self._engine.slide + self._engine.overlap
+
+                    # get the patch we are currently working on
+                    patch = image[
+                            max(x_start, 0): min(x_end, image.shape[0]),
+                            max(y_start, 0): min(y_end, image.shape[1])
+                            ]
+
+                    # get the desired target representation for this patch
+                    target_patch = target[
+                                   max(x_start, 0): min(x_end, image.shape[0]),
+                                   max(y_start, 0): min(y_end, image.shape[1])
+                                   ]
+
+                    perturbation_patch = None
+                    regularization_value = 0
+                    if old_perturbation is not None:
+                        perturbation_patch = old_perturbation[
+                                             max(x_start, 0): min(x_end, image.shape[0]),
+                                             max(y_start, 0): min(y_end, image.shape[1])
+                                             ]
+                        regularization_value = np.linalg.norm(perturbation_patch) * self.regularization_weight
+
+                    patch_gradient, patch_loss = self._get_gradient_of_patch(patch, target_patch,
+                                                                             regularization_value)
+
+                    # discard initial overlap if not the row or first column
+                    if x > 0:
+                        patch_gradient = patch_gradient[self._engine.overlap:, :]
+                    if y > 0:
+                        patch_gradient = patch_gradient[:, self._engine.overlap:]
+
+                    # add this patch loss to the total loss
+                    cumulative_loss += patch_loss
+
+                    # add this patch's gradient to the image gradient
+                    # discard data beyond image size
+                    patch_gradient = patch_gradient[:min(self._engine.slide, patch.shape[0]),
+                                     :min(self._engine.slide, patch.shape[1])]
+
+                    # copy data to output buffer
+                    image_gradient[x: min(x + self._engine.slide, image_gradient.shape[0]),
+                    y: min(y + self._engine.slide, image_gradient.shape[1])] = patch_gradient
+
+        return image_gradient, cumulative_loss
+
     @property
     def attacked_image(self):
         """
@@ -187,7 +223,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         Use attacked_image_monochannel to get the one channel version of the image withoud rounding errors
         :return:
         """
-        return Picture((self.target_image - Picture(self.noise).three_channels(1/3,1/3,1/3)).clip(0,255))
+        return Picture((self.target_image - Picture(self.noise).three_channels(1 / 3, 1 / 3, 1 / 3)).clip(0, 255))
 
     @property
     def attacked_image_monochannel(self):
@@ -196,4 +232,4 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         rounding artifacts caused by translating the nosie from one to 3 channels and vie versa multiple times
         :return:
         """
-        return Picture((self.target_image.one_channel() - self.noise).clip(0,255))
+        return Picture((self.target_image.one_channel() - self.noise).clip(0, 255))

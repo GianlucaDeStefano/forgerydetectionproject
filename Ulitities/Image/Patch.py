@@ -47,7 +47,7 @@ class Patch(np.ndarray):
 
     def get_verticies(self, with_padding=False):
         """
-        Return 2 tuples containing the coordinates of the 2 verticies formingthe square that contains the patch
+        Return 2 tuples containing the coordinates of the 2 verticies formingnthe square that contains the patch
         in the original image
         :return: (stat x, start y), (end x, end y)
         """
@@ -84,13 +84,8 @@ class Patch(np.ndarray):
             # No array passed,
             array = self
 
-        values = None
-        if len(array.shape) == 2:
-            values = array[self.paddings[3]:self.shape[0] - self.paddings[1],
-                     self.paddings[0]:self.shape[1] - self.paddings[2]]
-        else:
-            values = array[self.paddings[3]:self.shape[0] - self.paddings[1],
-                     self.paddings[0]:self.shape[1] - self.paddings[2], :]
+        values = array[self.paddings[3]:self.shape[0] - self.paddings[1],
+                 self.paddings[0]:self.shape[1] - self.paddings[2]]
 
         (x_index, y_index), (x_index_f, y_index_f) = self.get_verticies(False)
 
@@ -107,12 +102,14 @@ class Patch(np.ndarray):
         # if no array is given
         if array is None:
             # use this patch
-            array = self.no_paddings()
+            array = self
+
+        array = self.no_paddings(array)
 
         # get the boundaries of the core data of the patch
         (x_index, y_index), (x_index_f, y_index_f) = self.get_verticies(True)
 
         # write the patch on the image
-        image[x_index:x_index_f, y_index:y_index_f] = array
+        image[x_index:x_index_f, y_index:y_index_f] += array
 
         return image

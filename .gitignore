@@ -1,5 +1,6 @@
 #exclude folders containing data (e.g datasets)
-Data/
+Data/*
+!Data/custom
 
 #excluding folder containing the Exif-sc models
 ckpt/

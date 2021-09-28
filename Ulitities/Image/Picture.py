@@ -14,7 +14,7 @@ class Picture(Patch):
     Class used to standardize operations on images
     """
 
-    def __new__(cls, value = None, path: str = "", *args, **kwargs):
+    def __new__(cls, value=None, path: str = "", *args, **kwargs):
 
         if value is not None and type(value) is str:
             path = str(value)
@@ -64,7 +64,8 @@ class Picture(Patch):
             except:
                 raise IncompatibeShapeException("'1 to 3 channels'", self.shape)
 
-    def divide_in_patches(self, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False, zero_padding=True):
+    def divide_in_patches(self, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False, zero_padding=True,
+                          stride=None):
         """
         Function to divide an image into patches
         :param patch_shape: target shape of each patch
@@ -76,6 +77,11 @@ class Picture(Patch):
         :return: list of patches
         """
 
+        if stride is None:
+            stride = (patch_shape[0],patch_shape[1])
+
+        assert (len(stride) == 2)
+
         for element in padding:
             assert (element >= 0)
 
@@ -84,10 +90,10 @@ class Picture(Patch):
         patches = []
 
         # iterate over the x axis
-        for x_step in range(0, self.shape[0], patch_shape[0]):
+        for x_step in range(0, self.shape[0], stride[0]):
 
-            # iteraste over the y axis
-            for y_step in range(0, self.shape[1], patch_shape[1]):
+            # iterate over the y axis
+            for y_step in range(0, self.shape[1], stride[1]):
                 target_top_padding, target_right_padding, taret_bottom_padding, target_left_padding = padding
 
                 # variables to save how much 0-padding we add along each dimension
@@ -189,7 +195,7 @@ class Picture(Patch):
         :param patch_shape: shape of the patches
         :param padding: padding of each patch (the padding may also contain forged pixels)
         :param force_shape: true if we want only patches strictly of the desied shape
-        :param zero_padding: true and were no padding is available 0 padding will be used to fill the missing sections
+        :param zero_padding: where no padding is available 0 padding will be used to fill the missing sections
         :param debug_folder:
         :return:
         """
@@ -255,7 +261,7 @@ class Picture(Patch):
         im.save(path)
 
     def to_float(self):
-        return Picture(np.array(self,np.float) / 256).clip(0, 1)
+        return Picture(np.array(self, np.float) / 256).clip(0, 1)
 
     def to_int(self):
         return Picture(np.rint(self) * 256, self.path)
@@ -272,14 +278,15 @@ class Picture(Patch):
     def pad(self, pad_width, mode='constant', **kwargs):
         if mode == "cut&copy":
             vertical_pad, horizontal_pad = pad_width
-            array = np.zeros((self.shape[0] + horizontal_pad[0]+horizontal_pad[1],self.shape[1] + vertical_pad[0]+vertical_pad[1]))
+            array = np.zeros((self.shape[0] + horizontal_pad[0] + horizontal_pad[1],
+                              self.shape[1] + vertical_pad[0] + vertical_pad[1]))
 
             array[:vertical_pad[0]] = self[:vertical_pad[0]]
             array[-vertical_pad[1]:] = self[-vertical_pad[1]:]
 
-            array[:,vertical_pad[0]] = self[:vertical_pad[0]]
-            array[:,-horizontal_pad[1]:] = self[-horizontal_pad[1]:]
-            array[vertical_pad[0]:-vertical_pad[1],horizontal_pad[0],horizontal_pad[1]] = self
+            array[:, vertical_pad[0]] = self[:vertical_pad[0]]
+            array[:, -horizontal_pad[1]:] = self[-horizontal_pad[1]:]
+            array[vertical_pad[0]:-vertical_pad[1], horizontal_pad[0], horizontal_pad[1]] = self
             return Picture(array)
 
         return Picture(np.pad(self, pad_width, mode, **kwargs))

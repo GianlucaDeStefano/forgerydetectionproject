@@ -32,6 +32,9 @@ class ExifVisualizer(BaseVisualizer):
     def prediction_pipeline(self, image: Picture, path=None, original_picture=None,omask=None, note="",threshold=None):
 
         n_cols = 3
+        normal_image = image
+        if normal_image.max()> 1:
+            normal_image = normal_image.to_float()
 
         if original_picture is not None:
             n_cols += 1
@@ -40,7 +43,7 @@ class ExifVisualizer(BaseVisualizer):
 
         fig, axs = plt.subplots(1, n_cols, figsize=(n_cols * 4, 5))
 
-        axs[0].imshow(image)
+        axs[0].imshow(normal_image)
         axs[0].set_title('Image')
 
         axs[1].imshow(heatmap, clim=[0, 1], cmap='jet')
@@ -50,9 +53,13 @@ class ExifVisualizer(BaseVisualizer):
         axs[2].set_title('Mask')
 
         if original_picture is not None:
-            noise = self.compute_difference(original_picture.one_channel(), image.one_channel())
-            axs[3].imshow(noise, clim=[0, 1], cmap='gray')
-            axs[3].set_title('Adversarial noise')
+
+            if original_picture.max()>1:
+                original_picture = original_picture.to_float()
+
+            noise = self.compute_difference(original_picture, normal_image)
+            axs[3].imshow(noise, clim=[0, 1],cmap='gray')
+            axs[3].set_title('Difference')
 
         if note:
             fig.text(0.9, 0.2, note, size=14, horizontalalignment='right', verticalalignment='top')

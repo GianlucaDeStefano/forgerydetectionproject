@@ -10,7 +10,6 @@ from cv2 import PSNR
 
 from Datasets import get_image_and_mask
 from Ulitities.Image.Picture import Picture
-from Ulitities.Visualizers.BaseVisualizer import BaseVisualizer
 from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
 from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
 from Ulitities.io.folders import create_debug_folder
@@ -21,13 +20,14 @@ class BaseAttack(ABC):
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, detector_name: str,
                  debug_root: str = "./Data/Debug/",
-                 verbose: bool = True):
+                 test: bool = True):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
         :param detector: name of the detector to be used to visualize the results
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
-        :param verbose: verbosity of the logs printed in the console
+        :param test: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
+            faster execution to test the code
         """
 
         # check if the target image is in the desired format (integer [0,255])
@@ -53,11 +53,10 @@ class BaseAttack(ABC):
             raise Exception("Unknown detector: {}".format(detector_name))
 
         # save the verbosity level (0 -> short logs, 1-> full lofs)
-        self.verbose = verbose
+        self.test = test
 
         # create debug folder
         self.debug_folder = create_debug_folder(debug_root)
-
 
         # Remove all handlers associated with the root logger object.
         for handler in logging.root.handlers[:]:
@@ -93,10 +92,13 @@ class BaseAttack(ABC):
         Instructions executed before performing the attack, writing logs
         :return:
         """
+        self.write_to_logs("Test mode: {}\n".format(str(self.test)))
+
         self.write_to_logs("Attack name: {}".format(self.name))
         self.write_to_logs("Target image: {}".format(self.target_image.path))
 
-        self.detector.prediction_pipeline(self.target_image, os.path.join(self.debug_folder, "initial result"),omask=self.target_image_mask)
+        if not self.test:
+            self.detector.prediction_pipeline(self.target_image, os.path.join(self.debug_folder, "initial result"),omask=self.target_image_mask)
 
         self.start_time = datetime.now()
 
@@ -140,7 +142,7 @@ class BaseAttack(ABC):
         :return:
         """
 
-        if force_print or self.verbose:
+        if force_print or self.test:
             print(message)
 
         if not self.debug_folder:
@@ -159,7 +161,7 @@ class BaseAttack(ABC):
         parser = argparse.ArgumentParser()
         parser.add_argument('--image', required=True, help='Name of the input image, or its path')
         parser.add_argument('--mask', default=None, help='Path to the binary mask of the image')
-        parser.add_argument('--visualizer', default=None, type=str, help='Path to the binary mask of the image')
+        parser.add_argument('--test',default=False,action='store_true', help='Should the algorithm be executed in test mode?')
         args = parser.parse_known_args()[0]
 
         image_path = args.image
@@ -175,6 +177,7 @@ class BaseAttack(ABC):
         kwarg = dict()
         kwarg["target_image"] = image
         kwarg["target_image_mask"] = mask
+        kwarg["test"] = args.test
         return kwarg
 
     @classmethod

@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from Detectors.Noiseprint.Noiseprint.noiseprint import normalize_noiseprint
+from Detectors.Noiseprint.noiseprintEngine import normalize_noiseprint
 
 
 def plot_noiseprint(noiseprint: np.array, saveTo: str = None, toNormalize: bool = True, showMetrics: bool = True):

@@ -86,7 +86,7 @@ class NoiseprintVisualizer(BaseVisualizer):
         if original_picture is not None:
             noise = self.compute_difference(original_picture.one_channel(),image_one_channel)
             axs0[4].imshow(noise, clim=[0, 1], cmap='gray')
-            axs0[4].set_title('Adversarial noise')
+            axs0[4].set_title('Difference')
 
         if debug:
             original_noiseprint = self._engine.predict(original_picture.one_channel())

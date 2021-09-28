@@ -328,9 +328,7 @@ class Demo():
         # run for every new image
         self.bu.reset_image(im)
         res = self.bu.precomputed_analysis_vote_cls(num_fts=4096)
-        # print('result shape', np.shape(res))
 
-        print("result shape", res.shape)
         ms = mean_shift(res.reshape((-1, res.shape[0] * res.shape[1])), res)
 
         if np.mean(ms > .5) > .5:
@@ -339,7 +337,6 @@ class Demo():
                 ms = 1 - ms
 
         if use_ncuts:
-
             ncuts = normalized_cut(res)
             if np.mean(ncuts > .5) > .5:
                 # majority of the image is white
