@@ -6,16 +6,17 @@ import numpy as np
 
 from Attacks.Noiseprint.BaseNoiseprintAttack import BaseNoiseprintAttack
 from Datasets import get_image_and_mask, ImageNotFoundError
-from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine
+from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine, normalize_noiseprint
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
 from Ulitities.Image.Picture import Picture
+from Ulitities.Image.functions import visuallize_matrix_values
 
 
 class NoiseprintIntelligentMimickingAttack(BaseNoiseprintAttack):
     name = "Noiseprint intelligent mimicking attack"
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, target_forgery_mask: Picture
-                 , steps: int, alpha: float, patch_size=(16, 16), quality_factor=None,
+                 , steps: int, alpha: float, patch_size=(8, 8), quality_factor=None,
                  regularization_weight=0.05, plot_interval=5, debug_root: str = "./Data/Debug/", test: bool = True):
         """
         :param target_image: original image on which we should perform the attack
@@ -33,7 +34,7 @@ class NoiseprintIntelligentMimickingAttack(BaseNoiseprintAttack):
             faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha, quality_factor,
+        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha,0.9, quality_factor,
                          regularization_weight, plot_interval, debug_root, test)
 
         self.target_forgery_mask = target_forgery_mask
@@ -82,15 +83,12 @@ class NoiseprintIntelligentMimickingAttack(BaseNoiseprintAttack):
         for patch in authentic_noiseprint_patches:
             authentic_average_patch += patch / len(authentic_noiseprint_patches)
 
-        # spit the noiseprint map into forged patches, discard the rest
-        forged_noiseprint_patches = original_noiseprint.get_forged_patches(
-            target_representation_source_image_mask, self.patch_size, self.padding_size,
-            force_shape=True, zero_padding=False)
-
         # compute the average forged patch
-        forged_average_patch = np.zeros(self.patch_size)
-        for patch in forged_noiseprint_patches:
-            forged_average_patch += patch / len(forged_noiseprint_patches)
+        forged_average_patch = - authentic_average_patch
+
+        # visualize the 2 target representtions
+        visuallize_matrix_values(authentic_average_patch, os.path.join(self.debug_folder, "authentic-patch.png"))
+        visuallize_matrix_values(forged_average_patch, os.path.join(self.debug_folder, "forged-patch.png"))
 
         # compute the target representation by pasting on authentic patches of the target_forgery_mask the average
         # authentic patch, and on forgered patches of the target_forgery_mask the average forged patch
@@ -98,21 +96,28 @@ class NoiseprintIntelligentMimickingAttack(BaseNoiseprintAttack):
 
         # object for storing a mask showng the distribution of authentic and forged patches in the final
         # target representatation
-        taret_representation_mask = np.zeros(original_noiseprint.shape)
-
-        patches_target_forgery_mask = target_forgery_mask.divide_in_patches(self.patch_size, self.padding_size, True,
+        target_representation_mask = np.zeros(original_noiseprint.shape)
+        patches_target_forgery_mask = target_forgery_mask.divide_in_patches(self.patch_size, self.padding_size, False,
                                                                             False)
         for patch in patches_target_forgery_mask:
-            if patch.max() > 0:
-                # this patch is forged apply average forged patch
-                target_representation = patch.no_paddings().add_to_image(target_representation, forged_average_patch)
-                taret_representation_mask= patch.no_paddings().add_to_image(taret_representation_mask, np.zeros(forged_average_patch.shape))
-            else:
+            if patch.no_paddings().sum() == 0:
                 # this patch is authentic, apply average authentic patch
                 target_representation = patch.no_paddings().add_to_image(target_representation, authentic_average_patch)
-                taret_representation_mask = patch.no_paddings().add_to_image(taret_representation_mask, np.ones(authentic_average_patch.shape))
+                target_representation_mask = patch.no_paddings().add_to_image(target_representation_mask,
+                                                                              np.zeros(authentic_average_patch.shape))
 
-        Picture(taret_representation_mask).save(os.path.join(self.debug_folder,"target representation patch mask.png"))
+            else:
+                # this patch is forged apply average forged patch
+                target_representation = patch.no_paddings().add_to_image(target_representation, forged_average_patch)
+                target_representation_mask = patch.no_paddings().add_to_image(target_representation_mask,
+                                                                              np.ones(forged_average_patch.shape))
+
+        Picture(target_representation_mask).save(
+            os.path.join(self.debug_folder, "target representation patch mask.png"))
+
+        Picture(normalize_noiseprint(target_representation)).save(
+            os.path.join(self.debug_folder, "target representation.png"))
+
         return target_representation
 
     @staticmethod
@@ -136,7 +141,7 @@ class NoiseprintIntelligentMimickingAttack(BaseNoiseprintAttack):
         mask_path = Path(target_forgery_mask_path)
 
         if mask_path.exists():
-            mask = np.where(np.all(Picture(str(mask_path)) == (255, 255, 255), axis=-1), 0, 1)
+            mask = np.where(np.all(Picture(str(mask_path)) == (255, 255, 255), axis=-1), 1, 0)
         else:
             raise Exception("Target forgery mask not found")
 

@@ -166,7 +166,7 @@ class ExifMimickingAttack(BaseExifAttack):
 
             if image_path.exists():
                 image = Picture(str(image_path))
-                mask = np.where(np.all(image == (255, 255, 255), axis=-1), 0, 1)
+                mask = np.where(np.all(image == (255, 255, 255), axis=-1), 1, 0)
             else:
                 raise
 

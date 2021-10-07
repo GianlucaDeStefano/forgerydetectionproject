@@ -3,6 +3,8 @@ import os
 from abc import ABC, abstractmethod
 import numpy as np
 from cv2 import PSNR
+from tensorflow.python.ops.linalg_ops import norm
+
 from Attacks.BaseIterativeAttack import BaseIterativeAttack
 from Ulitities.Image.Picture import Picture
 
@@ -37,7 +39,7 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
     name = "Base Mimicking Attack"
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
-                 source_image_mask: Picture, detector: str, steps: int, alpha: float,momentum_coeficient: float = 0.5,
+                 source_image_mask: Picture, detector: str, steps: int, alpha: float, momentum_coeficient: float = 0.5,
                  regularization_weight=0.05, plot_interval=5, additive_attack=True,
                  debug_root: str = "./Data/Debug/", test: bool = True):
         """
@@ -135,44 +137,9 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         self.detector.plot_graph(self.psnr_steps[1:], "PSNR", "Attack iteration",
                                  os.path.join(self.debug_folder, "psnr"))
 
-        #write the loss and psnr into the log
+        # write the loss and psnr into the log
         self.write_to_logs("Loss: {:.2f}".format(self.loss_steps[-1]))
         self.write_to_logs("Psnr: {:.2f}".format(psnr))
-
-    def attack(self, image_to_attack: Picture, *args, **kwargs):
-        """
-        Perform step of the attack executing the following steps:
-            (2) -> compute the gradient
-            (3) -> normalize the gradient
-            (4) -> apply the gradient to the image with the desired strength
-            (5) -> return the image
-        :return: attacked image
-        """
-
-        # apply Nesterov momentum
-        image_to_attack = np.array(image_to_attack, dtype=float) - self.moving_avg_gradient
-
-        # compute the gradient
-        image_gradient, loss = self._get_gradient_of_image(image_to_attack, self.target_representation,
-                                                           Picture(self.noise))
-
-        # save loss value to plot it
-        self.loss_steps.append(loss)
-
-        # compute the decaying alpha
-        alpha = self.alpha / (1 + 0.05 * self.step_counter)
-
-        # normalize the gradient
-        image_gradient = normalize_gradient(image_gradient, 0) * alpha
-
-        # update the moving average
-        self.moving_avg_gradient = self.moving_avg_gradient * self.momentum_coeficient + (
-                    1 - self.momentum_coeficient) * image_gradient
-
-        # add this iteration contribution to the cumulative noise
-        self.noise += self.moving_avg_gradient / (1 - self.momentum_coeficient ** (1 + self.step_counter))
-
-        return self.attacked_image
 
     @abstractmethod
     def _get_gradient_of_image(self, image: Picture, target: Picture, old_perturbation: Picture = None):
@@ -220,7 +187,7 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         :param y_true: target representation
         :return: loss value
         """
-        return np.linalg.norm(y_pred - y_true)
+        return norm(y_pred - y_true,ord="euclidean")
 
     @staticmethod
     def read_arguments(dataset_root) -> dict:

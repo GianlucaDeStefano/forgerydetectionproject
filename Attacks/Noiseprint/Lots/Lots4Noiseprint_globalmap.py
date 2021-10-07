@@ -4,14 +4,14 @@ from math import ceil
 import numpy as np
 from tqdm import tqdm
 
-from Attacks.Noiseprint.BaseNoiseprintAttack import BaseNoiseprintAttack
+from Attacks.Noiseprint.Lots.BaseLots4Noiseprint import BaseLots4Noiseprint
 from Detectors.Noiseprint.noiseprintEngine import normalize_noiseprint, NoiseprintEngine
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
 from Ulitities.Image.Picture import Picture
 from Ulitities.Image.functions import visuallize_matrix_values
 
 
-class Lots4NoiseprintAttackGlobalMap(BaseNoiseprintAttack):
+class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
 
     def __init__(self, target_image: Picture, target_image_mask: Picture,
                  steps: int, alpha: float, patch_size=(16, 16), padding_size=(0, 0, 0, 0),
@@ -34,11 +34,13 @@ class Lots4NoiseprintAttackGlobalMap(BaseNoiseprintAttack):
             faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha, quality_factor,
+        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha,0, quality_factor,
                          regularization_weight, plot_interval, debug_root, test)
 
         self.patch_size = patch_size
         self.padding_size = padding_size
+
+        self.gradient_normalization_margin = 8
 
     def _on_before_attack(self):
         """
@@ -120,6 +122,9 @@ class Lots4NoiseprintAttackGlobalMap(BaseNoiseprintAttack):
         """
 
         assert (len(image.shape) == 2)
+
+        image = Picture(image)
+        target = Picture(target)
 
         pad_size = ((self.padding_size[0], self.padding_size[2]), (self.padding_size[3], self.padding_size[1]))
 
