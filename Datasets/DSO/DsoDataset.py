@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 
 from Datasets.Dataset import Dataset, ImageNotFoundException, mask_2_binary
+from Ulitities.Image.Picture import Picture
 
 
 class DsoDatasetDataset(Dataset):
@@ -22,8 +23,19 @@ class DsoDatasetDataset(Dataset):
         paths = []
 
         for image_format in self.supported_formats:
-            paths += Path(os.path.join(self.root, "images")).glob("*.{}".format(image_format))
+            images= Path(os.path.join(self.root, "images")).glob("*.{}".format(image_format))
 
+            for image_path in images:
+
+                if "splicing" in str(image_path):
+                    continue
+
+                if target_shape is not None:
+                    img = Picture(path=str(image_path))
+                    if img.shape[0] != target_shape[0] or img.shape[0] != target_shape[0]:
+                        continue
+
+                paths.append(image_path)
         return paths
 
     def get_forged_images(self, target_shape=None):
@@ -36,7 +48,19 @@ class DsoDatasetDataset(Dataset):
         paths = []
 
         for image_format in self.supported_formats:
-            Path(os.path.join(self.root, "masks")).glob("*.{}".format(image_format))
+            images= Path(os.path.join(self.root, "images")).glob("*.{}".format(image_format))
+
+            for image_path in images:
+
+                if "normal" in str(image_path):
+                    continue
+
+                if target_shape is not None:
+                    img = Picture(path=str(image_path))
+                    if img.shape[0] != target_shape[0] or img.shape[0] != target_shape[0]:
+                        continue
+
+                paths.append(image_path)
 
         return paths
 

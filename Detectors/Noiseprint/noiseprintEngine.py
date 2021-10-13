@@ -18,8 +18,8 @@ from Ulitities.Image.Picture import Picture
 
 class NoiseprintEngine(DeterctorEngine):
     _save_path = os.path.join(os.path.dirname(__file__), './weights/net_jpg%d/')
-    slide = 762  # 3072
-    large_limit = 580644  # 9437184
+    slide = 512  # 3072
+    large_limit = 262144  # 9437184
     overlap = 34
     setup_on_init = True
 

@@ -9,6 +9,7 @@ import numpy as np
 from cv2 import PSNR
 
 from Datasets import get_image_and_mask
+from Detectors.DetectorEngine import DeterctorEngine
 from Ulitities.Image.Picture import Picture
 from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
 from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
@@ -18,16 +19,18 @@ from Ulitities.io.folders import create_debug_folder
 class BaseAttack(ABC):
     attack_name = "Base Attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, detector_name: str,
+    def __init__(self, target_image: Picture, target_image_mask: Picture, detector: DeterctorEngine,
                  debug_root: str = "./Data/Debug/",
-                 test: bool = True):
+                 verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
         :param detector: name of the detector to be used to visualize the results
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
-        :param test: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
-            faster execution to test the code
+        :param verbosity: modality to use to run the attack:
+                0 -> the attack will not output any log in the console safe for error crashes, no visualizer is used before,during or after the attack
+                1 -> the attack output logs in the console, visualizers will be used during and after the attack
+                2 -> the attack outputs logs in the console, visualizers will be used before,during and after the attack
         """
 
         # check if the target image is in the desired format (integer [0,255])
@@ -44,16 +47,10 @@ class BaseAttack(ABC):
         self.target_image_mask = target_image_mask
 
         # load the desired detector into memory
-        self.detector = None
-        if detector_name.lower() == "noiseprint":
-            self.detector = NoiseprintVisualizer()
-        elif detector_name.lower() == "exif":
-            self.detector = ExifVisualizer()
-        else:
-            raise Exception("Unknown detector: {}".format(detector_name))
+        self.detector = detector
 
-        # save the verbosity level (0 -> short logs, 1-> full lofs)
-        self.test = test
+        # save the verbosity level (0 -> no logs,1 -> quick logs, 2-> full logs)
+        self.verbosity = verbosity
 
         # create debug folder
         self.debug_folder = create_debug_folder(debug_root)
@@ -92,7 +89,7 @@ class BaseAttack(ABC):
         Instructions executed before performing the attack, writing logs
         :return:
         """
-        self.write_to_logs("Test mode: {}\n".format(str(self.test)))
+        self.write_to_logs("Verbosity: {}\n".format(str(self.verbosity)))
 
         self.write_to_logs("Attack name: {}".format(self.name))
         self.write_to_logs("Target image: {}".format(self.target_image.path))
@@ -116,7 +113,8 @@ class BaseAttack(ABC):
 
         attacked_image = Picture(path=path)
 
-        self.detector.prediction_pipeline(attacked_image, os.path.join(self.debug_folder, "final result"),original_picture=self.target_image,omask=self.target_image_mask,note="final result PSNR:{:.2f}".format(psnr))
+        if not self.clean_execution:
+            self.detector.prediction_pipeline(attacked_image, os.path.join(self.debug_folder, "final result"),original_picture=self.target_image,omask=self.target_image_mask,note="final result PSNR:{:.2f}".format(psnr))
 
         end_time = datetime.now()
         timedelta = end_time - self.start_time
@@ -142,7 +140,7 @@ class BaseAttack(ABC):
         :return:
         """
 
-        if force_print or self.test:
+        if force_print and not self.clean_execution:
             print(message)
 
         if not self.debug_folder:
@@ -174,12 +172,24 @@ class BaseAttack(ABC):
 
         image, mask = get_image_and_mask(dataset_root, image_path, mask_path)
 
+        verbosity = 2
+        if args.test:
+            verbosity = 1
+
         kwarg = dict()
         kwarg["target_image"] = image
         kwarg["target_image_mask"] = mask
-        kwarg["test"] = args.test
+        kwarg["verbosity"] = verbosity
         return kwarg
 
     @classmethod
     def name(cls):
         return cls.attack_name
+
+    @property
+    def test(self):
+        return self.verbosity <= 1
+
+    @property
+    def clean_execution(self):
+        return self.verbosity == 0

@@ -2,11 +2,14 @@ from abc import ABC
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.ops.gen_math_ops import squared_difference
+
 from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack
 from Detectors.Exif.ExifEngine import ExifEngine
 from Detectors.Exif.lib.utils import ops
 from Detectors.Exif.models.exif import exif_net
 from Ulitities.Image.Picture import Picture
+from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
 
 
 class BaseExifAttack(BaseWhiteBoxAttack, ABC):
@@ -15,9 +18,9 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
     """
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
-                 source_image_mask: Picture, steps: int, alpha: float,
+                 source_image_mask: Picture, steps: int, alpha: float, detector:ExifVisualizer=None,
                  regularization_weight=0.05, plot_interval=5, patch_size=(128, 128), batch_size: int = 64,
-                 debug_root: str = "./Data/Debug/", test: bool = True):
+                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -25,19 +28,24 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         :param source_image_mask: mask of the imae from which we will compute the target representation
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
+        :param detector: instance of the detector class to use to process the results, usefull also to share weights
+            between multiple instances of the attack
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param patch_size: Width and Height of the patches we are using to compute the Exif parameters
                             we assume that the the patch is always a square eg patch_size[0] == patch_size[1]
         :param batch_size: how many patches shall be processed in parallel
         :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
-        :param test: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
+        :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, source_image, source_image_mask, "Exif", steps, alpha, 0.5,
+        if detector is None:
+            detector = ExifVisualizer()
+
+        super().__init__(target_image, target_image_mask, source_image, source_image_mask, detector, steps, alpha, 0.5,
                          regularization_weight,
-                         plot_interval, True, debug_root, test)
+                         plot_interval, True, debug_root, verbosity)
 
         assert (patch_size[0] == patch_size[1])
         self.batch_size = batch_size
@@ -91,3 +99,26 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         gradients = tf.gradients(loss, self.x)
 
         return gradients, loss
+
+    def loss_function(self, y_pred, y_true):
+        """
+        Specify a loss function to drive the image we are attacking towards the target representation
+        The default loss is the l2-norm
+        :param y_pred: last output of the model
+        :param y_true: target representation
+        :return: loss value
+        """
+        return tf.reduce_sum(squared_difference(y_pred, y_true), [1,2])
+
+    def regularizer_function(self, perturbation=None):
+        """
+        Compute te regularization value to add to the loss function
+        :param perturbation:perturbation for which to compute the regularization value
+        :return: regularization value
+        """
+
+        # if no perturbation is given return 0
+        if perturbation is None:
+            return 0
+
+        return tf.norm(perturbation, ord='euclidean', axis=[1,2])

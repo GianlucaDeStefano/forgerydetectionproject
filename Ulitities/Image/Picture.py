@@ -186,7 +186,7 @@ class Picture(Patch):
         return patches
 
     def get_authentic_patches(self, mask, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False,
-                              zero_padding=True):
+                              zero_padding=True,stride=None):
 
         """
         Divide the image into patches, returning only the authentic ones, we define a patch authenic if it contains no
@@ -204,8 +204,8 @@ class Picture(Patch):
         assert (self.shape[1] == mask.shape[1])
 
         # divide image and mask into patches
-        img_patches = self.divide_in_patches(patch_shape, padding, force_shape, zero_padding)
-        mask_patches = mask.divide_in_patches(patch_shape, padding, force_shape, zero_padding)
+        img_patches = self.divide_in_patches(patch_shape, padding, force_shape, zero_padding,stride)
+        mask_patches = mask.divide_in_patches(patch_shape, padding, force_shape, zero_padding,stride)
         assert (len(img_patches) == len(mask_patches))
 
         recomposed_mask = np.zeros(self.one_channel().shape)
@@ -220,7 +220,7 @@ class Picture(Patch):
 
         return authentic_patches
 
-    def get_forged_patches(self, mask, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False, zero_padding=True):
+    def get_forged_patches(self, mask, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False, zero_padding=True,stride=None):
         """
         Divide the image into patches, returning only the forged ones, we define a patch forgered if it contains no
         authentic pixels
@@ -245,7 +245,7 @@ class Picture(Patch):
         # disgard patches containing true data
         forged_patches = []
         for i in range(len(img_patches)):
-            if np.all(mask_patches[i].no_paddings() == 1):
+            if (1-mask_patches[i]).sum() == 0:
                 forged_patches.append(img_patches[i])
             else:
                 recomposed_mask = mask_patches[i].add_to_image(recomposed_mask)

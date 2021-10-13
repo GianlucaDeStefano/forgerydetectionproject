@@ -2,10 +2,13 @@ import argparse
 import os
 from abc import ABC, abstractmethod
 import numpy as np
+import tensorflow as tf
 from cv2 import PSNR
+from tensorflow.python.ops.gen_math_ops import squared_difference
 from tensorflow.python.ops.linalg_ops import norm
 
 from Attacks.BaseIterativeAttack import BaseIterativeAttack
+from Detectors.DetectorEngine import DeterctorEngine
 from Ulitities.Image.Picture import Picture
 
 
@@ -39,9 +42,9 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
     name = "Base Mimicking Attack"
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
-                 source_image_mask: Picture, detector: str, steps: int, alpha: float, momentum_coeficient: float = 0.5,
+                 source_image_mask: Picture, detector: DeterctorEngine, steps: int, alpha: float, momentum_coeficient: float = 0.5,
                  regularization_weight=0.05, plot_interval=5, additive_attack=True,
-                 debug_root: str = "./Data/Debug/", test: bool = True):
+                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -56,13 +59,13 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param additive_attack: show we feed the result of the iteration i as the input of the iteration 1+1?
         :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
-        :param test: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
+        :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
         super(BaseWhiteBoxAttack, self).__init__(target_image, target_image_mask, detector, steps, plot_interval,
                                                  additive_attack,
-                                                 debug_root, test)
+                                                 debug_root, verbosity)
 
         # save the source image and its mask
         self.source_image = source_image
@@ -179,7 +182,22 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         """
         return Picture((self.target_image - Picture(self.noise)).clip(0, 255))
 
-    def loss(self, y_pred, y_true):
+    def loss(self, y_pred, y_true, perturbation=None):
+        """
+        Specify a loss function to drive the image we are attacking towards the target representation
+        The default loss is the l2-norm
+        :param y_pred: last output of the model
+        :param y_true: target representation
+        :param perturbation:perturbation for which to compute the regularization value
+        :return: loss value
+        """
+
+        loss = tf.cast(self.loss_function(y_pred, y_true), tf.float64)
+        perturbation = tf.cast(self.regularizer_function(perturbation) * self.regularization_weight, tf.float64)
+
+        return loss + perturbation
+
+    def loss_function(self, y_pred, y_true):
         """
         Specify a loss function to drive the image we are attacking towards the target representation
         The default loss is the l2-norm
@@ -187,7 +205,20 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         :param y_true: target representation
         :return: loss value
         """
-        return norm(y_pred - y_true,ord="euclidean")
+        raise NotImplementedError
+
+    def regularizer_function(self, perturbation=None):
+        """
+        Compute te regularization value to add to the loss function
+        :param perturbation:perturbation for which to compute the regularization value
+        :return: regularization value
+        """
+
+        # if no perturbation is given return 0
+        if perturbation is None:
+            return 0
+
+        raise NotImplementedError
 
     @staticmethod
     def read_arguments(dataset_root) -> dict:

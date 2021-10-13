@@ -23,17 +23,16 @@ class InvalidImageShape(Exception):
 
 class ExifVisualizer(BaseVisualizer):
 
-    def __init__(self,):
+    def __init__(self, ):
 
-        super().__init__(ExifEngine(),"EXIF-SC")
+        super().__init__(ExifEngine(), "EXIF-SC")
 
-
-
-    def prediction_pipeline(self, image: Picture, path=None, original_picture=None,omask=None, note="",threshold=None):
+    def prediction_pipeline(self, image: Picture, path=None, original_picture=None, omask=None, note="",
+                            threshold=None):
 
         n_cols = 3
         normal_image = image
-        if normal_image.max()> 1:
+        if normal_image.max() > 1:
             normal_image = normal_image.to_float()
 
         if original_picture is not None:
@@ -54,11 +53,11 @@ class ExifVisualizer(BaseVisualizer):
 
         if original_picture is not None:
 
-            if original_picture.max()>1:
+            if original_picture.max() > 1:
                 original_picture = original_picture.to_float()
 
             noise = self.compute_difference(original_picture, normal_image)
-            axs[3].imshow(noise, clim=[0, 1],cmap='gray')
+            axs[3].imshow(noise, clim=[0, 1], cmap='gray')
             axs[3].set_title('Difference')
 
         if note:
@@ -72,19 +71,17 @@ class ExifVisualizer(BaseVisualizer):
         if path:
             plt.savefig(path, bbox_inches='tight')
             plt.close()
-        else:
-            return plt
+
+        return heatmap, mask
 
     def predict(self, image: Picture, path=None):
 
-        image_one_channel = image.one_channel().to_float()
+        heatmap, mask = self._engine.detect(image)
 
-        heatmap, mask = self._engine.detect(image_one_channel)
-
-        plt.imshow(mask)
+        plt.imshow(mask,cmap='gray')
 
         if path:
             plt.savefig(path)
             plt.close()
-        else:
-            return plt
+
+        return heatmap, mask

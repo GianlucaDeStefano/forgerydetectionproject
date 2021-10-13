@@ -17,13 +17,13 @@ from PIL.JpegImagePlugin import convert_dict_qtables
 
 def imread2f_pil(stream, channel=1, dtype=np.float32):
     img = Image.open(stream)
-    mode = img.mode
+    mode = img.verbosity
 
     if channel == 3:
         img = img.convert('RGB')
         img = np.asarray(img).astype(dtype) / 256.0
     elif channel == 1:
-        if img.mode == 'L':
+        if img.verbosity == 'L':
             img = np.asarray(img).astype(dtype) / 256.0
         else:
             img = img.convert('RGB')

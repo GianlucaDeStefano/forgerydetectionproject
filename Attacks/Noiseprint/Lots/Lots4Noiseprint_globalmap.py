@@ -2,8 +2,10 @@ import os
 from math import ceil
 
 import numpy as np
+from tensorflow.python.ops.gen_math_ops import squared_difference
 from tqdm import tqdm
 
+import tensorflow as tf
 from Attacks.Noiseprint.Lots.BaseLots4Noiseprint import BaseLots4Noiseprint
 from Detectors.Noiseprint.noiseprintEngine import normalize_noiseprint, NoiseprintEngine
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
@@ -13,11 +15,13 @@ from Ulitities.Image.functions import visuallize_matrix_values
 
 class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
 
+    name = "LOTS global map Attack"
+
     def __init__(self, target_image: Picture, target_image_mask: Picture,
-                 steps: int, alpha: float, patch_size=(16, 16), padding_size=(0, 0, 0, 0),
-                 quality_factor=None, regularization_weight=0.1, plot_interval: int = 5,
+                 steps: int, alpha: float, patch_size=(8, 8), padding_size=(0, 0, 0, 0),
+                 quality_factor=None, regularization_weight=0.0, plot_interval: int = 5,
                  debug_root: str = "./Data/Debug/",
-                 test: bool = True):
+                 verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -30,12 +34,13 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
-        :param test: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
+        :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha,0, quality_factor,
-                         regularization_weight, plot_interval, debug_root, test)
+        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha, 0,
+                         quality_factor,
+                         regularization_weight, plot_interval, debug_root, verbosity)
 
         self.patch_size = patch_size
         self.padding_size = padding_size
@@ -63,6 +68,11 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
 
         :return: the target representation in the shape of a numpy array
         """
+
+        pad_size = ((self.padding_size[0], self.padding_size[2]), (self.padding_size[3], self.padding_size[1]))
+
+        image = target_representation_source_image.pad(pad_size, mode="reflect")
+        target = target_representation_source_image_mask.pad(pad_size, mode="reflect")
 
         # conver the image in the standard required by noiseprint
         image = prepare_image_noiseprint(target_representation_source_image)
@@ -112,12 +122,7 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
 
     def _get_gradient_of_image(self, image: Picture, target: Picture, old_perturbation: Picture = None):
         """
-        Perform step of the attack executing the following steps:
-
-            1) Divide the entire image into patches
-            2) Compute the gradient of each patch with respect to the patch-tirget representation
-            3) Recombine all the patch-gradients to obtain a image wide gradient
-            4) Apply the image-gradient to the image
+            Add option to support padding along the border of the patch
         :return: image_gradient, cumulative_loss
         """
 
@@ -134,70 +139,13 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
         if old_perturbation is not None:
             old_perturbation = old_perturbation.pad(pad_size, "reflect")
 
-        # variable to store the cumulative loss across all patches
-        cumulative_loss = 0
-
-        # image wide gradient
-        image_gradient = np.zeros(image.shape)
-
-        if image.shape[0] * image.shape[1] < NoiseprintEngine.large_limit:
-            # the image can be processed as a single patch
-            image_gradient, cumulative_loss = self._get_gradient_of_patch(image, target)
-
-        else:
-            # the image is too big, we have to divide it in patches to process separately
-            # iterate over x and y, strides = self.slide, window size = self.slide+2*self.overlap
-            for x in range(0, image.shape[0], self._engine.slide):
-                x_start = x - self._engine.overlap
-                x_end = x + self._engine.slide + self._engine.overlap
-                for y in range(0, image.shape[1], self._engine.slide):
-                    y_start = y - self._engine.overlap
-                    y_end = y + self._engine.slide + self._engine.overlap
-
-                    # get the patch we are currently working on
-                    patch = image[
-                            max(x_start, 0): min(x_end, image.shape[0]),
-                            max(y_start, 0): min(y_end, image.shape[1])
-                            ]
-
-                    # get the desired target representation for this patch
-                    target_patch = target[
-                                   max(x_start, 0): min(x_end, image.shape[0]),
-                                   max(y_start, 0): min(y_end, image.shape[1])
-                                   ]
-
-                    perturbation_patch = None
-                    if old_perturbation is not None:
-                        perturbation_patch = old_perturbation[
-                                             max(x_start, 0): min(x_end, image.shape[0]),
-                                             max(y_start, 0): min(y_end, image.shape[1])
-                                             ]
-
-                    patch_gradient, patch_loss = self._get_gradient_of_patch(patch, target_patch)
-
-                    # discard initial overlap if not the row or first column
-                    if x > 0:
-                        patch_gradient = patch_gradient[self._engine.overlap:, :]
-                    if y > 0:
-                        patch_gradient = patch_gradient[:, self._engine.overlap:]
-
-                    # add this patch loss to the total loss
-                    cumulative_loss += patch_loss
-
-                    # add this patch's gradient to the image gradient
-                    # discard data beyond image size
-                    patch_gradient = patch_gradient[:min(self._engine.slide, patch.shape[0]),
-                                     :min(self._engine.slide, patch.shape[1])]
-
-                    # copy data to output buffer
-                    image_gradient[x: min(x + self._engine.slide, image_gradient.shape[0]),
-                    y: min(y + self._engine.slide, image_gradient.shape[1])] = patch_gradient
+        image_gradient, cumulative_loss = super()._get_gradient_of_image(image, target, old_perturbation)
 
         if self.padding_size[0] > 0:
             image_gradient = image_gradient[self.padding_size[0]:, :]
 
         if self.padding_size[1] > 0:
-            image_gradient = image_gradient[:, self.padding_size[1]]
+            image_gradient = image_gradient[:, self.padding_size[1]:]
 
         if self.padding_size[2] > 0:
             image_gradient = image_gradient[:-self.padding_size[2], :]
@@ -206,3 +154,26 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
             image_gradient = image_gradient[:, :-self.padding_size[3]]
 
         return image_gradient, cumulative_loss
+
+    def loss_function(self, y_pred, y_true):
+        """
+        Specify a loss function to drive the image we are attacking towards the target representation
+        The default loss is the l2-norm
+        :param y_pred: last output of the model
+        :param y_true: target representation
+        :return: loss value
+        """
+        return tf.reduce_sum(squared_difference(y_pred, y_true))
+
+    def regularizer_function(self, perturbation=None):
+        """
+        Compute te regularization value to add to the loss function
+        :param perturbation:perturbation for which to compute the regularization value
+        :return: regularization value
+        """
+
+        # if no perturbation is given return 0
+        if perturbation is None:
+            return 0
+
+        return tf.norm(perturbation, ord='euclidean')

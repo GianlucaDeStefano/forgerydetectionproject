@@ -1,17 +1,15 @@
 import argparse
-import os
+
 from pathlib import Path
-
 import numpy as np
-
 from Attacks.Noiseprint.BaseNoiseprintAttack import BaseNoiseprintAttack
+from Attacks.Noiseprint.Mimiking.BaseMimickin4Noiseprint import BaseMimicking4Noiseprint
 from Datasets import get_image_and_mask, ImageNotFoundError
-from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
 from Ulitities.Image.Picture import Picture
 
 
-class NoiseprintMimickingAttack(BaseNoiseprintAttack):
+class NoiseprintMimickingAttack(BaseMimicking4Noiseprint):
     name = "Noiseprint mimicking attack"
 
     def _compute_target_representation(self, target_representation_source_image: Picture,

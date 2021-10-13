@@ -17,7 +17,7 @@ class GaussianNoiseAdditionAttack(BaseIterativeAttack):
     def __init__(self, target_image: Picture, target_image_mask: Picture, detector:str, steps: int, initial_mean,
                  initial_standard_deviation,
                  final_mean, final_standard_deviation, debug_root: str = "./Data/Debug/",
-                 test: bool = True):
+                 verbosity: bool = True):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -27,10 +27,10 @@ class GaussianNoiseAdditionAttack(BaseIterativeAttack):
         :param final_mean: final value for the mean of the Gaussian distribution from which we will sample the noise
         :param final_standard_deviation: initial value for the standard deviation of the Gaussian distribution from which we will sample the noise
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
-        :param test: verbosity of the logs printed in the console
+        :param verbosity: verbosity of the logs printed in the console
         """
 
-        super().__init__(target_image, target_image_mask, detector, steps, False, debug_root, test)
+        super().__init__(target_image, target_image_mask, detector, steps, False, debug_root, verbosity)
 
         self.initial_mean = initial_mean
         self.initial_standard_deviation = initial_standard_deviation

@@ -15,17 +15,17 @@ class JpegCompressionAttack(BaseIterativeAttack):
     name = "Jpeg Compression Attack"
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, detector:str, steps: int, initial_quality_level, final_quality_level,
-                 debug_root: str = "./Data/Debug/", test: bool = True):
+                 debug_root: str = "./Data/Debug/", verbosity: bool = True):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
         :param steps: number of attack iterations to perform
 
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
-        :param test: verbosity of the logs printed in the console
+        :param verbosity: verbosity of the logs printed in the console
         """
 
-        super().__init__(target_image, target_image_mask, detector, steps, False, debug_root, test)
+        super().__init__(target_image, target_image_mask, detector, steps, False, debug_root, verbosity)
         self.initial_quality_level = initial_quality_level
         self.final_quality_level = final_quality_level
 
