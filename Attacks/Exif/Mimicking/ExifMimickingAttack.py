@@ -23,7 +23,7 @@ class ExifMimickingAttack(BaseExifAttack):
     def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
                  source_image_mask: Picture, steps: int, alpha: float = 1, detector:ExifVisualizer=None,
                  regularization_weight=0.05, plot_interval=1, patch_size=(128, 128), batch_size: int = 128,
-                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
+                 root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -38,7 +38,7 @@ class ExifMimickingAttack(BaseExifAttack):
         :param patch_size: Width and Height of the patches we are using to compute the Exif parameters
                             we assume that the the patch is always a square eg patch_size[0] == patch_size[1]
         :param batch_size: how many patches shall be processed in parallel
-        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
+        :param root_debug: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
@@ -46,7 +46,7 @@ class ExifMimickingAttack(BaseExifAttack):
         assert (target_image.shape == source_image.shape)
 
         super().__init__(target_image, target_image_mask, source_image, source_image_mask, steps, alpha, detector,
-                         regularization_weight, plot_interval, patch_size, batch_size, debug_root, verbosity)
+                         regularization_weight, plot_interval, patch_size, batch_size, root_debug, verbosity)
 
         stride = (max(source_image.shape[0], source_image.shape[1]) - self.patch_size[0]) // 30
 

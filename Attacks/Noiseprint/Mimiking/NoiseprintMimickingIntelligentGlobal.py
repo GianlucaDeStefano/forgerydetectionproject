@@ -1,5 +1,6 @@
 import argparse
 import os
+import random
 from pathlib import Path
 
 import numpy as np
@@ -17,7 +18,26 @@ from Ulitities.Image.functions import visuallize_matrix_values
 import tensorflow as tf
 
 
-class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
+def create_target_forgery_map(shape: tuple, target_forgery: np.array):
+    assert (len(shape) == 2 and shape[0] > 300 and shape[1] > 300)
+
+    forgery = Picture(
+        np.where(np.all(target_forgery == (255, 255, 255), axis=-1), 1, 0))
+
+    forgeries_width = forgery.shape[0]
+    forgeries_heigth = forgery.shape[1]
+
+    target_mask = np.zeros(shape)
+
+    x_start = random.randint(0, shape[0] - forgeries_width)
+    y_start = random.randint(0, shape[1] - forgeries_heigth)
+
+    target_mask[x_start:x_start + forgeries_width, y_start:y_start + forgeries_heigth] = forgery
+
+    return Picture(target_mask)
+
+
+class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
     name = "Noiseprint intelligent mimicking attack"
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, target_forgery_mask: Picture
@@ -50,7 +70,7 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         # for this technique no padding is needed
         self.padding_size = (8, 8, 8, 8)
 
-        self.k = 3
+        self.k = 10
 
     def _compute_target_representation(self, target_representation_source_image: Picture,
                                        target_representation_source_image_mask: Picture,
@@ -86,7 +106,7 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
 
         average_authentic_patch = np.zeros(complete_patch_size)
 
-        for base_index in tqdm(range(0, len(authentic_patches), self.batch_size)):
+        for base_index in tqdm(range(0, len(authentic_patches), self.batch_size), disable=self.clean_execution):
 
             patches = authentic_patches[base_index:min(len(authentic_patches), base_index + self.batch_size)]
 
@@ -110,7 +130,7 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
 
             average_forged_patch = np.zeros(complete_patch_size)
 
-            for base_index in tqdm(range(0, len(forged_patches), self.batch_size)):
+            for base_index in tqdm(range(0, len(forged_patches), self.batch_size), disable=self.clean_execution):
 
                 patches = forged_patches[base_index:min(len(forged_patches), base_index + self.batch_size)]
 
@@ -127,71 +147,16 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         target_mask_patches = target_forgery_mask.divide_in_patches(self.patch_size, self.padding_size,
                                                                     zero_padding=True)
 
-        targets_list = []
+        target_map = np.zeros(target_forgery_mask.shape)
 
         for target_mask_patch in target_mask_patches:
 
             if target_mask_patch.max() == 0:
-                targets_list.append(average_authentic_patch*self.k)
+                target_map = target_mask_patch.add_to_image(target_map, np.zeros(average_authentic_patch.shape))
             else:
-                targets_list.append(average_forged_patch*self.k)
+                target_map = target_mask_patch.add_to_image(target_map, average_forged_patch * self.k)
 
-        return targets_list
-
-    def _get_gradient_of_image(self, image: Picture, target: Picture, old_perturbation: Picture = None):
-        """
-        Compute the gradient on the entire image by executing the following steps:
-            1) Divide the entire image into patches
-            2) Compute the gradient of each patch with respect to the patch-target representation
-            3) Recombine all the patch-gradients to obtain a image wide gradient
-        :return: gradient, loss
-        """
-
-        # make sure tha image is a picture
-        image = Picture(image)
-
-        # variable to store the cumulative loss across all patches
-        cumulative_loss = 0
-
-        # image wide gradient
-        image_gradient = np.zeros((image.shape[0:2]))
-
-        # divide the image into patches
-        img_patches = image.divide_in_patches(self.patch_size, self.padding_size, zero_padding=True)
-        noise_patches = Picture(self.noise).divide_in_patches(self.patch_size, self.padding_size, zero_padding=True)
-
-        assert (len(img_patches) == len(target))
-
-        # analyze the image using batch of patches
-        for base_index in tqdm(range(0, len(img_patches), self.batch_size), disable=self.clean_execution):
-
-            # retieve this batch's patches form the list
-            patches = img_patches[base_index:min(len(img_patches), base_index + self.batch_size)]
-
-            # retrieve the noise patches from the list
-            perturbations = noise_patches[base_index:min(len(img_patches), base_index + self.batch_size)]
-
-            targets = target[base_index:min(len(img_patches), base_index + self.batch_size)]
-
-            # check if we are on a border and therefore we have to "cut"tareget representation
-            # if we are on a border, cut away the "overflowing target representation"
-            for i, patch in enumerate(patches):
-                if targets[i].shape != patch.shape:
-                    targets[i] = targets[i][:patch.shape[0], :patch.shape[1]]
-
-            # compute the gradient of the input w.r.t. the target representation
-            patches_gradient, patch_loss = self._get_gradients_of_patches(patches, targets, perturbations)
-
-            patch_loss = np.sum(patch_loss) / self.batch_size
-
-            # add this patch's loss contribution
-            cumulative_loss += patch_loss
-
-            for i, patch in enumerate(patches):
-                # Add the contribution of this patch to the image wide gradient removing the padding
-                image_gradient = patch.add_to_image(image_gradient, patches_gradient[i])
-
-        return image_gradient, cumulative_loss / (len(img_patches) // self.batch_size)
+        return target_map
 
     @staticmethod
     def read_arguments(dataset_root) -> dict:
@@ -204,22 +169,32 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         kwarg = BaseNoiseprintAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
-        parser.add_argument('--target_forgery_mask', required=True,
+        parser.add_argument('--target_forgery_mask', required=False, default=None,
                             help='Path of the mask highlighting the section of the image that should be identified as '
                                  'forged')
+        parser.add_argument('--target_forgery_id', required=False, type=int, default=None,
+                            help='Id of the target_forgery type to use to autogenerate the target_forgery map')
         args = parser.parse_known_args()[0]
 
         target_forgery_mask_path = args.target_forgery_mask
+        target_forgery_id = args.target_forgery_id
 
-        mask_path = Path(target_forgery_mask_path)
+        if target_forgery_mask_path is not None:
+            mask_path = Path(target_forgery_mask_path)
 
-        if mask_path.exists():
-            mask = np.where(np.all(Picture(str(mask_path)) == (255, 255, 255), axis=-1), 1, 0)
+            if mask_path.exists():
+                mask = np.where(np.all(Picture(str(mask_path)) == (255, 255, 255), axis=-1), 1, 0)
+            else:
+                raise Exception("Target forgery mask not found")
+
+            kwarg["target_forgery_mask"] = Picture(mask)
+
+        elif target_forgery_id is not None:
+            print("./Data/custom/target_forgery_masks/{}.png".format(str(target_forgery_id)))
+            kwarg["target_forgery_mask"] = create_target_forgery_map(kwarg["target_image_mask"].shape, Picture(path=os.path.join(
+                "./Data/custom/target_forgery_masks/{}.png".format(str(target_forgery_id)))))
         else:
-            raise Exception("Target forgery mask not found")
-
-        kwarg["target_forgery_mask"] = Picture(mask)
-
+            raise Exception("Target forgery not specified")
         return kwarg
 
     def loss_function(self, y_pred, y_true):
@@ -230,7 +205,7 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         :param y_true: target representation
         :return: loss value
         """
-        return tf.reduce_sum(squared_difference(y_pred, y_true), [1, 2])
+        return tf.reduce_sum(squared_difference(y_pred, y_true))
 
     def regularizer_function(self, perturbation=None):
         """
@@ -243,4 +218,4 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         if perturbation is None:
             return 0
 
-        return tf.norm(perturbation, ord='euclidean', axis=[1, 2])
+        return tf.norm(perturbation, ord='euclidean')

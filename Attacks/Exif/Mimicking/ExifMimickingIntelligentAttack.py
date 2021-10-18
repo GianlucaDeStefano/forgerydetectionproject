@@ -1,4 +1,5 @@
 import argparse
+import os
 from pathlib import Path
 
 import numpy as np
@@ -6,6 +7,7 @@ from tqdm import tqdm
 
 from Attacks.Exif.BaseExifAttack import BaseExifAttack
 from Attacks.Exif.Mimicking.BaseMimickin4Exif import BaseMimicking4Exif
+from Attacks.Noiseprint.Mimiking.NoiseprintMimickingIntelligentGlobal import create_target_forgery_map
 from Datasets import get_image_and_mask, ImageNotFoundError
 from Detectors.Exif.utility import prepare_image
 from Ulitities.Image.Picture import Picture
@@ -24,7 +26,7 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, target_forgery_mask: Picture, steps: int, alpha: float = 1,
                  detector:ExifVisualizer=None, regularization_weight=0.05, plot_interval=1, patch_size=(128, 128), batch_size: int = 64,
-                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
+                 root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -37,7 +39,7 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
         :param patch_size: Width and Height of the patches we are using to compute the Exif parameters
                             we assume that the the patch is always a square eg patch_size[0] == patch_size[1]
         :param batch_size: how many patches shall be processed in parallel
-        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
+        :param root_debug: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
@@ -46,7 +48,7 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
         assert (target_image.shape[1] == target_forgery_mask.shape[1])
 
         super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha, detector,
-                         regularization_weight, plot_interval, patch_size, batch_size, debug_root, verbosity)
+                         regularization_weight, plot_interval, patch_size, batch_size, root_debug, verbosity)
 
         self.target_forgery_mask = target_forgery_mask
 
@@ -193,20 +195,31 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
         kwarg = BaseExifAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
-        parser.add_argument('--target_forgery_mask', required=True,
+        parser.add_argument('--target_forgery_mask', required=False,default=None,
                             help='Path of the mask highlighting the section of the image that should be identified as '
                                  'forged')
+        parser.add_argument('--target_forgery_id', required=False, type=int, default=None,
+                            help='Id of the target_forgery type to use to autogenerate the target_forgery map')
         args = parser.parse_known_args()[0]
 
         target_forgery_mask_path = args.target_forgery_mask
+        target_forgery_id = args.target_forgery_id
 
-        mask_path = Path(target_forgery_mask_path)
+        if target_forgery_mask_path is not None:
+            mask_path = Path(target_forgery_mask_path)
 
-        if mask_path.exists():
-            mask = np.where(np.all(Picture(str(mask_path)) == (255, 255, 255), axis=-1), 1, 0)
+            if mask_path.exists():
+                mask = np.where(np.all(Picture(str(mask_path)) == (255, 255, 255), axis=-1), 1, 0)
+            else:
+                raise Exception("Target forgery mask not found")
+
+            kwarg["target_forgery_mask"] = Picture(mask)
+
+        elif target_forgery_id is not None:
+            print("./Data/custom/target_forgery_masks/{}.png".format(str(target_forgery_id)))
+            kwarg["target_forgery_mask"] = create_target_forgery_map(kwarg["target_image_mask"].shape, Picture(path=os.path.join(
+                "./Data/custom/target_forgery_masks/{}.png".format(str(target_forgery_id)))))
         else:
-            raise Exception("Target forgery mask not found")
-
-        kwarg["target_forgery_mask"] = Picture(mask)
+            raise Exception("Target forgery not specified")
 
         return kwarg

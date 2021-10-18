@@ -70,9 +70,10 @@ class NoiseprintVisualizer(BaseVisualizer):
         axs0[2].imshow(heatmap, clim=[np.nanmin(heatmap), np.nanmax(heatmap)], cmap='jet')
         axs0[2].set_title('Heatmap')
 
+        mask = None
+
         if omask is not None:
-            threshold = find_best_theshold(heatmap, omask)
-            mask = np.array(heatmap > threshold, int).clip(0,1)
+            mask = np.rint(self.get_mask(heatmap,omask))
 
             axs0[3].imshow(mask, clim=[0, 1], cmap='gray')
             axs0[3].set_title('Mask')
@@ -117,8 +118,14 @@ class NoiseprintVisualizer(BaseVisualizer):
         if path:
             plt.savefig(path,bbox_inches='tight')
             plt.close()
-        else:
-            return plt
+
+        return heatmap,mask
+
+    @staticmethod
+    def get_mask(heatmap,omask):
+        threshold = find_best_theshold(heatmap, omask)
+        mask = np.array(heatmap > threshold, int).clip(0,1)
+        return mask
 
     def get_noiseprint(self,image):
         return self._engine.predict(image)
@@ -134,7 +141,6 @@ class NoiseprintVisualizer(BaseVisualizer):
         if path:
             plt.savefig(path)
             plt.close()
-        else:
-            return plt
+
 
 

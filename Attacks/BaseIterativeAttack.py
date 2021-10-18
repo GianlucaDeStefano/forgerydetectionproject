@@ -12,7 +12,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
     name = "Base Iterative Attack"
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, detector: DeterctorEngine, steps: int,
-                 plot_interval: int = 5, additive_attack=True, debug_root: str = "./Data/Debug/",
+                 plot_interval: int = 5, additive_attack=True, root_debug: str = "./Data/Debug/",
                  verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
@@ -21,12 +21,12 @@ class BaseIterativeAttack(BaseAttack, ABC):
         :param steps: number of attack iterations to perform
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param additive_attack: showl we feed the result of the iteration i as the input of the iteration 1+1?
-        :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
+        :param root_debug: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, detector, debug_root, verbosity)
+        super().__init__(target_image, target_image_mask, detector, root_debug, verbosity)
 
         assert (steps > 0)
 

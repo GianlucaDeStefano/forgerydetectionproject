@@ -1,0 +1,134 @@
+2021-10-14 10:33:57.981395: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcudart.so.11.0
+2021-10-14 10:33:58.933828: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2021-10-14 10:33:58.935626: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcuda.so.1
+2021-10-14 10:34:00.820113: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:34:00.820190: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcudart.so.11.0
+2021-10-14 10:34:00.825238: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcublas.so.11
+2021-10-14 10:34:00.825348: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcublasLt.so.11
+2021-10-14 10:34:00.827171: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcufft.so.10
+2021-10-14 10:34:00.827614: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcurand.so.10
+2021-10-14 10:34:00.828687: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcusolver.so.11
+2021-10-14 10:34:00.830208: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcusparse.so.11
+2021-10-14 10:34:00.830520: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcudnn.so.8
+2021-10-14 10:34:00.833219: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:34:00.833302: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcudart.so.11.0
+2021-10-14 10:34:01.331157: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:34:01.331201: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:34:01.331211: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:34:01.333765: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+WARNING:tensorflow:From /home/gianlucadestefano/LOTS/Ulitities/Visualizers/ExifVisualizer.py:15: The name tf.keras.backend.set_session is deprecated. Please use tf.compat.v1.keras.backend.set_session instead.
+
+2021-10-14 10:34:02.023900: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:34:02.025112: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:34:24.842194: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:34:24.843505: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:34:24.843543: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:34:24.843560: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:34:24.843567: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:34:24.844854: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:34:25.263418: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:34:25.264699: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:34:25.264730: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:34:25.264740: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:34:25.264747: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:34:25.266068: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:34:25.570718: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:34:25.571985: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:34:25.572012: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:34:25.572021: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:34:25.572027: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:34:25.573309: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+DSO dataset
+Loading checkpoint quality 101
+  0%|          | 0/84 [00:00<?, ?it/s]2021-10-14 10:34:26.542350: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:34:26.543625: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:34:26.543656: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:34:26.543666: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:34:26.543673: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:34:26.544910: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:34:26.847479: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:34:26.848696: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:34:26.848723: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:34:26.848740: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:34:26.848747: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:34:26.849984: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:34:27.395165: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:34:27.396440: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:34:27.396470: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:34:27.396480: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:34:27.396486: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:34:27.397764: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:34:29.401143: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcudnn.so.8
+2021-10-14 10:34:33.017890: I tensorflow/stream_executor/cuda/cuda_dnn.cc:359] Loaded cuDNN version 8202
+2021-10-14 10:34:36.766105: E tensorflow/stream_executor/gpu/asm_compiler.cc:93] You are using ptxas 8.x, but TF requires ptxas 9.x (and strongly prefers >= 9.2.88).  Compilation of XLA kernels below will likely fail.
+
+You do not need to update CUDA; cherry-picking the ptxas binary is sufficient.
+2021-10-14 10:34:36.957090: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcublas.so.11
+2021-10-14 10:34:39.434774: I tensorflow/stream_executor/platform/default/dso_loader.cc:53] Successfully opened dynamic library libcublasLt.so.11
+2021-10-14 10:34:39.478314: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:176] None of the MLIR Optimization Passes are enabled (registered 2)
+2021-10-14 10:34:39.509140: I tensorflow/core/platform/profile_utils/cpu_utils.cc:114] CPU Frequency: 2399165000 Hz
+  1%|          | 1/84 [10:58<15:10:26, 658.15s/it]2021-10-14 10:45:24.650740: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:45:24.651295: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:45:24.651327: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:45:24.651337: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:45:24.651344: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:45:24.651901: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:45:24.952360: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:45:24.952914: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:45:24.952950: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:45:24.952960: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:45:24.952966: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:45:24.953555: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:45:25.388139: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:45:25.388689: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:45:25.388733: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:45:25.388745: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:45:25.388752: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:45:25.389333: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+  2%|▏         | 2/84 [20:46<14:03:29, 617.19s/it]2021-10-14 10:55:13.405122: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:55:13.405707: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:55:13.405740: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:55:13.405751: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:55:13.405759: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:55:13.406356: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:55:13.714542: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:55:13.715014: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:55:13.715037: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:55:13.715046: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:55:13.715052: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:55:13.715545: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)
+2021-10-14 10:55:14.153801: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1733] Found device 0 with properties: 
+pciBusID: 0000:03:00.0 name: NVIDIA Tesla K40c computeCapability: 3.5
+coreClock: 0.745GHz coreCount: 15 deviceMemorySize: 11.17GiB deviceMemoryBandwidth: 268.58GiB/s
+2021-10-14 10:55:14.154284: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1871] Adding visible gpu devices: 0
+2021-10-14 10:55:14.154317: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1258] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-10-14 10:55:14.154326: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1264]      0 
+2021-10-14 10:55:14.154332: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1277] 0:   N 
+2021-10-14 10:55:14.154848: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1418] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11441 MB memory) -> physical GPU (device: 0, name: NVIDIA Tesla K40c, pci bus id: 0000:03:00.0, compute capability: 3.5)

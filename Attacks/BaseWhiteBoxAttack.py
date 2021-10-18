@@ -44,7 +44,7 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
     def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
                  source_image_mask: Picture, detector: DeterctorEngine, steps: int, alpha: float, momentum_coeficient: float = 0.5,
                  regularization_weight=0.05, plot_interval=5, additive_attack=True,
-                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
+                 root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -58,14 +58,14 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param additive_attack: show we feed the result of the iteration i as the input of the iteration 1+1?
-        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
+        :param root_debug: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
         super(BaseWhiteBoxAttack, self).__init__(target_image, target_image_mask, detector, steps, plot_interval,
                                                  additive_attack,
-                                                 debug_root, verbosity)
+                                                 root_debug, verbosity)
 
         # save the source image and its mask
         self.source_image = source_image

@@ -20,7 +20,7 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
     def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
                  source_image_mask: Picture, steps: int, alpha: float, detector:ExifVisualizer=None,
                  regularization_weight=0.05, plot_interval=5, patch_size=(128, 128), batch_size: int = 64,
-                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
+                 root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -35,7 +35,7 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         :param patch_size: Width and Height of the patches we are using to compute the Exif parameters
                             we assume that the the patch is always a square eg patch_size[0] == patch_size[1]
         :param batch_size: how many patches shall be processed in parallel
-        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
+        :param root_debug: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
@@ -45,7 +45,7 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
 
         super().__init__(target_image, target_image_mask, source_image, source_image_mask, detector, steps, alpha, 0.5,
                          regularization_weight,
-                         plot_interval, True, debug_root, verbosity)
+                         plot_interval, True, root_debug, verbosity)
 
         assert (patch_size[0] == patch_size[1])
         self.batch_size = batch_size
