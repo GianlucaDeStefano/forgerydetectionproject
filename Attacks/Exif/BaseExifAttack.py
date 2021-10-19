@@ -5,9 +5,6 @@ import tensorflow as tf
 from tensorflow.python.ops.gen_math_ops import squared_difference
 
 from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack
-from Detectors.Exif.ExifEngine import ExifEngine
-from Detectors.Exif.lib.utils import ops
-from Detectors.Exif.models.exif import exif_net
 from Ulitities.Image.Picture import Picture
 from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
 
@@ -17,15 +14,10 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         This class is used to implement white box attacks on the Exif-Sc detector
     """
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
-                 source_image_mask: Picture, steps: int, alpha: float, detector:ExifVisualizer=None,
+    def __init__(self, steps: int, alpha: float, detector:ExifVisualizer=None,
                  regularization_weight=0.05, plot_interval=5, patch_size=(128, 128), batch_size: int = 64,
                  root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
-        :param target_image: original image on which we should perform the attack
-        :param target_image_mask: original mask of the image on which we should perform the attack
-        :param source_image: image from which we will compute the target representation
-        :param source_image_mask: mask of the imae from which we will compute the target representation
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
         :param detector: instance of the detector class to use to process the results, usefull also to share weights
@@ -43,7 +35,7 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         if detector is None:
             detector = ExifVisualizer()
 
-        super().__init__(target_image, target_image_mask, source_image, source_image_mask, detector, steps, alpha, 0.5,
+        super().__init__(detector, steps, alpha, 0.5,
                          regularization_weight,
                          plot_interval, True, root_debug, verbosity)
 
@@ -55,8 +47,8 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         self._engine = self.detector._engine.model.solver.net
         self._sess = self.detector._engine.model.solver.sess
 
-        self.moving_avg_gradient = np.zeros(target_image.shape)
-        self.noise = np.zeros(target_image.shape)
+        self.moving_avg_gradient = None
+        self.noise = None
 
         self.get_gradient = self._get_gradient_of_batch
 
@@ -65,6 +57,17 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
 
         self.gradient_op = None
         self.loss_op = None
+
+    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+              source_image_mask: Picture = None, target_forgery_mask: Picture = None):
+
+        super().setup(target_image, target_image_mask, source_image, source_image_mask,target_forgery_mask)
+
+        # create variable to store the generated adversarial noise
+        self.noise = np.zeros(target_image.shape)
+
+        # create variable to store the momentum of the gradient
+        self.moving_avg_gradient = np.zeros(target_image.shape)
 
     def _on_before_attack(self):
         """

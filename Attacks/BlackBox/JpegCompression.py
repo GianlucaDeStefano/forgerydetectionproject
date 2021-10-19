@@ -59,14 +59,14 @@ class JpegCompressionAttack(BaseIterativeAttack):
 
 
     @staticmethod
-    def read_arguments(dataset_root) -> dict:
+    def read_arguments(dataset_root) -> tuple:
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        kwarg = BaseIterativeAttack.read_arguments(dataset_root)
+        attack_parameters,setup_parameters = BaseIterativeAttack.read_arguments(dataset_root)
         parser = argparse.ArgumentParser()
         parser.add_argument('--initial_quality_level', default=100, type=int,
                             help='initial (highest) quality level')
@@ -81,13 +81,13 @@ class JpegCompressionAttack(BaseIterativeAttack):
 
         for element in list:
             if getattr(args,element) is None:
-                kwarg[element] = float(input("Add an (int) value [100,1] for the variable {}:".format(element)))
+                attack_parameters[element] = float(input("Add an (int) value [100,1] for the variable {}:".format(element)))
             else:
-                kwarg[element] = getattr(args,element)
+                attack_parameters[element] = getattr(args,element)
 
         if args.detector is None:
-            kwarg["detector"] = str(input("Which detector should be used? [Noiseprint,Exif]:"))
+            attack_parameters["detector"] = str(input("Which detector should be used? [Noiseprint,Exif]:"))
         else:
-            kwarg["detector"] = args.detector
+            attack_parameters["detector"] = args.detector
 
-        return kwarg
+        return attack_parameters,setup_parameters

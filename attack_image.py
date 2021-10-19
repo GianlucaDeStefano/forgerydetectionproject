@@ -25,23 +25,21 @@ def attack_pipeline(category_number, attack_number):
         for key, supported_attack in supported_attacks.items():
             print("  {}) {}".format(i, key))
             i = i + 1
-        print("  {}) {}".format(i, "All attacks in sequence"))
         attack_number = int(input("Enter attack number:"))
 
-    if attack_number == len(supported_attacks.items()):
-        attacks = supported_attacks.values()
-    else:
-        attacks = list(supported_attacks.values())[attack_number]
 
-    if not isinstance(attacks, list):
-        attacks = [attacks]
+    attack_class = list(supported_attacks.values())[attack_number]
 
-    # execute each attack sequentially
-    for current_attack in attacks:
-        kwarg = current_attack.read_arguments(DATASETS_ROOT)
+    attack_arguments,setup_arguments = attack_class.read_arguments(DATASETS_ROOT)
 
-        attack = current_attack(**kwarg)
-        attack.execute()
+    # create an instance of the attack
+    attack = attack_class(**attack_arguments)
+
+    # load iteration dependent data (images, masks...)
+    attack.setup(**setup_arguments)
+
+    # execute the attack
+    attack.execute()
 
 
 if __name__ == "__main__":

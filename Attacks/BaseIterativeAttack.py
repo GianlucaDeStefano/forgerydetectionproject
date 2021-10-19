@@ -11,12 +11,10 @@ from Ulitities.Image import Picture
 class BaseIterativeAttack(BaseAttack, ABC):
     name = "Base Iterative Attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, detector: DeterctorEngine, steps: int,
+    def __init__(self, detector: DeterctorEngine, steps: int,
                  plot_interval: int = 5, additive_attack=True, root_debug: str = "./Data/Debug/",
                  verbosity: int = 2):
         """
-        :param target_image: original image on which we should perform the attack
-        :param target_image_mask: original mask of the image on which we should perform the attack
         :param detector: name of the detector to be used to visualize the results
         :param steps: number of attack iterations to perform
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
@@ -26,7 +24,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
             faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, detector, root_debug, verbosity)
+        super().__init__(detector, root_debug, verbosity)
 
         assert (steps > 0)
 
@@ -38,6 +36,18 @@ class BaseIterativeAttack(BaseAttack, ABC):
 
         # counter of the attack iterations that have been applied to the image
         self.step_counter = 0
+
+
+    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+              source_image_mask: Picture = None,target_forgery_mask : Picture = None):
+        """
+        :param source_image: image from which we will compute the target representation
+        :param source_image_mask: mask of the imae from which we will compute the target representation
+        :param target_forgery_mask: mask highlighting the section of the image that should be identified as forged after the attack
+        :return:
+        """
+
+        super().setup(target_image, target_image_mask,source_image,source_image_mask,target_forgery_mask)
 
         # create a folder where to store the data generated at each step
         self.steps_debug_folder = os.path.join(str(self.debug_folder), "steps")
@@ -99,7 +109,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         :param image: image before the attack step
         :return:
         """
-        if self.plot_interval > 0 and (self.step_counter + 1) % self.plot_interval == 0:
+        if self.plot_interval > 0 and (self.step_counter + 1) % self.plot_interval == 0 and not self.clean_execution:
             self.detector.prediction_pipeline(attacked_image,
                                               path=os.path.join(self.steps_debug_folder, str(self.step_counter + 1))
                                               , original_picture=self.target_image, omask=self.target_image_mask,
@@ -116,10 +126,11 @@ class BaseIterativeAttack(BaseAttack, ABC):
         self.write_to_logs("Plot interval: {}".format(self.plot_interval))
         self.write_to_logs("Additive attack: {}".format(self.additive_attack))
 
-        if self.plot_interval > 0 and not self.test:
-            self.detector.prediction_pipeline(self.target_image, path=os.path.join(self.steps_debug_folder, str(0))
+        if not self.clean_execution:
+            self.detector.prediction_pipeline(self.target_image,
+                                              path=os.path.join(self.steps_debug_folder, str(self.step_counter + 1))
                                               , original_picture=self.target_image, omask=self.target_image_mask,
-                                              note="Initial state")
+                                              note=self.step_note())
 
     def step_note(self):
         """
@@ -136,21 +147,21 @@ class BaseIterativeAttack(BaseAttack, ABC):
         return self.step_counter / self.steps
 
     @staticmethod
-    def read_arguments(dataset_root) -> dict:
+    def read_arguments(dataset_root) -> tuple:
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        kwarg = BaseAttack.read_arguments(dataset_root)
+        attack_parameters,setup_parameters = BaseAttack.read_arguments(dataset_root)
         parser = argparse.ArgumentParser()
         parser.add_argument("-s", '--steps', default=50, type=int, help='Number of attack steps to perform')
         parser.add_argument("-pi", '--plot_interval', default=5, type=int,
                             help='how often (# steps) should the step-visualizations be generated?')
         args = parser.parse_known_args()[0]
 
-        kwarg["steps"] = int(args.steps)
-        kwarg["plot_interval"] = int(args.plot_interval)
+        attack_parameters["steps"] = int(args.steps)
+        attack_parameters["plot_interval"] = int(args.plot_interval)
 
-        return kwarg
+        return attack_parameters,setup_parameters

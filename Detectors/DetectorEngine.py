@@ -7,6 +7,7 @@ class DeterctorEngine():
 
     def __init__(self,name):
 
+        self._engine = None
         self.name = name
 
     @abstractmethod

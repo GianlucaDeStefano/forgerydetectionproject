@@ -24,12 +24,10 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
 
     name = "Exif mimicking attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, target_forgery_mask: Picture, steps: int, alpha: float = 1,
+    def __init__(self, steps: int, alpha: float = 1,
                  detector:ExifVisualizer=None, regularization_weight=0.05, plot_interval=1, patch_size=(128, 128), batch_size: int = 64,
                  root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
-        :param target_image: original image on which we should perform the attack
-        :param target_image_mask: original mask of the image on which we should perform the attack
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
         :param detector: instance of the detector class to use to process the results, usefull also to share weights
@@ -44,17 +42,29 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
             faster execution to test the code
         """
 
+        super().__init__(steps, alpha, detector,regularization_weight, plot_interval, patch_size, batch_size, root_debug, verbosity)
+
+        self.target_forgery_mask = None
+
+        self.stride = None
+
+    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+              source_image_mask: Picture = None, target_forgery_mask: Picture = None):
+
         assert (target_image.shape[0] == target_forgery_mask.shape[0])
         assert (target_image.shape[1] == target_forgery_mask.shape[1])
 
-        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha, detector,
-                         regularization_weight, plot_interval, patch_size, batch_size, root_debug, verbosity)
+        super().setup(target_image, target_image_mask, source_image, source_image_mask,target_forgery_mask)
 
+        # create variable to store the generated adversarial noise
         self.target_forgery_mask = target_forgery_mask
+
+        # create variable to store the momentum of the gradient
+        self.moving_avg_gradient = np.zeros(target_image.shape)
 
         stride = (max(target_image.shape[0], target_image.shape[1]) - self.patch_size[0]) // 30
 
-        self.stride = (stride, stride)
+        self.stride = (stride,stride)
 
     def _compute_target_representation(self, target_representation_source_image: Picture,
                                        target_representation_source_image_mask: Picture,target_forgery_mask: Picture = None):
@@ -185,14 +195,14 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
         return gradient_map, loss
 
     @staticmethod
-    def read_arguments(dataset_root) -> dict:
+    def read_arguments(dataset_root) -> tuple:
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        kwarg = BaseExifAttack.read_arguments(dataset_root)
+        attack_parameters,setup_parameters = BaseExifAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
         parser.add_argument('--target_forgery_mask', required=False,default=None,
@@ -213,13 +223,13 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
             else:
                 raise Exception("Target forgery mask not found")
 
-            kwarg["target_forgery_mask"] = Picture(mask)
+            setup_parameters["target_forgery_mask"] = Picture(mask)
 
         elif target_forgery_id is not None:
             print("./Data/custom/target_forgery_masks/{}.png".format(str(target_forgery_id)))
-            kwarg["target_forgery_mask"] = create_target_forgery_map(kwarg["target_image_mask"].shape, Picture(path=os.path.join(
+            setup_parameters["target_forgery_mask"] = create_target_forgery_map(setup_parameters["target_image_mask"].shape, Picture(path=os.path.join(
                 "./Data/custom/target_forgery_masks/{}.png".format(str(target_forgery_id)))))
         else:
             raise Exception("Target forgery not specified")
 
-        return kwarg
+        return attack_parameters,setup_parameters

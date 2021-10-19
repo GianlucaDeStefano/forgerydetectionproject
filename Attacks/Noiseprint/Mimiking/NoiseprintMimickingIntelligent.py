@@ -20,8 +20,7 @@ import tensorflow as tf
 class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
     name = "Noiseprint intelligent mimicking attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, target_forgery_mask: Picture
-                 , steps: int, alpha: float, patch_size=(8, 8), quality_factor=None,
+    def __init__(self,steps: int, alpha: float, patch_size=(8, 8), quality_factor=None,
                  regularization_weight=0.05, plot_interval=5, root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
@@ -39,18 +38,21 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
             faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha, 0.0,
-                         quality_factor,
-                         regularization_weight, plot_interval, root_debug, verbosity)
-
-        self.target_forgery_mask = target_forgery_mask
+        super().__init__(steps, alpha, 0.0, quality_factor, regularization_weight, plot_interval, root_debug, verbosity)
 
         self.patch_size = patch_size
 
         # for this technique no padding is needed
         self.padding_size = (8, 8, 8, 8)
 
-        self.k = 3
+        self.k = 5
+
+    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+              source_image_mask: Picture = None, target_forgery_mask: Picture = None):
+
+        super().setup(target_image, target_image_mask, target_image, target_image_mask,target_forgery_mask)
+
+        self.target_forgery_mask = target_forgery_mask
 
     def _compute_target_representation(self, target_representation_source_image: Picture,
                                        target_representation_source_image_mask: Picture,
@@ -91,7 +93,7 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
             patches = authentic_patches[base_index:min(len(authentic_patches), base_index + self.batch_size)]
 
             # compute its noiseprint
-            noiseprint_patches = np.squeeze(self._engine.model(np.array(patches)[:, :, :, np.newaxis]))
+            noiseprint_patches = np.squeeze(self.detector._engine.model(np.array(patches)[:, :, :, np.newaxis]))
 
             for i, noiseprint_patch in enumerate(noiseprint_patches):
                 # add the noiseprint to the mean target patch object
@@ -194,14 +196,14 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         return image_gradient, cumulative_loss / (len(img_patches) // self.batch_size)
 
     @staticmethod
-    def read_arguments(dataset_root) -> dict:
+    def read_arguments(dataset_root) -> tuple:
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        kwarg = BaseNoiseprintAttack.read_arguments(dataset_root)
+        attack_parameters,setup_parameters = BaseNoiseprintAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
         parser.add_argument('--target_forgery_mask', required=True,
@@ -218,9 +220,9 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         else:
             raise Exception("Target forgery mask not found")
 
-        kwarg["target_forgery_mask"] = Picture(mask)
+        setup_parameters["target_forgery_mask"] = Picture(mask)
 
-        return kwarg
+        return attack_parameters,setup_parameters
 
     def loss_function(self, y_pred, y_true):
         """

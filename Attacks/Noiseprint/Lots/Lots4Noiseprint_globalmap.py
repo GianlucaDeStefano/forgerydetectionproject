@@ -17,14 +17,11 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
 
     name = "LOTS global map Attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture,
-                 steps: int, alpha: float, patch_size=(8, 8), padding_size=(0, 0, 0, 0),
+    def __init__(self, steps: int, alpha: float, patch_size=(8, 8), padding_size=(0, 0, 0, 0),
                  quality_factor=None, regularization_weight=0.0, plot_interval: int = 5,
                  root_debug: str = "./Data/Debug/",
                  verbosity: int = 2):
         """
-        :param target_image: original image on which we should perform the attack
-        :param target_image_mask: original mask of the image on which we should perform the attack
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
         :param patch_size: the size of the patches we will split the image in for analysis
@@ -38,9 +35,7 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
             faster execution to test the code
         """
 
-        super().__init__(target_image, target_image_mask, target_image, target_image_mask, steps, alpha, 0,
-                         quality_factor,
-                         regularization_weight, plot_interval, root_debug, verbosity)
+        super().__init__(steps, alpha, 0, quality_factor,                        regularization_weight, plot_interval, root_debug, verbosity)
 
         self.patch_size = patch_size
         self.padding_size = padding_size
@@ -71,8 +66,6 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
 
         pad_size = ((self.padding_size[0], self.padding_size[2]), (self.padding_size[3], self.padding_size[1]))
 
-        image = target_representation_source_image.pad(pad_size, mode="reflect")
-        target = target_representation_source_image_mask.pad(pad_size, mode="reflect")
 
         # conver the image in the standard required by noiseprint
         image = prepare_image_noiseprint(target_representation_source_image)

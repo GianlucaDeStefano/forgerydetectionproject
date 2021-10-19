@@ -27,14 +27,14 @@ class NoiseprintMimickingAttack(BaseMimicking4Noiseprint):
 
 
     @staticmethod
-    def read_arguments(dataset_root) -> dict:
+    def read_arguments(dataset_root) -> tuple:
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        kwarg = BaseNoiseprintAttack.read_arguments(dataset_root)
+        attack_parameters,setup_parameters = BaseNoiseprintAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
         parser.add_argument('--source_image', required=True,
@@ -55,6 +55,7 @@ class NoiseprintMimickingAttack(BaseMimicking4Noiseprint):
             else:
                 raise
 
-        kwarg["source_image"] = image
-        kwarg["source_image_mask"] = mask
-        return kwarg
+        setup_parameters["source_image"] = image
+        setup_parameters["source_image_mask"] = mask
+
+        return attack_parameters,setup_parameters

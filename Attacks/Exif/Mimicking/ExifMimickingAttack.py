@@ -25,10 +25,6 @@ class ExifMimickingAttack(BaseExifAttack):
                  regularization_weight=0.05, plot_interval=1, patch_size=(128, 128), batch_size: int = 128,
                  root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
-        :param target_image: original image on which we should perform the attack
-        :param target_image_mask: original mask of the image on which we should perform the attack
-        :param source_image: image from which we will compute the target representation
-        :param source_image_mask: mask of the imae from which we will compute the target representation
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
         :param detector: instance of the detector class to use to process the results, usefull also to share weights
@@ -45,8 +41,7 @@ class ExifMimickingAttack(BaseExifAttack):
 
         assert (target_image.shape == source_image.shape)
 
-        super().__init__(target_image, target_image_mask, source_image, source_image_mask, steps, alpha, detector,
-                         regularization_weight, plot_interval, patch_size, batch_size, root_debug, verbosity)
+        super().__init__(steps, alpha, detector,regularization_weight, plot_interval, patch_size, batch_size, root_debug, verbosity)
 
         stride = (max(source_image.shape[0], source_image.shape[1]) - self.patch_size[0]) // 30
 
@@ -145,14 +140,14 @@ class ExifMimickingAttack(BaseExifAttack):
         return gradient_map, loss
 
     @staticmethod
-    def read_arguments(dataset_root) -> dict:
+    def read_arguments(dataset_root) -> tuple:
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        kwarg = BaseExifAttack.read_arguments(dataset_root)
+        attack_parameters,setup_parameters = BaseExifAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
         parser.add_argument('--source_image', required=True,
@@ -174,6 +169,6 @@ class ExifMimickingAttack(BaseExifAttack):
             else:
                 raise
 
-        kwarg["source_image"] = image
-        kwarg["source_image_mask"] = mask
-        return kwarg
+        setup_parameters["source_image"] = image
+        setup_parameters["source_image_mask"] = mask
+        return attack_parameters,setup_parameters

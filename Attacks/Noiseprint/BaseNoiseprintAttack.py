@@ -2,12 +2,10 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.losses import mse
-from tensorflow.python.ops.gen_math_ops import squared_difference
 
 from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack, normalize_gradient
 from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine
-from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file, prepare_image_noiseprint
+from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file
 from Ulitities.Image.Picture import Picture
 from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
 
@@ -19,15 +17,10 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
 
     name = "Base Noiseprint Attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
-                 source_image_mask: Picture, steps: int, alpha: float, momentum_coeficient: float = 0.5,
+    def __init__(self, steps: int, alpha: float, momentum_coeficient: float = 0.5,
                  quality_factor=None,
                  regularization_weight=0, plot_interval=5, root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
-        :param target_image: original image on which we should perform the attack
-        :param target_image_mask: original mask of the image on which we should perform the attack
-        :param source_image: image from which we will compute the target representation
-        :param source_image_mask: mask of the imae from which we will compute the target representation
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
         :param momentum_coeficient: [0,1] how relevant is the velocity ferived from past gradients for computing the
@@ -40,27 +33,41 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
+
         detector = NoiseprintVisualizer()
 
-        super().__init__(target_image, target_image_mask, source_image, source_image_mask, detector, steps, alpha,
-                         momentum_coeficient, regularization_weight, plot_interval, False, root_debug, verbosity)
-
-        # compute and save the quality factor to use if it has not been specifier or if it is invalid
-        self.inferred = False
-        if not quality_factor or quality_factor < 51 or quality_factor > 101:
-            try:
-                quality_factor = jpeg_quality_of_file(target_image.path)
-                self.inferred = True
-            except:
-                quality_factor = 101
+        super().__init__(detector, steps, alpha, momentum_coeficient, regularization_weight, plot_interval, False,
+                         root_debug, verbosity)
 
         self.quality_factor = quality_factor
 
-        # instantiate the noiseprint engine class
-        self._engine = NoiseprintEngine()
+        # compute and save the quality factor to use if it has not been specifier or if it is invalid
+        self.inferred = False
 
-        # load the desired model
-        self._engine.load_quality(self.quality_factor)
+        # instantiate the noiseprint engine class
+        self._engine = detector._engine
+
+        if not quality_factor or quality_factor < 51 or quality_factor > 101:
+            self.inferred = True
+        else:
+            self._engine.load_quality(self.quality_factor)
+
+        # create variable to store the generated adversarial noise
+        self.noise = None
+
+        # create variable to store the momentum of the gradient
+        self.moving_avg_gradient = None
+
+        # the ammount of margin to apply to the gradient before normalization
+        self.gradient_normalization_margin = 0
+
+        # the batch size to use
+        self.batch_size = 512
+
+    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+              source_image_mask: Picture = None, target_forgery_mask: Picture = None):
+
+        super().setup(target_image, target_image_mask, source_image, source_image_mask,target_forgery_mask)
 
         # create variable to store the generated adversarial noise
         self.noise = np.zeros((target_image.shape[0], target_image.shape[1]))
@@ -68,11 +75,15 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         # create variable to store the momentum of the gradient
         self.moving_avg_gradient = np.zeros((target_image.shape[0], target_image.shape[1]))
 
-        # the ammount of margin to apply to the gradient before normalization
-        self.gradient_normalization_margin = 0
+        if self.inferred:
 
-        # the batch size to use
-        self.batch_size = 512
+            try:
+                self.quality_factor = jpeg_quality_of_file(target_image.path)
+            except:
+                self.quality_factor = 101
+
+            # load the desired model
+            self._engine.load_quality(self.quality_factor)
 
     def _on_before_attack(self):
         """
@@ -103,7 +114,6 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
 
         # prepare the tape object to compute the gradient
         with tf.GradientTape(persistent=True) as tape:
-
             # convert the input batch into a tensor
             input_tensor = tf.convert_to_tensor(patches[:, :, :, np.newaxis])
 
@@ -117,7 +127,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
             noiseprint_maps = tf.squeeze(self._engine.model(input_tensor))
 
             # compute the loss with respect to the target representation
-            loss = self.loss(noiseprint_maps, output_tensor,perturbations)
+            loss = self.loss(noiseprint_maps, output_tensor, perturbations)
 
             # retrieve the gradient of the image
             gradients = np.squeeze(tape.gradient(loss, input_tensor).numpy())

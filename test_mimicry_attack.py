@@ -22,31 +22,6 @@ results_root = os.path.join(root, "results")
 os.mkdir(results_root)
 os.mkdir(attacks_root)
 
-possible_forgery_masks = [
-    "./Data/custom/DSO_target_forgery_masks/1.png",
-    "./Data/custom/DSO_target_forgery_masks/2.png",
-    "./Data/custom/DSO_target_forgery_masks/2.png",
-]
-
-
-def create_target_forgery_map(shape: tuple):
-    assert (len(shape) == 2 and shape[0] > 300 and shape[1] > 300)
-
-    forgery = Picture(
-        np.where(np.all(Picture(path=str(random.choice(possible_forgery_masks))) == (255, 255, 255), axis=-1), 1, 0))
-
-    forgeries_width = forgery.shape[0]
-    forgeries_heigth = forgery.shape[1]
-
-    target_mask = np.zeros(shape)
-
-    x_start = random.randint(0, shape[0] - forgeries_width)
-    y_start = random.randint(0, shape[1] - forgeries_heigth)
-
-    target_mask[x_start:x_start + forgeries_width, y_start:y_start + forgeries_heigth] = forgery
-
-    return Picture(target_mask)
-
 
 dataset = DsoDatasetDataset(DATASETS_ROOT)
 

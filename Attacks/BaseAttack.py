@@ -19,12 +19,8 @@ from Ulitities.io.folders import create_debug_folder
 class BaseAttack(ABC):
     attack_name = "Base Attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, detector: DeterctorEngine,
-                 debug_root: str = "./Data/Debug/",
-                 verbosity: int = 2):
+    def __init__(self, detector: DeterctorEngine, debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
-        :param target_image: original image on which we should perform the attack
-        :param target_image_mask: original mask of the image on which we should perform the attack
         :param detector: name of the detector to be used to visualize the results
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: modality to use to run the attack:
@@ -32,7 +28,36 @@ class BaseAttack(ABC):
                 1 -> the attack output logs in the console, visualizers will be used during and after the attack
                 2 -> the attack outputs logs in the console, visualizers will be used before,during and after the attack
         """
+        # save the input image and its mask
+        self.target_image = None
+        self.target_image_mask = None
 
+        # load the desired detector into memory
+        self.detector = detector
+
+        # save the verbosity level (0 -> no logs,1 -> quick logs, 2-> full logs)
+        self.verbosity = verbosity
+
+        # save debug root folder
+        self.debug_root = debug_root
+
+        # create debug folder
+        self.debug_folder = None
+
+        self.start_time = datetime.now()
+
+    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+              source_image_mask: Picture = None,target_forgery_mask : Picture = None):
+        """
+        Function to load the iteration-dependent variable into the pipeline :param target_image: original image on
+        which we should perform the attack :param target_image_mask: original mask of the image on which we should
+        perform the attack
+        :param source_image: image from which we will compute the target representation  (to be
+        ignored for classes not extending BaseWhiteBoxAttack)
+        :param source_image_mask: mask of the image from which we will compute the target representation (to be
+        ignored for classes not extending BaseWhiteBoxAttack)
+        :return:
+        """
         # check if the target image is in the desired format (integer [0,255])
         assert (isinstance(target_image[0], (int, np.uint)), np.amax(target_image) < 255, np.amax(target_image) > -1)
 
@@ -46,14 +71,7 @@ class BaseAttack(ABC):
         self.target_image = target_image
         self.target_image_mask = target_image_mask
 
-        # load the desired detector into memory
-        self.detector = detector
-
-        # save the verbosity level (0 -> no logs,1 -> quick logs, 2-> full logs)
-        self.verbosity = verbosity
-
-        # create debug folder
-        self.debug_folder = create_debug_folder(debug_root)
+        self.debug_folder = create_debug_folder(self.debug_root)
 
         # Remove all handlers associated with the root logger object.
         for handler in logging.root.handlers[:]:
@@ -65,7 +83,12 @@ class BaseAttack(ABC):
         for name in logging.root.manager.loggerDict:
             logging.getLogger(name).disabled = True
 
-        self.start_time = datetime.now()
+    @property
+    def is_ready(self):
+        """
+        :return: returns True if the attack is ready to be executed otherwise False
+        """
+        return self.target_image is not None and self.target_image_mask is not None
 
     def execute(self) -> Picture:
         """
@@ -89,16 +112,20 @@ class BaseAttack(ABC):
         Instructions executed before performing the attack, writing logs
         :return:
         """
+
+        if not self.is_ready:
+            raise Exception("The attack is not ready to be executed")
+
         self.write_to_logs("Verbosity: {}\n".format(str(self.verbosity)))
 
         self.write_to_logs("Attack name: {}".format(self.name))
         self.write_to_logs("Target image: {}".format(self.target_image.path))
 
         if not self.test:
-            self.detector.prediction_pipeline(self.target_image, os.path.join(self.debug_folder, "initial result"),omask=self.target_image_mask)
+            self.detector.prediction_pipeline(self.target_image, os.path.join(self.debug_folder, "initial result"),
+                                              omask=self.target_image_mask)
 
         self.start_time = datetime.now()
-
 
     def _on_after_attack(self, attacked_image: Picture):
         """
@@ -106,15 +133,17 @@ class BaseAttack(ABC):
         :return:
         """
 
-        psnr = PSNR(self.target_image,np.array(attacked_image,np.int))
+        psnr = PSNR(self.target_image, np.array(attacked_image, np.int))
 
-        path = os.path.join(self.debug_folder,"attacked_image.png")
+        path = os.path.join(self.debug_folder, "attacked_image.png")
         attacked_image.save(path)
 
         attacked_image = Picture(path=path)
 
         if not self.clean_execution:
-            self.detector.prediction_pipeline(attacked_image, os.path.join(self.debug_folder, "final result"),original_picture=self.target_image,omask=self.target_image_mask,note="final result PSNR:{:.2f}".format(psnr))
+            self.detector.prediction_pipeline(attacked_image, os.path.join(self.debug_folder, "final result"),
+                                              original_picture=self.target_image, omask=self.target_image_mask,
+                                              note="final result PSNR:{:.2f}".format(psnr))
 
         end_time = datetime.now()
         timedelta = end_time - self.start_time
@@ -149,7 +178,7 @@ class BaseAttack(ABC):
         logging.info(message)
 
     @staticmethod
-    def read_arguments(dataset_root) -> dict:
+    def read_arguments(dataset_root) -> tuple:
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
@@ -159,7 +188,8 @@ class BaseAttack(ABC):
         parser = argparse.ArgumentParser()
         parser.add_argument('--image', required=True, help='Name of the input image, or its path')
         parser.add_argument('--mask', default=None, help='Path to the binary mask of the image')
-        parser.add_argument('--test',default=False,action='store_true', help='Should the algorithm be executed in test mode?')
+        parser.add_argument('--test', default=False, action='store_true',
+                            help='Should the algorithm be executed in test mode?')
         args = parser.parse_known_args()[0]
 
         image_path = args.image
@@ -176,11 +206,17 @@ class BaseAttack(ABC):
         if args.test:
             verbosity = 1
 
-        kwarg = dict()
-        kwarg["target_image"] = image
-        kwarg["target_image_mask"] = mask
-        kwarg["verbosity"] = verbosity
-        return kwarg
+        attack_parameters = dict()
+        attack_parameters["verbosity"] = verbosity
+
+        setup_parameters = dict()
+        setup_parameters["target_image"] = image
+        setup_parameters["target_image_mask"] = mask
+        setup_parameters["source_image"] = None
+        setup_parameters["source_image_mask"] = None
+        setup_parameters["target_forgery_mask"] = None
+
+        return attack_parameters,setup_parameters
 
     @classmethod
     def name(cls):

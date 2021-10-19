@@ -1,11 +1,10 @@
 import argparse
 import os
 from abc import ABC, abstractmethod
+
 import numpy as np
 import tensorflow as tf
 from cv2 import PSNR
-from tensorflow.python.ops.gen_math_ops import squared_difference
-from tensorflow.python.ops.linalg_ops import norm
 
 from Attacks.BaseIterativeAttack import BaseIterativeAttack
 from Detectors.DetectorEngine import DeterctorEngine
@@ -41,15 +40,10 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
 
     name = "Base Mimicking Attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
-                 source_image_mask: Picture, detector: DeterctorEngine, steps: int, alpha: float, momentum_coeficient: float = 0.5,
+    def __init__(self, detector: DeterctorEngine, steps: int, alpha: float, momentum_coeficient: float = 0.5,
                  regularization_weight=0.05, plot_interval=5, additive_attack=True,
                  root_debug: str = "./Data/Debug/", verbosity: int = 2):
         """
-        :param target_image: original image on which we should perform the attack
-        :param target_image_mask: original mask of the image on which we should perform the attack
-        :param source_image: image from which we will compute the target representation
-        :param source_image_mask: mask of the imae from which we will compute the target representation
         :param detector: name of the detector to be used to visualize the results
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
@@ -62,14 +56,12 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
-
-        super(BaseWhiteBoxAttack, self).__init__(target_image, target_image_mask, detector, steps, plot_interval,
-                                                 additive_attack,
+        super(BaseWhiteBoxAttack, self).__init__(detector, steps, plot_interval, additive_attack,
                                                  root_debug, verbosity)
 
         # save the source image and its mask
-        self.source_image = source_image
-        self.source_image_mask = source_image_mask
+        self.source_image = None
+        self.source_image_mask = None
 
         # save the regularization weight
         self.regularization_weight = regularization_weight
@@ -81,13 +73,10 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         self.target_representation = None
 
         # create list for tracking the loss during iterations
-        self.loss_steps = [9999]
+        self.loss_steps = None
 
         # create list for tracking the PSNR during iterations
-        self.psnr_steps = [999]
-
-        # variable to store the detector engine
-        self._engine = None
+        self.psnr_steps = None
 
         # variable used to store the generated adversarial noise
         self.noise = None
@@ -99,13 +88,38 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         assert (0 <= momentum_coeficient <= 1)
         self.momentum_coeficient = momentum_coeficient
 
+    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+              source_image_mask: Picture = None,target_forgery_mask : Picture = None):
+        """
+        :param source_image: image from which we will compute the target representation
+        :param source_image_mask: mask of the imae from which we will compute the target representation
+        :param target_forgery_mask: mask highlighting the section of the image that should be identified as forged after the attack
+        :return:
+        """
+
+        super().setup(target_image, target_image_mask)
+
+        if source_image is None:
+            source_image = target_image
+            source_image_mask = target_image_mask
+
+        # save the source image and its mask
+        self.source_image = source_image
+        self.source_image_mask = source_image_mask
+
+        # create list for tracking the loss during iterations
+        self.loss_steps = [9999]
+
+        # create list for tracking the PSNR during iterations
+        self.psnr_steps = [999]
+
     def _on_before_attack(self):
         """
         Write the input parameters into the logs, generate target representation
         :return: None
         """
-        super(BaseWhiteBoxAttack, self)._on_before_attack()
 
+        super(BaseWhiteBoxAttack, self)._on_before_attack()
         self.write_to_logs("Source image: {}".format(self.source_image.path))
         self.write_to_logs("Alpha: {}".format(self.alpha))
         self.write_to_logs("Momentum coefficient:{}".format(self.momentum_coeficient))
@@ -114,11 +128,6 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         # compute the target representation
         self.target_representation = self._compute_target_representation(self.source_image, self.source_image_mask)
 
-        if self.source_image.path != self.target_image.path and not self.test:
-            self.detector.prediction_pipeline(self.source_image,
-                                              path=os.path.join(self.debug_folder, "Initial result source")
-                                              , original_picture=self.source_image, omask=self.source_image_mask,
-                                              note="Initial state")
 
     def _on_after_attack_step(self, attacked_image: Picture, *args, **kwargs):
         """
@@ -221,18 +230,18 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         raise NotImplementedError
 
     @staticmethod
-    def read_arguments(dataset_root) -> dict:
+    def read_arguments(dataset_root) -> tuple:
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        kwarg = BaseIterativeAttack.read_arguments(dataset_root)
+        attack_parameters,setup_parameters = BaseIterativeAttack.read_arguments(dataset_root)
         parser = argparse.ArgumentParser()
         parser.add_argument("-a", '--alpha', default=5, type=float, help='Strength of the attack')
         args = parser.parse_known_args()[0]
 
-        kwarg["alpha"] = float(args.alpha)
+        attack_parameters["alpha"] = float(args.alpha)
 
-        return kwarg
+        return attack_parameters,setup_parameters
