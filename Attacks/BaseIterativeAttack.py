@@ -51,8 +51,8 @@ class BaseIterativeAttack(BaseAttack, ABC):
 
         # create a folder where to store the data generated at each step
         self.steps_debug_folder = os.path.join(str(self.debug_folder), "steps")
-        if self.plot_interval > 0:
-            os.makedirs(self.steps_debug_folder)
+
+        os.makedirs(self.steps_debug_folder)
 
     def execute(self) -> Picture:
         """
@@ -109,7 +109,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         :param image: image before the attack step
         :return:
         """
-        if self.plot_interval > 0 and (self.step_counter + 1) % self.plot_interval == 0 and not self.clean_execution:
+        if self.plot_interval > 0 and (self.step_counter + 1) % self.plot_interval == 0 and not self.test:
             self.detector.prediction_pipeline(attacked_image,
                                               path=os.path.join(self.steps_debug_folder, str(self.step_counter + 1))
                                               , original_picture=self.target_image, omask=self.target_image_mask,
@@ -126,7 +126,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         self.write_to_logs("Plot interval: {}".format(self.plot_interval))
         self.write_to_logs("Additive attack: {}".format(self.additive_attack))
 
-        if not self.clean_execution:
+        if not self.test:
             self.detector.prediction_pipeline(self.target_image,
                                               path=os.path.join(self.steps_debug_folder, str(self.step_counter + 1))
                                               , original_picture=self.target_image, omask=self.target_image_mask,

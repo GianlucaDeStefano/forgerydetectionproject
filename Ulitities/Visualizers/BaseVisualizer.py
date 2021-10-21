@@ -62,3 +62,11 @@ class BaseVisualizer:
             plt.savefig(path)
 
         plt.close()
+
+    @abstractmethod
+    def complete_pipeline(self,image,mask,base_result,target_mask,final_result,path):
+
+        raise NotImplementedError
+
+
+

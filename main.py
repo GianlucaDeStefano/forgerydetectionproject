@@ -2,6 +2,7 @@ import os
 from os.path import basename
 from pathlib import Path
 
+from Attacks.Exif.Mimicking.ExifMimickingIntelligentAttack import ExifIntelligentAttack
 from Attacks.Noiseprint.Mimiking.NoiseprintMimickingIntelligent import NoiseprintIntelligentMimickingAttack
 from Attacks.Noiseprint.Mimiking.NoiseprintMimickingIntelligentGlobal import NoiseprintGlobalIntelligentMimickingAttack
 from Datasets.DSO.DsoDataset import DsoDatasetDataset
@@ -10,9 +11,9 @@ from Ulitities.Image.functions import create_target_forgery_map
 
 DEBUG_ROOT = os.path.abspath("Data/Debug/")
 DATASETS_ROOT = os.path.abspath("Data/Datasets/")
-OUTPUT_ROOT  = os.path.abspath("Data/Tampered/DSO/Noiseprint")
+OUTPUT_ROOT  = os.path.abspath("Data/Tampered/DSO/Exif")
 
-attack = NoiseprintGlobalIntelligentMimickingAttack(50, 5,plot_interval=50,verbosity=0)
+attack = ExifIntelligentAttack(50, 5,plot_interval=50,verbosity=0)
 
 dataset = DsoDatasetDataset(DATASETS_ROOT)
 
@@ -45,4 +46,5 @@ for path_image in paths_images:
     attacked_image = Picture(attack.execute())
     attacked_image.save(os.path.join(OUTPUT_ROOT, Path(path_image).stem + ".png"))
 
+    final_heatmap, final_mask_original = attack.detector._engine.detect(attacked_image.to_float(), Picture(mask))
 

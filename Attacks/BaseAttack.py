@@ -25,7 +25,7 @@ class BaseAttack(ABC):
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: modality to use to run the attack:
                 0 -> the attack will not output any log in the console safe for error crashes, no visualizer is used before,during or after the attack
-                1 -> the attack output logs in the console, visualizers will be used during and after the attack
+                1 -> the attack output logs in the console, visualizers will be used only before and after the attack
                 2 -> the attack outputs logs in the console, visualizers will be used before,during and after the attack
         """
         # save the input image and its mask
@@ -59,11 +59,11 @@ class BaseAttack(ABC):
         :return:
         """
         # check if the target image is in the desired format (integer [0,255])
-        assert (isinstance(target_image[0], (int, np.uint)), np.amax(target_image) < 255, np.amax(target_image) > -1)
+        assert (isinstance(target_image[0], (int, np.uint)), np.amax(target_image) < 255, np.amin(target_image) > -1)
 
         # check that the mask is in the desired format (integer [0,1]) and has the same shape of the input image
         # along the x and y axis
-        assert (isinstance(target_image[0], (int, np.uint)), np.amax(target_image) < 255, np.amax(target_image) > -1,
+        assert (isinstance(target_image[0], (int, np.uint)), np.amax(target_image) < 255, np.amin(target_image) > -1,
                 target_image.shape[0] ==
                 target_image_mask.shape[0], target_image.shape[1] == target_image_mask.shape[1])
 
@@ -140,7 +140,7 @@ class BaseAttack(ABC):
 
         attacked_image = Picture(path=path)
 
-        if not self.clean_execution:
+        if not self.test:
             self.detector.prediction_pipeline(attacked_image, os.path.join(self.debug_folder, "final result"),
                                               original_picture=self.target_image, omask=self.target_image_mask,
                                               note="final result PSNR:{:.2f}".format(psnr))

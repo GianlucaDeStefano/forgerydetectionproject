@@ -17,7 +17,7 @@ class ExifEngine(DeterctorEngine):
         ckpt_path = os.path.join(pathlib.Path(__file__).parent, './ckpt/exif_final/exif_final.ckpt')
         self.model = demo.Demo(ckpt_path=ckpt_path, use_gpu=0, quality=3.0, num_per_dim=30)
 
-    def detect(self, image: Picture):
+    def detect(self, image: Picture, target_mask: Picture = None) -> tuple:
         res = self.model.run(image, use_ncuts=True, blue_high=True)
         return res[0], res[1]
 

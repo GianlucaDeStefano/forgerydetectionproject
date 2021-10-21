@@ -32,8 +32,14 @@ class NoiseprintEngine(DeterctorEngine):
         if self.setup_on_init:
             setup_session()
 
-    def detect(self, image: Picture):
-
+    def detect(self, image: Picture, target_mask: Picture = None) -> tuple:
+        """
+        Function returning a tuple containing the heatmap and its segmented equivalent computed
+        using the given engine
+        :param image: image to analyze
+        :param target_mask: the mask that should ideally be produced
+        :return: (heatmap,mask)
+        """
         # check that the image has only one channel
         assert (len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1))
 
@@ -44,15 +50,16 @@ class NoiseprintEngine(DeterctorEngine):
         mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, image)
         attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
-        return attacked_heatmap
+        mask = None
+        if target_mask is not None:
+            mask = self.get_mask(attacked_heatmap, target_mask)
 
-    def get_mask(self,image: Picture,gtmask):
+        return attacked_heatmap, mask
 
-        heatmap = self.detect(image)
+    def get_mask(self,heatmap: Picture,gtmask):
 
         threshold = find_best_theshold(heatmap, gtmask)
         predicted_mask = np.array(heatmap > threshold, int).clip(0, 1)
-
 
         return predicted_mask
 

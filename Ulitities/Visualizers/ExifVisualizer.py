@@ -23,8 +23,7 @@ class InvalidImageShape(Exception):
 
 class ExifVisualizer(BaseVisualizer):
 
-    def __init__(self, ):
-
+    def __init__(self):
         super().__init__(ExifEngine(), "EXIF-SC")
 
     def prediction_pipeline(self, image: Picture, path=None, original_picture=None, omask=None, note="",
@@ -85,3 +84,30 @@ class ExifVisualizer(BaseVisualizer):
             plt.close()
 
         return heatmap, mask
+
+    def complete_pipeline(self,image,mask,base_result,target_mask,final_result,path):
+
+        fig, axs = plt.subplots(1, 5, figsize=(25, 5))
+
+        for ax in axs:
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+
+        axs[0].imshow(image)
+        axs[0].set_title('Image')
+
+        axs[1].imshow(mask, clim=[0, 1], cmap='gray')
+        axs[1].set_title('Original Forgery')
+
+        axs[2].imshow(base_result, clim=[0, 1], cmap='jet')
+        axs[2].set_title('Original Heatmap')
+
+        axs[3].imshow(target_mask, clim=[0, 1], cmap='gray')
+        axs[3].set_title('Target Forgery')
+
+        axs[4].imshow(final_result, clim=[0, 1], cmap='jet')
+        axs[4].set_title('Final Heatmap')
+
+        plt.savefig(path)
+        plt.close()
