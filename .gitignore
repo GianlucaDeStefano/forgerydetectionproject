@@ -1,6 +1,9 @@
 #exclude folders containing data (e.g datasets)
+*.zip
+
 Data/*
 !Data/custom
+!Detectors/Exif/lib
 
 #excluding folder containing the Exif-sc models
 ckpt/
