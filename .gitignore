@@ -3,6 +3,7 @@
 
 Data/*
 !Data/custom
+lib/
 !Detectors/Exif/lib
 
 #excluding folder containing the Exif-sc models
@@ -29,7 +30,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
