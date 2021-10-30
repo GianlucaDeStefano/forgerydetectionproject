@@ -12,6 +12,7 @@ from Ulitities.Image.Picture import Picture
 class ExifEngine(DeterctorEngine):
 
     def __init__(self):
+        tf.compat.v1.disable_eager_execution()
         super().__init__("ExifEngine")
 
         ckpt_path = os.path.join(pathlib.Path(__file__).parent, './ckpt/exif_final/exif_final.ckpt')

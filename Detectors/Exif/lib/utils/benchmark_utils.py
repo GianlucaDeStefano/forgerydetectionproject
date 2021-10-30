@@ -1,6 +1,6 @@
 import sys, os
-import init_paths
-from lib.utils import queue_runner, util
+from Detectors.Exif.lib.utils import queue_runner
+from Detectors.Exif.lib.utils import util
 import tensorflow as tf
 import threading
 import numpy as np

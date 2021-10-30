@@ -44,7 +44,7 @@ fi
 echo "Datasets setup successfully"
 
 echo "Preparing DSO-1 Dataset"
-if [ ! -f "./Data/Datasets/DSO/Masks" ]
+if [ ! -f "./Data/Datasets/DSO/masks" ]
 then
   if [ ! -f "./tifs-database.zip" ]
   then
@@ -66,7 +66,7 @@ if [ ! -f "./Detectors/Exif/ckpt" ]
 then
 echo "Downloading exif_final.zip"
   # Google Drive link to exif_final.zip
-  gdown https://drive.google.com/uc?id=1X6b55rwZzU68Mz1m68WIX_G2idsEw3Qh
+  gdown https://drive.google.com/uc?id=1X6b55rwZzU68Mz1m68WIX_G2idsEw3Qh -O exif_final.zip
 
   mkdir -p ./Detectors/Exif/ckpt/
   unzip exif_final.zip -d ./Detectors/Exif/ckpt/

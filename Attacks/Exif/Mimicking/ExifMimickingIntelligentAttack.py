@@ -48,6 +48,8 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
 
         self.stride = None
 
+        self.k = 1
+
     def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):
 
@@ -100,37 +102,15 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
                 for authentic_feature in features:
                     authentic_target_representation += np.array(authentic_feature) / len(authentic_patches)
 
-
-        forged_target_representation = np.zeros(4096)
-
-        forged_patches = Picture(target_representation_source_image).get_forged_patches(target_representation_source_image_mask,(128, 128), force_shape=False,
-                                                                                stride=self.stride)
-        with self._sess.as_default():
-            for batch_idx in tqdm(range(0, (len(forged_patches) + self.batch_size - 1) // self.batch_size, 1),disable=self.clean_execution):
-                starting_idx = self.batch_size * batch_idx
-
-                batch_patches = forged_patches[starting_idx:min(starting_idx + self.batch_size, len(forged_patches))]
-
-                for i, patch in enumerate(batch_patches):
-                    batch_patches[i] = prepare_image(patch)
-
-                patch = np.array(batch_patches)
-                tensor_patch = tf.convert_to_tensor(patch, dtype=tf.float32)
-
-                features = self._engine.extract_features_resnet50(tensor_patch, "test", reuse=True).eval()
-
-                for forged_feature in features:
-                    forged_target_representation += np.array(forged_feature) / len(forged_patches)
-
         patches = Picture(target_forgery_mask).divide_in_patches((128, 128), force_shape=False,stride=self.stride)
 
         target_representations = []
 
         for patch in patches:
             if patch.max() ==0:
-                target_representations += [authentic_target_representation]
+                target_representations += [np.zeros(4096)]
             else:
-                target_representations += [-authentic_target_representation]
+                target_representations += [authentic_target_representation * self.k]
 
         return target_representations
 

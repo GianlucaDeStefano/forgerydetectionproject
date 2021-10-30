@@ -1,5 +1,6 @@
 import os
-
+import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 from Attacks.Exif.Mimicking.ExifMimickingIntelligentAttack import ExifIntelligentAttack
 from Attacks.Noiseprint.Mimiking.NoiseprintMimickingIntelligentGlobal import NoiseprintGlobalIntelligentMimickingAttack
 from Datasets.DSO.DsoDataset import DsoDatasetDataset
@@ -11,7 +12,7 @@ DEBUG_ROOT = os.path.abspath("./Data/Debug/")
 DATASETS_ROOT = os.path.abspath("./Data/Datasets/")
 OUTPUT_ROOT = os.path.abspath("./Data/Tampered/DSO/Exif")
 
-root_experiment = create_debug_folder(DATASETS_ROOT)
+root_experiment = create_debug_folder(DEBUG_ROOT)
 
 attack = ExifIntelligentAttack(50, 5, plot_interval=1, verbosity=0,root_debug=root_experiment)
 
