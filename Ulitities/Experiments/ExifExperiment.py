@@ -18,13 +18,15 @@ class ExifExperiment(BaseExperiment):
     
     def __init__(self, attack: BaseAttack, dataset: Dataset, debug_root : str):
         super(ExifExperiment, self).__init__(attack,dataset,debug_root)
-        self.visualizer = self.attack.detector
+        self.visualizer = None
     
     def compute_scores(self,original_image, attacked_image, original_mask, target_mask):
 
         psrn = PSNR(original_image,attacked_image)
 
         self.PSNRs.append(psrn)
+
+        self.visualizer = self.attack.detector
 
         initial_heatmap, initial_mask = self.visualizer._engine.detect(original_image.to_float())
 

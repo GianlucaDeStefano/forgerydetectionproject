@@ -32,10 +32,7 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
             faster execution to test the code
         """
 
-        if detector is None:
-            detector = ExifVisualizer()
-
-        super().__init__(detector, steps, alpha, 0.5,
+        super().__init__(None, steps, alpha, 0.5,
                          regularization_weight,
                          plot_interval, True, root_debug, verbosity)
 
@@ -44,22 +41,31 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
 
         self.patch_size = patch_size
 
-        self._engine = self.detector._engine.model.solver.net
-        self._sess = self.detector._engine.model.solver.sess
+        self._engine = None
+        self._sess = None
 
         self.moving_avg_gradient = None
         self.noise = None
 
         self.get_gradient = self._get_gradient_of_batch
 
-        self.x = tf.compat.v1.placeholder(tf.float32, shape=[None, 128, 128, 3])
-        self.y = tf.compat.v1.placeholder(tf.float32, shape=[None, 4096])
+        self.x = None
+        self.y = None
 
         self.gradient_op = None
         self.loss_op = None
 
     def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):
+
+        del self.detector,self._engine,self._sess
+
+        self.detector = ExifVisualizer()
+        self._engine = self.detector._engine.model.solver.net
+        self._sess = self.detector._engine.model.solver.sess
+
+        self.x = tf.compat.v1.placeholder(tf.float32, shape=[None, 128, 128, 3])
+        self.y = tf.compat.v1.placeholder(tf.float32, shape=[None, 4096])
 
         super().setup(target_image, target_image_mask, source_image, source_image_mask,target_forgery_mask)
 
