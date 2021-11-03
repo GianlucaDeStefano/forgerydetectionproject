@@ -31,9 +31,11 @@ class NoiseprintExperiment(BaseExperiment):
             pass
         self.visualizer.load_quality(quality_factor)
 
-        initial_heatmap, _ = self.visualizer._engine.detect(original_image.one_channel().to_float())
+        threshold = self.visualizer._engine.get_best_threshold(original_image.one_channel().to_float(),original_mask)
 
-        final_heatmap, final_mask_original = self.visualizer._engine.detect(attacked_image.one_channel().to_float(), original_mask)
+        initial_heatmap, _ = self.visualizer._engine.detect(original_image.one_channel().to_float(),threshold=threshold)
+
+        final_heatmap, final_mask_original = self.visualizer._engine.detect(attacked_image.one_channel().to_float(), threshold=threshold)
 
         final_mask_target = self.visualizer._engine.get_mask(final_heatmap, target_mask)
 

@@ -32,7 +32,7 @@ class NoiseprintEngine(DeterctorEngine):
         if self.setup_on_init:
             setup_session()
 
-    def detect(self, image: Picture, target_mask: Picture = None) -> tuple:
+    def detect(self, image: Picture, target_mask: Picture = None,threshold =None) -> tuple:
         """
         Function returning a tuple containing the heatmap and its segmented equivalent computed
         using the given engine
@@ -51,14 +51,22 @@ class NoiseprintEngine(DeterctorEngine):
         attacked_heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
         mask = None
-        if target_mask is not None:
-            mask = self.get_mask(attacked_heatmap, target_mask)
+        if target_mask is not None or threshold is not None:
+            mask = self.get_mask(attacked_heatmap, target_mask,threshold)
 
         return attacked_heatmap, mask
 
-    def get_mask(self,heatmap: Picture,gtmask):
+    def get_best_threshold(self,heatmap,gtmask):
+        return find_best_theshold(heatmap, gtmask)
 
-        threshold = find_best_theshold(heatmap, gtmask)
+    def get_mask(self,heatmap: Picture,gtmask = None, threshold = None):
+
+        if gtmask is None and threshold is None:
+            raise Exception("You must provide the ground truth mask or the treshold to use")
+
+        if threshold is None:
+            threshold = find_best_theshold(heatmap, gtmask)
+
         predicted_mask = np.array(heatmap > threshold, int).clip(0, 1)
 
         return predicted_mask
