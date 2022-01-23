@@ -8,16 +8,11 @@ from tqdm import tqdm
 from Attacks.Exif.BaseExifAttack import BaseExifAttack
 from Attacks.Exif.Mimicking.BaseMimickin4Exif import BaseMimicking4Exif
 from Attacks.Noiseprint.Mimiking.NoiseprintMimickingIntelligentGlobal import create_target_forgery_map
-from Datasets import get_image_and_mask, ImageNotFoundError
 from Detectors.Exif.utility import prepare_image
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 import tensorflow as tf
 
-from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
-
-gpus = tf.config.experimental.list_physical_devices('GPU')
-for gpu in gpus:
-    tf.config.experimental.set_memory_growth(gpu, True)
+from Utilities.Visualizers.ExifVisualizer import ExifVisualizer
 
 
 class ExifIntelligentAttack(BaseMimicking4Exif):
@@ -26,7 +21,7 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
 
     def __init__(self, steps: int, alpha: float = 1,
                  detector:ExifVisualizer=None, regularization_weight=0.05, plot_interval=1, patch_size=(128, 128), batch_size: int = 64,
-                 root_debug: str = "./Data/Debug/", verbosity: int = 2):
+                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
@@ -37,24 +32,26 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
         :param patch_size: Width and Height of the patches we are using to compute the Exif parameters
                             we assume that the the patch is always a square eg patch_size[0] == patch_size[1]
         :param batch_size: how many patches shall be processed in parallel
-        :param root_debug: root folder inside which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
-        super().__init__(steps, alpha, detector,regularization_weight, plot_interval, patch_size, batch_size, root_debug, verbosity)
+        super().__init__(steps, alpha, detector,regularization_weight, plot_interval, patch_size, batch_size, debug_root, verbosity)
 
         self.target_forgery_mask = None
 
         self.stride = None
 
-        self.k = 5
+        self.k = 10
 
     def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):
 
         assert (target_image.shape[0] == target_forgery_mask.shape[0])
         assert (target_image.shape[1] == target_forgery_mask.shape[1])
+
+        self.logger_module.info("Setting up the attack ...")
 
         super().setup(target_image, target_image_mask, source_image, source_image_mask,target_forgery_mask)
 
@@ -68,6 +65,8 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
 
         self.stride = (stride,stride)
 
+        self.logger_module.info("Attack Ready")
+
     def _compute_target_representation(self, target_representation_source_image: Picture,
                                        target_representation_source_image_mask: Picture,target_forgery_mask: Picture = None):
         """
@@ -77,6 +76,8 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
         :param target_representation_source_image_mask: mask of the image
         :return: list of 4096-dimensional feature vectors
         """
+
+        self.logger_module.info("Compute target representation")
 
         if target_forgery_mask is None:
             target_forgery_mask = self.target_forgery_mask
@@ -130,9 +131,9 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
 
         for patch in patches:
             if patch.max() ==0:
-                target_representations += [np.zeros(4096)]
+                target_representations += [authentic_target_representation]
             else:
-                target_representations += [forged_target_representation * self.k]
+                target_representations += [-authentic_target_representation * self.k]
 
         return target_representations
 

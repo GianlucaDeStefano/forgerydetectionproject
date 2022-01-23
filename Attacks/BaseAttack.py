@@ -10,13 +10,13 @@ from cv2 import PSNR
 
 from Datasets import get_image_and_mask
 from Detectors.DetectorEngine import DeterctorEngine
-from Ulitities.Image.Picture import Picture
-from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
-from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
-from Ulitities.io.folders import create_debug_folder
+from Utilities.Image.Picture import Picture
+from Utilities.Logger.Logger import Logger
+
+from Utilities.io.folders import create_debug_folder
 
 
-class BaseAttack(ABC):
+class BaseAttack(ABC, Logger):
     attack_name = "Base Attack"
 
     def __init__(self, detector: DeterctorEngine, debug_root: str = "./Data/Debug/", verbosity: int = 2):
@@ -73,16 +73,6 @@ class BaseAttack(ABC):
 
         self.debug_folder = create_debug_folder(self.debug_root)
 
-        # Remove all handlers associated with the root logger object.
-        for handler in logging.root.handlers[:]:
-            logging.root.removeHandler(handler)
-
-        logging.basicConfig(format='%(message)s', filename=os.path.join(self.debug_folder, "logs.txt"),
-                            level=logging.DEBUG)
-
-        for name in logging.root.manager.loggerDict:
-            logging.getLogger(name).disabled = True
-
     @property
     def is_ready(self):
         """
@@ -116,10 +106,10 @@ class BaseAttack(ABC):
         if not self.is_ready:
             raise Exception("The attack is not ready to be executed")
 
-        self.write_to_logs("Verbosity: {}\n".format(str(self.verbosity)))
+        self.logger_module.info("Verbosity: {}\n".format(str(self.verbosity)))
 
-        self.write_to_logs("Attack name: {}".format(self.name))
-        self.write_to_logs("Target image: {}".format(self.target_image.path))
+        self.logger_module.info("Attack name: {}".format(self.name))
+        self.logger_module.info("Target image: {}".format(self.target_image.path))
 
         if not self.test:
             self.detector.prediction_pipeline(self.target_image, os.path.join(self.debug_folder, "initial result"),
@@ -141,14 +131,16 @@ class BaseAttack(ABC):
         attacked_image = Picture(path=path)
 
         if not self.test:
-            self.detector.prediction_pipeline(attacked_image, os.path.join(self.debug_folder, "final result"),
+            heatmap,mask = self.detector.prediction_pipeline(attacked_image, os.path.join(self.debug_folder, "final result"),
                                               original_picture=self.target_image, omask=self.target_image_mask,
                                               note="final result PSNR:{:.2f}".format(psnr))
+
+            self.detector.save_heatmap(heatmap,os.path.join(self.debug_folder, "final heatmap.png"))
 
         end_time = datetime.now()
         timedelta = end_time - self.start_time
 
-        self.write_to_logs("Attack pipeline terminated in {}".format(timedelta))
+        self.logger_module.info("Attack pipeline terminated in {}".format(timedelta))
 
     @abstractmethod
     def attack(self, image_to_attack: Picture, *args, **kwargs):
@@ -160,22 +152,6 @@ class BaseAttack(ABC):
         :return: the attacked image
         """
         raise NotImplementedError
-
-    def write_to_logs(self, message, force_print=True):
-        """
-        Add a new line to this attack's log file IF it exists
-        :param force_print:
-        :param message: message to write to the file
-        :return:
-        """
-
-        if force_print and not self.clean_execution:
-            print(message)
-
-        if not self.debug_folder:
-            return
-
-        logging.info(message)
 
     @staticmethod
     def read_arguments(dataset_root) -> tuple:

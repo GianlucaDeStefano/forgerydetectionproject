@@ -32,6 +32,7 @@ def noiseprint_blind_post(res, img):
 
 def genMappFloat(mapp, valid, range0, range1, imgsize):
     mapp_s = np.copy(mapp)
+    print(np.min(mapp_s[valid > 0]))
     mapp_s[valid == 0] = np.min(mapp_s[valid > 0])
 
     mapp_s = resizeMapWithPadding(mapp_s, range0, range1, imgsize)

@@ -7,10 +7,10 @@ from tqdm import tqdm
 from Attacks.Exif.BaseExifAttack import BaseExifAttack
 from Datasets import get_image_and_mask, ImageNotFoundError
 from Detectors.Exif.utility import prepare_image
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 import tensorflow as tf
 
-from Ulitities.Visualizers.ExifVisualizer import ExifVisualizer
+from Utilities.Visualizers.ExifVisualizer import ExifVisualizer
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
@@ -21,9 +21,9 @@ class ExifMimickingAttack(BaseExifAttack):
     name = "Exif mimicking attack"
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
-                 source_image_mask: Picture, steps: int, alpha: float = 1, detector:ExifVisualizer=None,
+                 source_image_mask: Picture, steps: int, alpha: float = 1, detector: ExifVisualizer = None,
                  regularization_weight=0.05, plot_interval=1, patch_size=(128, 128), batch_size: int = 128,
-                 root_debug: str = "./Data/Debug/", verbosity: int = 2):
+                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
@@ -34,14 +34,15 @@ class ExifMimickingAttack(BaseExifAttack):
         :param patch_size: Width and Height of the patches we are using to compute the Exif parameters
                             we assume that the the patch is always a square eg patch_size[0] == patch_size[1]
         :param batch_size: how many patches shall be processed in parallel
-        :param root_debug: root folder inside which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
         assert (target_image.shape == source_image.shape)
 
-        super().__init__(steps, alpha, detector,regularization_weight, plot_interval, patch_size, batch_size, root_debug, verbosity)
+        super().__init__(steps, alpha, detector, regularization_weight, plot_interval, patch_size, batch_size,
+                         debug_root, verbosity)
 
         stride = (max(source_image.shape[0], source_image.shape[1]) - self.patch_size[0]) // 30
 
@@ -122,7 +123,8 @@ class ExifMimickingAttack(BaseExifAttack):
             x_tensor = np.array(batch_patches_ready, dtype=np.float32)
             y_tensor = np.array(target_batch_patches, dtype=np.float32)
 
-            batch_gradients,batch_loss = self._sess.run([self.gradient_op,self.loss_op],feed_dict={self.x: x_tensor, self.y: y_tensor})
+            batch_gradients, batch_loss = self._sess.run([self.gradient_op, self.loss_op],
+                                                         feed_dict={self.x: x_tensor, self.y: y_tensor})
 
             # add the batch loss to the cumulative loss
             loss += batch_loss
@@ -147,7 +149,7 @@ class ExifMimickingAttack(BaseExifAttack):
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        attack_parameters,setup_parameters = BaseExifAttack.read_arguments(dataset_root)
+        attack_parameters, setup_parameters = BaseExifAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
         parser.add_argument('--source_image', required=True,
@@ -171,4 +173,4 @@ class ExifMimickingAttack(BaseExifAttack):
 
         setup_parameters["source_image"] = image
         setup_parameters["source_image_mask"] = mask
-        return attack_parameters,setup_parameters
+        return attack_parameters, setup_parameters

@@ -6,8 +6,8 @@ import tensorflow as tf
 from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack, normalize_gradient
 from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine
 from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file
-from Ulitities.Image.Picture import Picture
-from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
+from Utilities.Image.Picture import Picture
+from Utilities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
 
 
 class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
@@ -19,7 +19,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
 
     def __init__(self, steps: int, alpha: float, momentum_coeficient: float = 0.5,
                  quality_factor=None,
-                 regularization_weight=0, plot_interval=5, root_debug: str = "./Data/Debug/", verbosity: int = 2):
+                 regularization_weight=0, plot_interval=5, debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
@@ -29,7 +29,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
                level, if it left to None, the right model will be inferred from the file
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
-        :param root_debug: root folder insede which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
@@ -37,7 +37,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         detector = NoiseprintVisualizer()
 
         super().__init__(detector, steps, alpha, momentum_coeficient, regularization_weight, plot_interval, False,
-                         root_debug, verbosity)
+                         debug_root, verbosity)
 
         self.quality_factor = quality_factor
 
@@ -93,8 +93,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
 
         super()._on_before_attack()
 
-        self.write_to_logs(
-            "Quality factor to be used: {} {}".format(self.quality_factor, "(inferred)" if self.inferred else ""))
+        self.logger_module.info("Quality factor to be used: {} {}".format(self.quality_factor, "(inferred)" if self.inferred else ""))
 
     def _get_gradients_of_patches(self, patches_list: list, target_list: list, perturbations=None):
         """

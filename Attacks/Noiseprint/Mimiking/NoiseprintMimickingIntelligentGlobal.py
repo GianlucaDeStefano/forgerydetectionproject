@@ -8,8 +8,8 @@ from tqdm import tqdm
 from Attacks.Noiseprint.BaseNoiseprintAttack import BaseNoiseprintAttack
 from Attacks.Noiseprint.Mimiking.BaseMimickin4Noiseprint import BaseMimicking4Noiseprint
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
-from Ulitities.Image.Picture import Picture
-from Ulitities.Image.functions import visuallize_matrix_values
+from Utilities.Image.Picture import Picture
+from Utilities.Image.functions import visuallize_matrix_values
 import tensorflow as tf
 
 
@@ -36,7 +36,7 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
     name = "Noiseprint intelligent mimicking attack"
 
     def __init__(self, steps: int, alpha: float, patch_size=(8, 8), quality_factor=None,
-                 regularization_weight=0.05, plot_interval=5, root_debug: str = "./Data/Debug/", verbosity: int = 2):
+                 regularization_weight=0.05, plot_interval=5, debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
@@ -45,12 +45,12 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
                level, if it left to None, the right model will be inferred from the file
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
-        :param root_debug: root folder insede which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
-        super().__init__(steps, alpha, 0.0, quality_factor,  regularization_weight, plot_interval, root_debug, verbosity)
+        super().__init__(steps, alpha, 0.0, quality_factor,  regularization_weight, plot_interval, debug_root, verbosity)
 
         self.target_forgery_mask = None
 
@@ -59,7 +59,7 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         # for this technique no padding is needed
         self.padding_size = (8, 8, 8, 8)
 
-        self.k = 10
+        self.k = 5
 
     def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
               source_image_mask: Picture = None,target_forgery_mask : Picture = None):
@@ -155,9 +155,9 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         for target_mask_patch in target_mask_patches:
 
             if target_mask_patch.max() == 0:
-                target_map = target_mask_patch.add_to_image(target_map, np.zeros(average_authentic_patch.shape))
+                target_map = target_mask_patch.add_to_image(target_map, np.zeros(average_authentic_patch.shape)*self.k)
             else:
-                target_map = target_mask_patch.add_to_image(target_map, average_forged_patch * self.k)
+                target_map = target_mask_patch.add_to_image(target_map, -average_authentic_patch * self.k)
 
         return target_map
 

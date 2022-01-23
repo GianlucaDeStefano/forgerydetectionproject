@@ -228,6 +228,7 @@ class EfficientBenchmark():
                 h_ind_, w_ind_, fts_ = self.solver.sess.run([self.h_indices_,
                                                              self.w_indices_,
                                                              self.solver.net.im_b_feat])
+                #print("fts:",fts_.shape)
                 # print time.time() - t0
                 for i in range(h_ind_.shape[0]):
                     responses[:, h_ind_[i], w_ind_[i]] = fts_[i]
@@ -250,7 +251,7 @@ class EfficientBenchmark():
         assert not self.auto_close_sess, "Need to keep sess open"
         
         feature_response = self.run_ft(num_fts=num_fts)
-        
+        #print("feature response shape:", feature_response.shape,flush=True)
         flattened_features = feature_response.reshape((num_fts, -1)).T
         # Use np.unravel_index to recover x,y coordinate
         
@@ -276,11 +277,15 @@ class EfficientBenchmark():
             a_ind = np.ravel_multi_index(patch_a_inds.T, [self.max_h_ind, self.max_w_ind])
             b_ind = np.ravel_multi_index(patch_b_inds.T, [self.max_h_ind, self.max_w_ind])
 
+            #print("a_ind",a_ind.shape)
+            #print("b_ind",b_ind.shape)
             # t0 = time.time()
             preds_ = self.solver.sess.run(self.solver.net.pc_cls_pred,
                                           feed_dict={self.net.precomputed_features:flattened_features,
                                                      self.net.im_a_index: a_ind,
                                                      self.net.im_b_index: b_ind})
+            #print("preds", preds_.shape)
+
             # print preds_
             # print time.time() - t0
             for i in range(preds_.shape[0]):

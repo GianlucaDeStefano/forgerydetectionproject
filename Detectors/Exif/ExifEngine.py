@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from Detectors.DetectorEngine import DeterctorEngine
 from Detectors.Exif import demo
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 
 
 class ExifEngine(DeterctorEngine):

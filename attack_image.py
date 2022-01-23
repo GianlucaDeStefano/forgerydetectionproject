@@ -2,12 +2,14 @@ import argparse
 import os
 
 from Attacks import families_of_attacks
+from Utilities.Confs.Configs import Configs
 
-DEBUG_ROOT = os.path.abspath("Data/Debug/")
-DATASETS_ROOT = os.path.abspath("Data/Datasets/")
+configs = Configs("config.yaml","Attacks")
 
 
 def attack_pipeline(category_number, attack_number):
+
+    configs = Configs("config.yaml")
 
     if category_number is None:
 
@@ -16,7 +18,6 @@ def attack_pipeline(category_number, attack_number):
             print("  {}) {}".format(c, key))
             c = c + 1
         category_number = int(input("Enter category number:"))
-
 
     supported_attacks = list(families_of_attacks.values())[category_number]
 
@@ -27,10 +28,10 @@ def attack_pipeline(category_number, attack_number):
             i = i + 1
         attack_number = int(input("Enter attack number:"))
 
-
     attack_class = list(supported_attacks.values())[attack_number]
 
-    attack_arguments,setup_arguments = attack_class.read_arguments(DATASETS_ROOT)
+    attack_arguments,setup_arguments = attack_class.read_arguments(configs["global"]["datasets"]["root"])
+    attack_arguments["debug_root"] = configs.debug_root
 
     # create an instance of the attack
     attack = attack_class(**attack_arguments)

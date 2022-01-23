@@ -8,8 +8,8 @@ from tqdm import tqdm
 import tensorflow as tf
 from Attacks.Noiseprint.Lots.BaseLots4Noiseprint import BaseLots4Noiseprint
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint, normalize_noiseprint_no_margins
-from Ulitities.Image.Picture import Picture
-from Ulitities.Image.functions import visuallize_matrix_values
+from Utilities.Image.Picture import Picture
+from Utilities.Image.functions import visuallize_matrix_values
 
 
 class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
@@ -18,7 +18,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
 
     def __init__(self, steps: int, alpha: float, patch_size=(8, 8),
                  padding_size=(0, 0, 0, 0), quality_factor=None, regularization_weight=0.0, plot_interval: int = 5,
-                 root_debug: str = "./Data/Debug/",
+                 debug_root: str = "./Data/Debug/",
                  verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform
@@ -29,12 +29,12 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
                level, if it left to None, the right model will be inferred from the file
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
-        :param root_debug: root folder inside which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
-        super().__init__(steps, alpha, 0,quality_factor, regularization_weight, plot_interval, root_debug, verbosity)
+        super().__init__(steps, alpha, 0,quality_factor, regularization_weight, plot_interval, debug_root, verbosity)
 
         self.patch_size = patch_size
         self.padding_size = padding_size
@@ -49,8 +49,8 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
         """
         super(Lots4NoiseprintAttackOriginal, self)._on_before_attack()
 
-        self.write_to_logs("Analyzing the image by patches of size:{}".format(self.patch_size))
-        self.write_to_logs("Padding patches on each dimension by:{}".format(self.padding_size))
+        self.logger_module.info("Analyzing the image by patches of size:{}".format(self.patch_size))
+        self.logger_module.info("Padding patches on each dimension by:{}".format(self.padding_size))
 
     def _compute_target_representation(self, target_representation_source_image: Picture,
                                        target_representation_source_image_mask: Picture):
@@ -83,7 +83,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
         patches_map = np.zeros(target_representation_source_image.shape)
 
         # generate authentic target representation
-        self.write_to_logs("Generating target representation...")
+        self.logger_module.info("Generating target representation...")
 
         # foreach authentic patch
         for base_index in tqdm(range(0, len(authentic_patches), self.batch_size)):
@@ -100,7 +100,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
                 # add the result to the map of patches
                 patches_map = patches[i].no_paddings().add_to_image(patches_map)
 
-        self.write_to_logs("Target representation generated")
+        self.logger_module.info("Target representation generated")
 
         t_no_padding = authentic_patches[0].no_paddings(target_patch)
 

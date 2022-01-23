@@ -4,7 +4,7 @@ import numpy as np
 
 from Attacks.BaseAttack import BaseAttack
 from Attacks.BaseIterativeAttack import BaseIterativeAttack
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 
 
 class GaussianNoiseAdditionAttack(BaseIterativeAttack):
@@ -16,7 +16,7 @@ class GaussianNoiseAdditionAttack(BaseIterativeAttack):
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, detector:str, steps: int, initial_mean,
                  initial_standard_deviation,
-                 final_mean, final_standard_deviation, root_debug: str = "./Data/Debug/",
+                 final_mean, final_standard_deviation, debug_root: str = "./Data/Debug/",
                  verbosity: bool = True):
         """
         :param target_image: original image on which we should perform the attack
@@ -26,11 +26,11 @@ class GaussianNoiseAdditionAttack(BaseIterativeAttack):
         :param initial_standard_deviation: initial value for the standard deviation of the Gaussian distribution from which we will sample the noise
         :param final_mean: final value for the mean of the Gaussian distribution from which we will sample the noise
         :param final_standard_deviation: initial value for the standard deviation of the Gaussian distribution from which we will sample the noise
-        :param root_debug: root folder insede which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: verbosity of the logs printed in the console
         """
 
-        super().__init__(target_image, target_image_mask, detector, steps, False, root_debug, verbosity)
+        super().__init__(target_image, target_image_mask, detector, steps, False, debug_root, verbosity)
 
         self.initial_mean = initial_mean
         self.initial_standard_deviation = initial_standard_deviation
@@ -47,11 +47,11 @@ class GaussianNoiseAdditionAttack(BaseIterativeAttack):
         super(BaseIterativeAttack, self)._on_before_attack()
 
         # write the parameters into the logs
-        self.write_to_logs("Initial Mean:{}".format(str(self.initial_mean)))
-        self.write_to_logs("initial standard deviation:{}".format(str(self.initial_standard_deviation)))
+        self.logger_module.info("Initial Mean:{}".format(str(self.initial_mean)))
+        self.logger_module.info("initial standard deviation:{}".format(str(self.initial_standard_deviation)))
 
-        self.write_to_logs("Final Mean:{}".format(str(self.final_mean)))
-        self.write_to_logs("Final standard deviation:{}".format(str(self.final_standard_deviation)))
+        self.logger_module.info("Final Mean:{}".format(str(self.final_mean)))
+        self.logger_module.info("Final standard deviation:{}".format(str(self.final_standard_deviation)))
 
     def attack(self, image_to_attack: Picture, *args, **kwargs):
         """
@@ -64,7 +64,7 @@ class GaussianNoiseAdditionAttack(BaseIterativeAttack):
         mean = self.initial_mean + (self.final_mean - self.initial_mean)*self.progress_proportion
         standard_deviation = self.initial_standard_deviation + (self.final_standard_deviation-self.initial_standard_deviation)*self.progress_proportion
 
-        self.write_to_logs("Mean:{:.2f}, Standard deviation:{:.2f}".format(mean,standard_deviation))
+        self.logger_module.info("Mean:{:.2f}, Standard deviation:{:.2f}".format(mean,standard_deviation))
 
         noise = np.random.normal(mean, standard_deviation, size=image_to_attack.shape)
         return Picture((image_to_attack + noise).clip(0,255))

@@ -6,7 +6,7 @@ from Attacks.Noiseprint.BaseNoiseprintAttack import BaseNoiseprintAttack
 from Attacks.Noiseprint.Mimiking.BaseMimickin4Noiseprint import BaseMimicking4Noiseprint
 from Datasets import get_image_and_mask, ImageNotFoundError
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 
 
 class NoiseprintMimickingAttack(BaseMimicking4Noiseprint):

@@ -250,15 +250,18 @@ class EXIFNet():
         return out
 
     def classify_with_feat(self, im_a_feat, im_b_feat, affinity_pred, name, is_training=True, reuse=False):
+        print("im_a_feat & im_b_feat shapes: ", im_a_feat.shape,print(im_b_feat.shape),flush=True)
         """ Predicts whether the 2 image patches are from the same image """
         with tf.compat.v1.variable_scope(name, reuse=reuse):
             x = tf.concat([im_a_feat, im_b_feat, affinity_pred], axis=-1)
             x = slim.stack(x, slim.fully_connected, [4096, 1024], scope='fc')
             out = slim.fully_connected(x, 1, activation_fn=None, scope='fc_out')
+            print("out shape: ",out.shape,flush=True)
         return out
 
     def classify(self, affinity_pred, name, is_training=True, reuse=False):
         """ Predicts whether the 2 image patches are from the same image """
+        print("affinity pred:",affinity_pred.shape)
         with tf.compat.v1.variable_scope(name, reuse=reuse):
             x = slim.stack(affinity_pred, slim.fully_connected, [512], scope='fc')
             out = slim.fully_connected(x, 1, activation_fn=None, scope='fc_out')

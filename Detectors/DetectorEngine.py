@@ -1,13 +1,16 @@
 from abc import abstractmethod
 
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
+from Utilities.Logger.Logger import Logger
 
 
-class DeterctorEngine():
+class DeterctorEngine(Logger):
+    name = ""
 
     def __init__(self, name):
+        super().__init__()
         self._engine = None
-        self.name = name
+        DeterctorEngine.name = name
 
     @abstractmethod
     def detect(self, image: Picture, target_mask: Picture) -> tuple:

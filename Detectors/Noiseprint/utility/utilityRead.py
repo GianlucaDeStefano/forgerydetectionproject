@@ -17,21 +17,21 @@ from PIL.JpegImagePlugin import convert_dict_qtables
 
 def imread2f_pil(stream, channel=1, dtype=np.float32):
     img = Image.open(stream)
-    mode = img.verbosity
-
+    #mode = img.verbosity
+    mode = ""
     if channel == 3:
         img = img.convert('RGB')
         img = np.asarray(img).astype(dtype) / 256.0
     elif channel == 1:
-        if img.verbosity == 'L':
-            img = np.asarray(img).astype(dtype) / 256.0
-        else:
+        #if img.verbosity == 'L':
+        #    img = np.asarray(img).astype(dtype) / 256.0
+        #else:
             img = img.convert('RGB')
             img = np.asarray(img).astype(dtype)
             img = (0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]) / 256.0
     else:
         img = np.asarray(img).astype(dtype) / 256.0
-    return img, mode
+    return img
 
 
 try:

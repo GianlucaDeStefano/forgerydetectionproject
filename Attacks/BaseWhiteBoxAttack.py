@@ -8,7 +8,7 @@ from cv2 import PSNR
 
 from Attacks.BaseIterativeAttack import BaseIterativeAttack
 from Detectors.DetectorEngine import DeterctorEngine
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 
 
 def normalize_gradient(gradient, margin=17):
@@ -42,7 +42,7 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
 
     def __init__(self, detector: DeterctorEngine, steps: int, alpha: float, momentum_coeficient: float = 0.5,
                  regularization_weight=0.05, plot_interval=5, additive_attack=True,
-                 root_debug: str = "./Data/Debug/", verbosity: int = 2):
+                 debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param detector: name of the detector to be used to visualize the results
         :param steps: number of attack iterations to perform
@@ -52,12 +52,12 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param additive_attack: show we feed the result of the iteration i as the input of the iteration 1+1?
-        :param root_debug: root folder inside which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
         super(BaseWhiteBoxAttack, self).__init__(detector, steps, plot_interval, additive_attack,
-                                                 root_debug, verbosity)
+                                                 debug_root, verbosity)
 
         # save the source image and its mask
         self.source_image = None
@@ -120,10 +120,10 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         """
 
         super(BaseWhiteBoxAttack, self)._on_before_attack()
-        self.write_to_logs("Source image: {}".format(self.source_image.path))
-        self.write_to_logs("Alpha: {}".format(self.alpha))
-        self.write_to_logs("Momentum coefficient:{}".format(self.momentum_coeficient))
-        self.write_to_logs("Regularization weight:{}".format(self.regularization_weight))
+        self.logger_module.info("Source image: {}".format(self.source_image.path))
+        self.logger_module.info("Alpha: {}".format(self.alpha))
+        self.logger_module.info("Momentum coefficient:{}".format(self.momentum_coeficient))
+        self.logger_module.info("Regularization weight:{}".format(self.regularization_weight))
 
         # compute the target representation
         self.target_representation = self._compute_target_representation(self.source_image, self.source_image_mask)
@@ -150,8 +150,8 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
                                  os.path.join(self.debug_folder, "psnr"))
 
         # write the loss and psnr into the log
-        self.write_to_logs("Loss: {:.2f}".format(self.loss_steps[-1]))
-        self.write_to_logs("Psnr: {:.2f}".format(psnr))
+        self.logger_module.info("Loss: {:.2f}".format(self.loss_steps[-1]))
+        self.logger_module.info("Psnr: {:.2f}".format(psnr))
 
     @abstractmethod
     def _get_gradient_of_image(self, image: Picture, target: Picture, old_perturbation: Picture = None):

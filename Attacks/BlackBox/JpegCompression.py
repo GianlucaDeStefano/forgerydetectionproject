@@ -3,8 +3,8 @@ import os
 import numpy as np
 from PIL import Image
 from Attacks.BaseIterativeAttack import BaseIterativeAttack
-from Ulitities.Image.Picture import Picture
-from Ulitities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
+from Utilities.Image.Picture import Picture
+from Utilities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
 
 
 class JpegCompressionAttack(BaseIterativeAttack):
@@ -15,17 +15,17 @@ class JpegCompressionAttack(BaseIterativeAttack):
     name = "Jpeg Compression Attack"
 
     def __init__(self, target_image: Picture, target_image_mask: Picture, detector:str, steps: int, initial_quality_level, final_quality_level,
-                 root_debug: str = "./Data/Debug/", verbosity: bool = True):
+                 debug_root: str = "./Data/Debug/", verbosity: bool = True):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
         :param steps: number of attack iterations to perform
 
-        :param root_debug: root folder insede which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: verbosity of the logs printed in the console
         """
 
-        super().__init__(target_image, target_image_mask, detector, steps, False, root_debug, verbosity)
+        super().__init__(target_image, target_image_mask, detector, steps, False, debug_root, verbosity)
         self.initial_quality_level = initial_quality_level
         self.final_quality_level = final_quality_level
 
@@ -40,13 +40,13 @@ class JpegCompressionAttack(BaseIterativeAttack):
         super(BaseIterativeAttack, self)._on_before_attack()
 
         # write the parameters into the logs
-        self.write_to_logs("Initial Quality Level:{}".format(str(self.initial_quality_level)))
-        self.write_to_logs("Final quality Level:{}".format(str(self.final_quality_level)))
+        self.logger_module.info("Initial Quality Level:{}".format(str(self.initial_quality_level)))
+        self.logger_module.info("Final quality Level:{}".format(str(self.final_quality_level)))
 
 
     def attack(self, image_to_attack: Picture, *args, **kwargs):
         qf = self.initial_quality_level  - int((self.initial_quality_level - self.final_quality_level) * self.progress_proportion)
-        self.write_to_logs("quality level: {}".format(qf))
+        self.logger_module.info("quality level: {}".format(qf))
 
         path = os.path.join(self.debug_folder, 'compressed_image.jpg')
         img = Image.fromarray(np.array(self.target_image, np.uint8))

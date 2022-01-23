@@ -1,0 +1,7 @@
+global:
+    debug:
+        path: ./Data/Debug/
+    datasets:
+        root: ./Data/Datasets/
+        columbia: ./Data/Datasets/ColumbiaUncompressed/
+        dso: ./Data/Datasets/DSO/

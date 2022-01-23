@@ -328,7 +328,9 @@ class Demo():
         # run for every new image
         self.bu.reset_image(im)
         res = self.bu.precomputed_analysis_vote_cls(num_fts=4096)
-
+        print("ras sample",res[0][0][0][0])
+        print("Res shape:",res.shape,flush=True)
+        print(res[0][0][0])
         ms = mean_shift(res.reshape((-1, res.shape[0] * res.shape[1])), res)
 
         if np.mean(ms > .5) > .5:

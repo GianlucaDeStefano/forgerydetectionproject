@@ -2,7 +2,7 @@ from abc import ABC
 
 from Attacks.BaseWhiteBoxAttack import normalize_gradient
 from Attacks.Noiseprint.BaseNoiseprintAttack import BaseNoiseprintAttack
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 
 
 class BaseLots4Noiseprint(BaseNoiseprintAttack, ABC):

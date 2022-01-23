@@ -12,8 +12,8 @@ from Attacks.Noiseprint.Mimiking.BaseMimickin4Noiseprint import BaseMimicking4No
 from Datasets import get_image_and_mask, ImageNotFoundError
 from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine, normalize_noiseprint
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
-from Ulitities.Image.Picture import Picture
-from Ulitities.Image.functions import visuallize_matrix_values
+from Utilities.Image.Picture import Picture
+from Utilities.Image.functions import visuallize_matrix_values
 import tensorflow as tf
 
 
@@ -21,7 +21,7 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
     name = "Noiseprint intelligent mimicking attack"
 
     def __init__(self,steps: int, alpha: float, patch_size=(8, 8), quality_factor=None,
-                 regularization_weight=0.05, plot_interval=5, root_debug: str = "./Data/Debug/", verbosity: int = 2):
+                 regularization_weight=0.05, plot_interval=5, debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param target_image: original image on which we should perform the attack
         :param target_image_mask: original mask of the image on which we should perform the attack
@@ -33,12 +33,12 @@ class NoiseprintIntelligentMimickingAttack(BaseMimicking4Noiseprint):
                level, if it left to None, the right model will be inferred from the file
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
-        :param root_debug: root folder insede which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
 
-        super().__init__(steps, alpha, 0.0, quality_factor, regularization_weight, plot_interval, root_debug, verbosity)
+        super().__init__(steps, alpha, 0.0, quality_factor, regularization_weight, plot_interval, debug_root, verbosity)
 
         self.patch_size = patch_size
 

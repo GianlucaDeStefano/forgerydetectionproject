@@ -1,5 +1,7 @@
 import logging
+import multiprocessing
 import os
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -9,11 +11,13 @@ from tensorflow.python.keras.layers import Conv2D, BatchNormalization, Activatio
 from tensorflow.python.keras.models import Model
 
 # Bias layer necessary because noiseprint applies bias after batch-normalization.
+from tqdm import tqdm
+
 from Detectors.DetectorEngine import DeterctorEngine
 from Detectors.Noiseprint.noiseprint_blind import noiseprint_blind_post, genMappFloat
 from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file
 from Detectors.Noiseprint.utility.utilityRead import jpeg_qtableinv, imread2f
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 
 
 class NoiseprintEngine(DeterctorEngine):
@@ -32,16 +36,25 @@ class NoiseprintEngine(DeterctorEngine):
         if self.setup_on_init:
             setup_session()
 
-    def detect(self, image: Picture, target_mask: Picture = None,threshold =None) -> tuple:
+    def detect(self, image: Picture, target_mask: Picture = None, threshold=None,force_reaload_quality = False) -> tuple:
         """
         Function returning a tuple containing the heatmap and its segmented equivalent computed
         using the given engine
         :param image: image to analyze
         :param target_mask: the mask that should ideally be produced
+        :param force_reaload_quality: force the reload the noiseprint quality model
         :return: (heatmap,mask)
         """
         # check that the image has only one channel
-        assert (len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1))
+
+        if self._loaded_quality is None or force_reaload_quality:
+            try:
+                self._loaded_quality = jpeg_qtableinv(image.path)
+            except Exception as E:
+                self._loaded_quality = 101
+
+            self.load_quality(self._loaded_quality)
+            self.logger_module.info(f"LOADED quality: {self._loaded_quality}")
 
         # produce the noiseprint
         noiseprint = self.predict(image)
@@ -52,24 +65,24 @@ class NoiseprintEngine(DeterctorEngine):
 
         mask = None
         if target_mask is not None or threshold is not None:
-            mask = self.get_mask(attacked_heatmap, target_mask,threshold)
+            mask = self.get_mask(attacked_heatmap, target_mask, threshold, f1_score)
 
         return attacked_heatmap, mask
 
-    def get_best_threshold(self,heatmap,gtmask):
+    def get_best_threshold(self, heatmap, gtmask):
         return find_best_theshold(heatmap, gtmask)
 
-    def get_mask(self,heatmap: Picture,gtmask = None, threshold = None):
+    def get_mask(self, heatmap: Picture, gtmask=None, threshold=None, measure=None):
 
         if gtmask is None and threshold is None:
             raise Exception("You must provide the ground truth mask or the treshold to use")
 
         if threshold is None:
-            threshold = find_best_theshold(heatmap, gtmask)
+            threshold = find_best_theshold(heatmap, gtmask, measure)
 
         predicted_mask = np.array(heatmap > threshold, int).clip(0, 1)
 
-        return predicted_mask
+        return np.rint(predicted_mask)
 
     def load_quality(self, quality):
         """
@@ -79,9 +92,7 @@ class NoiseprintEngine(DeterctorEngine):
         """
         if quality < 51 or quality > 101:
             raise ValueError("Quality must be between 51 and 101 (included). Provided quality: %d" % quality)
-        if quality == self._loaded_quality:
-            return
-        print("Loading checkpoint quality %d" % quality)
+        self.logger_module.info("Loading checkpoint quality %d" % quality)
         checkpoint = self._save_path % quality
         self._model.load_weights(checkpoint)
         self._loaded_quality = quality
@@ -119,7 +130,7 @@ class NoiseprintEngine(DeterctorEngine):
                 res[x: min(x + self.slide, res.shape[0]), y: min(y + self.slide, res.shape[1])] = patch_res
         return res
 
-    def predict(self, img):
+    def predict(self, img : np.array):
         """
         Run the noiseprint generation CNN over the input image
         :param img: input image, 2-D numpy array
@@ -234,24 +245,56 @@ def noiseprint_blind_file(filename, model_name='net'):
     mapp, valid, range0, range1, imgsize, other = noiseprint_blind(img, QF, model_name=model_name)
     return QF, mapp, valid, range0, range1, imgsize, other
 
-def e_score(mask1:np.array,mask2:np.array):
-    return np.array(np.equal(mask1,mask2)).sum()**2 / (mask1.shape[0]*mask2.shape[0])
 
-def find_best_theshold(heatmap, mask):
-    best_theshold = -1
-    best_f1 = -1
-    seen_peak = False
-    for threshold in range(50, 2000, 5):
-        pred_mask = np.array(heatmap > threshold, int)
-        score = f1_score(mask.flatten(), pred_mask.flatten())
+def e_score(mask1: np.array, mask2: np.array):
+    return np.array(np.equal(mask1, mask2)).sum() ** 2 / (mask1.shape[0] * mask2.shape[0])
 
-        if score > best_f1:
-            best_f1 = score
-            best_theshold = threshold
+
+def find_best_theshold(heatmap, mask, measure):
+    manager = multiprocessing.Manager()
+
+    gap = min(max(10,int(heatmap.max() / 50)),100)
+    min_t = 0
+    max_t = min(int(heatmap.max()),25600)
+    max_index = -1
+
+    start_time = time.time()
+    while gap >= 1:
+
+        return_dict = manager.dict()
+        jobs = []
+
+        print(f"Gap:{gap}, n_worker:{int((max_t-min_t)/gap)}")
+
+        for threshold in range(min_t, max_t, gap):
+            p = multiprocessing.Process(target=test_threshold, args=(heatmap, mask, measure, threshold, return_dict))
+            jobs.append(p)
+            p.start()
+
+        for proc in jobs:
+            proc.join()
+
+        max_index = max(max_index, max(return_dict, key=return_dict.get))
+
+        min_t = max(max_index - gap * 4, 0)
+        max_t = min(max_index + gap * 4, int(heatmap.max()))
+
+        if gap > 1:
+            gap = gap // 2
         else:
             break
 
-    return best_theshold
+    assert (max_index > 0)
+
+    return max_index
+
+
+def test_threshold(heatmap, mask, measure, threshold, return_dict):
+    pred_mask = np.array(heatmap > threshold, int)
+    try:
+        return_dict[threshold] = measure(mask.flatten(), pred_mask.flatten())
+    except:
+        pass
 
 
 def noiseprint_blind(img, QF):
@@ -262,3 +305,4 @@ def noiseprint_blind(img, QF):
 
     assert (img.shape == res.shape)
     return noiseprint_blind_post(res, img)
+

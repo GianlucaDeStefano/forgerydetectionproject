@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 
 from Datasets.Dataset import Dataset, ImageNotFoundException, mask_2_binary
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 
 
 class DsoDatasetDataset(Dataset):

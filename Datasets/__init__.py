@@ -6,7 +6,7 @@ from Datasets.DSO.DsoDataset import DsoDatasetDataset
 from Datasets.Dataset import ImageNotFoundException, mask_2_binary
 from Datasets.RIT.RitDataset import RitDataset
 from Detectors.Noiseprint.utility.utilityRead import imread2f
-from Ulitities.Image.Picture import Picture
+from Utilities.Image.Picture import Picture
 
 supported_datasets = dict(columbia=ColumbiaDataset, rit=RitDataset, columbiaUncompressed=ColumbiaUncompressedDataset
                           , dso=DsoDatasetDataset)
