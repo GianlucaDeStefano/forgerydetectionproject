@@ -1,5 +1,5 @@
 # Forgery detection project
-This is a project for the course of Machine Learning in Cyber Security. It's aim is to produce a machine learning model capable of identifying tampered regions of images testin also its performances against black box adversarial attacks
+This is a project for the course of Machine Learning in Cyber Security. It's aim is to produce a machine learning model capable of identifying tampered regions of images testin also its performances against black box adversarial attacks.
 
 ## Installation
 
