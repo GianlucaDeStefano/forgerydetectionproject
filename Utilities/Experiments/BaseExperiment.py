@@ -73,7 +73,7 @@ class BaseExperiment(Logger):
 
         for image_path in tqdm(images):
 
-            if not "canonxt_38_sub_05.tif" in image_path:
+            if "canonxt_38_sub_05.tif" not in str(image_path):
                 print("skipping")
                 continue
 
