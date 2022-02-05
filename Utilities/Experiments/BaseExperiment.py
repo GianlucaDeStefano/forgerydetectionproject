@@ -73,6 +73,12 @@ class BaseExperiment(Logger):
 
         for image_path in tqdm(images):
 
+            if not "canonxt_38_sub_05.tif" in image_path:
+                print("skipping")
+                continue
+
+            print(f"Processing {image_path}")
+
             # load the image
             try:
                 image = Picture(path=image_path)
