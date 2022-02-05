@@ -284,8 +284,6 @@ def find_best_theshold(heatmap, mask, measure):
         else:
             break
 
-    assert (max_index > 0)
-
     return max_index
 
 
