@@ -264,8 +264,6 @@ def find_best_theshold(heatmap, mask, measure):
         return_dict = manager.dict()
         jobs = []
 
-        print(f"Gap:{gap}, n_worker:{int((max_t-min_t)/gap)}")
-
         for threshold in range(min_t, max_t, gap):
             p = multiprocessing.Process(target=test_threshold, args=(heatmap, mask, measure, threshold, return_dict))
             jobs.append(p)

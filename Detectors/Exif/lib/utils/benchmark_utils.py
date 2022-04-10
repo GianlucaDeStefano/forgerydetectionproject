@@ -14,7 +14,7 @@ class EfficientBenchmark():
     def __init__(self, solver, net_module_obj, net_module_obj_init_params, im,
                  num_processes=1, num_threads=1, stride=None, max_bs=20000, n_anchors=3,
                  patch_size=224, auto_close_sess=True, patches=None, mirror_pred=False,
-                 dense_compute=False, num_per_dim=30):
+                 dense_compute=False, num_per_dim=25):
         """
         solver: The model solver to run predictions
         net_module_obj: The corresponding net class

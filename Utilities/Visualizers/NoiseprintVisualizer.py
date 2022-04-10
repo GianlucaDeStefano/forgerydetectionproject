@@ -142,6 +142,30 @@ class NoiseprintVisualizer(BaseVisualizer):
             plt.savefig(path,bbox_inches='tight')
             plt.close()
 
+
+    def base_results(self,image,mask,base_result,result_mask,path):
+        fig, axs = plt.subplots(1, 4, figsize=(20, 5))
+
+        for ax in axs:
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        axs[0].imshow(image)
+        #axs[0].set_title('Image')
+
+        axs[1].imshow(mask, clim=[0, 1], cmap='gray')
+        #axs[1].set_title('Ground Truth')
+
+        axs[2].imshow(base_result, clim=[np.nanmin(base_result), np.nanmax(base_result)], cmap='jet')
+        #axs[2].set_title('Predicted heatmap')
+
+        axs[3].imshow(result_mask, clim=[0, 1], cmap='gray')
+        #axs[3].set_title('Predicted mask')
+
+        plt.savefig(path,bbox_inches='tight')
+        plt.close()
+
+
     def complete_pipeline(self,image,mask,base_result,target_mask,final_result,path):
 
         fig, axs = plt.subplots(1, 5, figsize=(25, 5))
@@ -152,19 +176,19 @@ class NoiseprintVisualizer(BaseVisualizer):
 
 
         axs[0].imshow(image)
-        axs[0].set_title('Image')
+        #axs[0].set_title('Image')
 
         axs[1].imshow(mask, clim=[0, 1], cmap='gray')
-        axs[1].set_title('Original Forgery')
+        #axs[1].set_title('Original Forgery')
 
         axs[2].imshow(base_result, clim=[np.nanmin(base_result), np.nanmax(base_result)], cmap='jet')
-        axs[2].set_title('Original Heatmap')
+        #axs[2].set_title('Original Heatmap')
 
         axs[3].imshow(target_mask, clim=[0, 1], cmap='gray')
-        axs[3].set_title('Target Forgery')
+        #axs[3].set_title('Target Forgery')
 
         axs[4].imshow(final_result, clim=[np.nanmin(final_result), np.nanmax(final_result)], cmap='jet')
-        axs[4].set_title('Final Heatmap')
+        #axs[4].set_title('Final Heatmap')
 
         plt.savefig(path,bbox_inches='tight')
         plt.close()

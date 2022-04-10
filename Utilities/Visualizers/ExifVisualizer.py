@@ -44,7 +44,7 @@ class ExifVisualizer(BaseVisualizer):
         axs[0].imshow(normal_image)
         axs[0].set_title('Image')
 
-        axs[1].imshow(heatmap, clim=[0, 1], cmap='jet')
+        axs[1].imshow(heatmap, vmin=0.0, vmax=1.0, cmap='jet')
         axs[1].set_title('Heatmap')
 
         axs[2].imshow(mask, clim=[0, 1], cmap='gray')
@@ -73,11 +73,33 @@ class ExifVisualizer(BaseVisualizer):
 
         return heatmap, mask
 
+    def base_results(self, image, mask, base_result, result_mask, path):
+        fig, axs = plt.subplots(1, 4, figsize=(20, 5))
+
+        for ax in axs:
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        axs[0].imshow(image)
+        # axs[0].set_title('Image')
+
+        axs[1].imshow(mask, clim=[0, 1], cmap='gray')
+        # axs[1].set_title('Ground Truth')
+
+        axs[2].imshow(base_result, vmin=0.0, vmax=1.0, cmap='jet')
+        # axs[2].set_title('Predicted Heatmap')
+
+        axs[3].imshow(result_mask, clim=[0, 1], cmap='gray')
+        # axs[3].set_title('Predicted mask')
+
+        plt.savefig(path, bbox_inches='tight')
+        plt.close()
+
     def predict(self, image: Picture, path=None):
 
         heatmap, mask = self._engine.detect(image)
 
-        plt.imshow(mask,cmap='gray')
+        plt.imshow(mask, cmap='gray')
 
         if path:
             plt.savefig(path)
@@ -85,39 +107,34 @@ class ExifVisualizer(BaseVisualizer):
 
         return heatmap, mask
 
-    def complete_pipeline(self, image, mask, base_result, target_mask, final_heatmap,final_mask, path):
+    def complete_pipeline(self, image, mask, base_result, target_mask, final_heatmap, final_mask, path):
 
-        fig, axs = plt.subplots(1, 6, figsize=(30, 5))
+        fig, axs = plt.subplots(1, 5, figsize=(25, 5))
 
         for ax in axs:
             ax.set_xticks([])
             ax.set_yticks([])
 
-
         axs[0].imshow(image)
-        axs[0].set_title('Image')
+        # axs[0].set_title('Image')
 
         axs[1].imshow(mask, clim=[0, 1], cmap='gray')
-        axs[1].set_title('Original Forgery')
+        # axs[1].set_title('Original Forgery')
 
-        axs[2].imshow(base_result, clim=[0, 1], cmap='jet')
-        axs[2].set_title('Original Heatmap')
+        axs[2].imshow(base_result, vmin=0.0, vmax=1.0, cmap='jet')
+        # axs[2].set_title('Original Heatmap')
 
         axs[3].imshow(target_mask, clim=[0, 1], cmap='gray')
-        axs[3].set_title('Target Forgery')
+        # axs[3].set_title('Target Forgery')
 
-        axs[4].imshow(final_heatmap, clim=[0, 1], cmap='jet')
-        axs[4].set_title('Final Heatmap')
+        axs[4].imshow(final_heatmap, vmin=0.0, vmax=1.0, cmap='jet')
+        # axs[4].set_title('Final Heatmap')
 
-        axs[5].imshow(final_mask, clim=[0, 1], cmap='gray')
-        axs[5].set_title('Final Mask')
-
-        plt.savefig(path,bbox_inches='tight')
+        plt.savefig(path, bbox_inches='tight')
         plt.close()
 
-
-    def save_heatmap(self,heatmap,path):
-        fig = plt.imshow(heatmap, clim=[0, 1], cmap='jet')
+    def save_heatmap(self, heatmap, path):
+        fig = plt.imshow(heatmap, vmin=0.0, vmax=1.0, cmap='jet')
         plt.axis('off')
         fig.axes.get_xaxis().set_visible(False)
         fig.axes.get_yaxis().set_visible(False)

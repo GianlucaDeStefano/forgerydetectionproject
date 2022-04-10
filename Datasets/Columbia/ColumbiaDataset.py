@@ -43,7 +43,8 @@ class ColumbiaDataset(Dataset):
         for root, dirs, files in os.walk(self.root, topdown=False):
             for dir_name in dirs:
                 for file_name in os.walk(os.path.join(root, dir_name), topdown=False):
-                    if file_name == image_name:
+                    print(str(file_name).split("."))
+                    if str(file_name).split(".")[0] == str(image_name).split(".")[0]:
                         return os.path.join(root, dir_name, image_name)
 
         raise ImageNotFoundException(image_name)

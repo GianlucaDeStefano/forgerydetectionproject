@@ -125,7 +125,7 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         visuallize_matrix_values(t_no_padding, os.path.join(self.debug_folder, "average_authentic_patch.png"))
 
         if target_representation_source_image_mask.max() == 0:
-            average_forged_patch = - average_authentic_patch
+            average_forged_patch = average_authentic_patch
         else:
             forged_patches = target_representation_source_image.get_forged_patches(
                 target_representation_source_image_mask, self.patch_size, self.padding_size,
@@ -150,14 +150,16 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         target_mask_patches = target_forgery_mask.divide_in_patches(self.patch_size, self.padding_size,
                                                                     zero_padding=True)
 
+        average_authentic_patch = np.zeros(average_authentic_patch.shape)
+
         target_map = np.zeros(target_forgery_mask.shape)
 
         for target_mask_patch in target_mask_patches:
 
             if target_mask_patch.max() == 0:
-                target_map = target_mask_patch.add_to_image(target_map, np.zeros(average_authentic_patch.shape)*self.k)
+                target_map = target_mask_patch.add_to_image(target_map, average_authentic_patch * self.k)
             else:
-                target_map = target_mask_patch.add_to_image(target_map, -average_authentic_patch * self.k)
+                target_map = target_mask_patch.add_to_image(target_map, average_forged_patch * self.k)
 
         return target_map
 
