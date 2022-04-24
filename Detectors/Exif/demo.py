@@ -311,7 +311,7 @@ def run_vote_no_threads(image, solver, exif_to_use, n_anchors=1, num_per_dim=Non
 
 class Demo():
     def __init__(self, ckpt_path='/data/scratch/minyoungg/ckpt/exif_medifor/exif_medifor.ckpt', use_gpu=0,
-                 quality=3.0, patch_size=128, num_per_dim=30):
+                 quality=3.0, patch_size=128, num_per_dim=35):
         self.quality = quality  # sample ratio
         self.solver, nc, params = load_models.initialize_exif(ckpt=ckpt_path, init=False, use_gpu=use_gpu)
         params["im_size"] = patch_size
@@ -323,37 +323,51 @@ class Demo():
                                                      patch_size=patch_size, num_per_dim=num_per_dim)
         return
 
-    def run(self, im, gt=None, show=False, save=False,
-            blue_high=False, use_ncuts=False):
-        # run for every new image
+    def run_extract_features(self, im):
         self.bu.reset_image(im)
         res = self.bu.precomputed_analysis_vote_cls(num_fts=4096)
-        print("ras sample",res[0][0][0][0])
-        print("Res shape:",res.shape,flush=True)
-        print(res[0][0][0])
-        ms = mean_shift(res.reshape((-1, res.shape[0] * res.shape[1])), res)
+        return res
 
-        if np.mean(ms > .5) > .5:
+    def run_cluster_heatmap(self, im, res, blue_high):
+        heatmap = mean_shift(res.reshape((-1, res.shape[0] * res.shape[1])), res)
+
+        if np.mean(heatmap > .5) > .5:
             # majority of the image is above .5
-            if blue_high:
-                ms = 1 - ms
+            heatmap = 1 - heatmap
+
+        heatmap = cv2.resize(heatmap, (im.shape[1], im.shape[0]), interpolation=cv2.INTER_LINEAR)
+
+        return heatmap
+
+    def run_cluster_mask(self,im,res):
+        ncuts = normalized_cut(res)
+        if np.mean(ncuts > .5) > .5:
+            # majority of the image is white
+            # flip so spliced is white
+            ncuts = 1 - ncuts
+        out_ncuts = cv2.resize(ncuts.astype(np.float32), (im.shape[1], im.shape[0]),
+                               interpolation=cv2.INTER_LINEAR)
+        return out_ncuts
+
+    def run(self, im, gt=None, show=False, save=False,blue_high=False, use_ncuts=False):
+        # run for every new image
+        res = self.run_extract_features(im)
+        ms = self.run_cluster_heatmap(im, res, blue_high)
+
+        out_ncuts = None
 
         if use_ncuts:
-            ncuts = normalized_cut(res)
-            if np.mean(ncuts > .5) > .5:
-                # majority of the image is white
-                # flip so spliced is white
-                ncuts = 1 - ncuts
-            out_ncuts = cv2.resize(ncuts.astype(np.float32), (im.shape[1], im.shape[0]),
-                                   interpolation=cv2.INTER_LINEAR)
+            out_ncuts = self.run_cluster_mask(im,res)
 
-        out_ms = cv2.resize(ms, (im.shape[1], im.shape[0]), interpolation=cv2.INTER_LINEAR)
-
-        if use_ncuts:
-            return out_ms, out_ncuts
-        return out_ms
+        return ms,out_ncuts
 
     def run_vote(self, im, num_per_dim=3, patch_size=128):
+
+        all_results = self.run_vote_features(im, num_per_dim, patch_size)
+
+        return self.run_vote_cluster(all_results)
+
+    def run_vote_extract_features(self, im, num_per_dim=3, patch_size=128):
         h, w = np.shape(im)[:2]
         all_results = []
         for hSt in np.linspace(0, h - patch_size, num_per_dim).astype(int):
@@ -362,7 +376,9 @@ class Demo():
                                           patch_size=128, batch_size=64, sample_ratio=self.quality,
                                           override_anchor=(hSt, wSt))['out']['responses'][0]
                 all_results.append(res)
+        return all_results
 
+    def run_vote_cluster(self, all_results):
         return dbscan_consensus(all_results)
 
     def __call__(self, url, dense=False):

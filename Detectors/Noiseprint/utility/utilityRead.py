@@ -17,18 +17,18 @@ from PIL.JpegImagePlugin import convert_dict_qtables
 
 def imread2f_pil(stream, channel=1, dtype=np.float32):
     img = Image.open(stream)
-    #mode = img.verbosity
+    # mode = img.verbosity
     mode = ""
     if channel == 3:
         img = img.convert('RGB')
         img = np.asarray(img).astype(dtype) / 256.0
     elif channel == 1:
-        #if img.verbosity == 'L':
+        # if img.verbosity == 'L':
         #    img = np.asarray(img).astype(dtype) / 256.0
-        #else:
-            img = img.convert('RGB')
-            img = np.asarray(img).astype(dtype)
-            img = (0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]) / 256.0
+        # else:
+        img = img.convert('RGB')
+        img = np.asarray(img).astype(dtype)
+        img = (0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]) / 256.0
     else:
         img = np.asarray(img).astype(dtype) / 256.0
     return img
@@ -55,8 +55,6 @@ try:
             img = img / (2.0 ** 32)
         elif ori_dtype == np.uint64:
             img = img / (2.0 ** 64)
-        elif ori_dtype == np.uint128:
-            img = img / (2.0 ** 128)
         return img, 'RAW'
 except:
     pass
@@ -67,6 +65,42 @@ def imread2f(stream, channel=1, dtype=np.float32):
         return imread2f_raw(stream, channel=channel, dtype=dtype)
     except:
         return imread2f_pil(stream, channel=channel, dtype=dtype)
+
+
+def imread2int_pil(path, channel, dtype=np.uint8):
+    img = Image.open(path)
+    if channel == 3:
+        img = img.convert('RGB')
+        img = np.asarray(img).astype(dtype)
+    elif channel == 1:
+        img = img.convert('RGB')
+        img = np.asarray(img).astype(np.float)
+        img = np.rint((0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]))
+    else:
+        img = np.asarray(img).astype(dtype)
+    return img
+
+
+def imconver_int_2_float(img, dtype=np.float32):
+    assert (img.min() >= 0 and img.max() > 1 and img.max() < 256)
+    return np.asarray(img).astype(dtype) / 256.0
+
+
+def three_2_one_channel(img, dtype=np.float32):
+    assert (len(img.shape) == 3 and img.shape[2] == 3)
+    img = np.asarray(img).astype(dtype)
+    return 0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]
+
+
+def one_2_three_channels(img):
+    assert (len(img.shape) == 2)
+    img3 = np.zeros((img.shape[0], img.shape[1], 3))
+
+    img3[:, :, 0] = img[:, :]
+    img3[:, :, 1] = img[:, :]
+    img3[:, :, 2] = img[:, :]
+
+    return img3
 
 
 def jpeg_qtableinv(stream, tnum=0, force_baseline=None):

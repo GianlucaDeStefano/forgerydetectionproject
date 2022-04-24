@@ -45,23 +45,23 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
 
         self.k = 10
 
-    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+    def setup(self, target_image_path: Picture, target_image_mask: Picture, source_image_path: Picture = None,
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):
 
-        assert (target_image.shape[0] == target_forgery_mask.shape[0])
-        assert (target_image.shape[1] == target_forgery_mask.shape[1])
+        assert (target_image_path.shape[0] == target_forgery_mask.shape[0])
+        assert (target_image_path.shape[1] == target_forgery_mask.shape[1])
 
         self.logger_module.info("Setting up the attack ...")
 
-        super().setup(target_image, target_image_mask, source_image, source_image_mask,target_forgery_mask)
+        super().setup(target_image_path, target_image_mask, source_image_path, source_image_mask, target_forgery_mask)
 
         # create variable to store the generated adversarial noise
         self.target_forgery_mask = target_forgery_mask
 
         # create variable to store the momentum of the gradient
-        self.moving_avg_gradient = np.zeros(target_image.shape)
+        self.moving_avg_gradient = np.zeros(target_image_path.shape)
 
-        stride = (max(target_image.shape[0], target_image.shape[1]) - self.patch_size[0]) // 30
+        stride = (max(target_image_path.shape[0], target_image_path.shape[1]) - self.patch_size[0]) // 30
 
         self.stride = (stride,stride)
 

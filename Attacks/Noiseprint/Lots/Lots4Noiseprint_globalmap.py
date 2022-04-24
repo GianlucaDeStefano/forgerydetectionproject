@@ -66,8 +66,7 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
 
         pad_size = ((self.padding_size[0], self.padding_size[2]), (self.padding_size[3], self.padding_size[1]))
 
-
-        # conver the image in the standard required by noiseprint
+        # convert the image in the standard required by noiseprint
         image = prepare_image_noiseprint(target_representation_source_image)
 
         # generate an image wise noiseprint representation on the entire image

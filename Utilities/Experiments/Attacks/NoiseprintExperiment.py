@@ -159,5 +159,5 @@ class NoiseprintExperiment(BaseExperiment):
 
         output_path = os.path.join(self.debug_foler, Path(original_image.path).stem)
 
-        self.visualizer.complete_pipeline(original_image, original_mask, initial_heatmap, target_mask, final_heatmap,
-                                          output_path)
+        self.visualizer.save_prediction_pipeline(original_image, original_mask, initial_heatmap, target_mask, final_heatmap,
+                                                 output_path)

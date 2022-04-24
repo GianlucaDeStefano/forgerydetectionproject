@@ -5,13 +5,14 @@ from abc import abstractmethod, ABC
 from datetime import datetime
 from pathlib import Path
 
+import cv2
 import numpy as np
 from cv2 import PSNR
 
 from Datasets import get_image_and_mask
-from Detectors.DetectorEngine import DeterctorEngine
 from Utilities.Image.Picture import Picture
 from Utilities.Logger.Logger import Logger
+from Utilities.Visualizers.BaseVisualizer import BaseVisualizer
 
 from Utilities.io.folders import create_debug_folder
 
@@ -19,9 +20,9 @@ from Utilities.io.folders import create_debug_folder
 class BaseAttack(ABC, Logger):
     attack_name = "Base Attack"
 
-    def __init__(self, detector: DeterctorEngine, debug_root: str = "./Data/Debug/", verbosity: int = 2):
+    def __init__(self, visualizer: BaseVisualizer, debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
-        :param detector: name of the detector to be used to visualize the results
+        :param visualizer: instance of the visualizer class wrapping the functionalities of the targeted detector
         :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
         :param verbosity: modality to use to run the attack:
                 0 -> the attack will not output any log in the console safe for error crashes, no visualizer is used before,during or after the attack
@@ -29,11 +30,12 @@ class BaseAttack(ABC, Logger):
                 2 -> the attack outputs logs in the console, visualizers will be used before,during and after the attack
         """
         # save the input image and its mask
+        self.target_image_path = None
         self.target_image = None
         self.target_image_mask = None
 
         # load the desired detector into memory
-        self.detector = detector
+        self.visualizer = visualizer
 
         # save the verbosity level (0 -> no logs,1 -> quick logs, 2-> full logs)
         self.verbosity = verbosity
@@ -46,31 +48,25 @@ class BaseAttack(ABC, Logger):
 
         self.start_time = datetime.now()
 
-    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
-              source_image_mask: Picture = None,target_forgery_mask : Picture = None):
+    def setup(self, target_image_path: Picture, target_image_mask: Picture):
         """
-        Function to load the iteration-dependent variable into the pipeline :param target_image: original image on
-        which we should perform the attack :param target_image_mask: original mask of the image on which we should
-        perform the attack
-        :param source_image: image from which we will compute the target representation  (to be
-        ignored for classes not extending BaseWhiteBoxAttack)
-        :param source_image_mask: mask of the image from which we will compute the target representation (to be
-        ignored for classes not extending BaseWhiteBoxAttack)
-        :return:
+        Setup the pipeline for execution
+        @param target_image_path: path fo the sample to process
+        @param target_image_mask: np.array containing a binary mask where 0 -> pristine 1-> forged pixel
+        @return:
         """
-        # check if the target image is in the desired format (integer [0,255])
-        assert (isinstance(target_image[0], (int, np.uint)), np.amax(target_image) < 255, np.amin(target_image) > -1)
 
-        # check that the mask is in the desired format (integer [0,1]) and has the same shape of the input image
-        # along the x and y axis
-        assert (isinstance(target_image[0], (int, np.uint)), np.amax(target_image) < 255, np.amin(target_image) > -1,
-                target_image.shape[0] ==
-                target_image_mask.shape[0], target_image.shape[1] == target_image_mask.shape[1])
+        print("\nSETUP \n")
 
-        # save the input image and its mask
-        self.target_image = target_image
+        # load the sample in the visualizer
+        self.visualizer.initialize(target_image_path, None, False, True)
+
+        # prepare the instance of the input image and its mask
+        self.target_image = self.visualizer.metadata["sample"]
+        self.target_image_path = self.visualizer.metadata["sample_path"]
         self.target_image_mask = target_image_mask
 
+        # create a debug folder where to save the results of the pipeline
         self.debug_folder = create_debug_folder(self.debug_root)
 
     @property
@@ -109,11 +105,10 @@ class BaseAttack(ABC, Logger):
         self.logger_module.info("Verbosity: {}\n".format(str(self.verbosity)))
 
         self.logger_module.info("Attack name: {}".format(self.name))
-        self.logger_module.info("Target image: {}".format(self.target_image.path))
+        self.logger_module.info("Target image: {}".format(self.target_image_path))
 
         if not self.test:
-            self.detector.prediction_pipeline(self.target_image, os.path.join(self.debug_folder, "initial result"),
-                                              omask=self.target_image_mask)
+            self.visualizer.save_prediction_pipeline(os.path.join(self.debug_folder, "initial result"))
 
         self.start_time = datetime.now()
 
@@ -122,20 +117,22 @@ class BaseAttack(ABC, Logger):
         Instructions executed after performing the attack
         :return:
         """
-
-        psnr = PSNR(self.target_image, np.array(attacked_image, np.int))
+        print("FINAL metadata")
+        print(attacked_image.shape, attacked_image.dtype, attacked_image.min(), attacked_image.max())
 
         path = os.path.join(self.debug_folder, "attacked_image.png")
         attacked_image.save(path)
 
-        attacked_image = Picture(path=path)
+        pristine_image = np.asarray(cv2.imread(self.target_image_path), dtype=np.uint8)
+        attacked_image_n = np.asarray(cv2.imread(path), dtype=np.uint8)
+
+        psnr = PSNR(pristine_image, attacked_image_n)
+
+        print(f"FINAL PSNR:{psnr:.02f}")
 
         if not self.test:
-            heatmap,mask = self.detector.prediction_pipeline(attacked_image, os.path.join(self.debug_folder, "final result"),
-                                              original_picture=self.target_image, omask=self.target_image_mask,
-                                              note="final result PSNR:{:.2f}".format(psnr))
-
-            self.detector.save_heatmap(heatmap,os.path.join(self.debug_folder, "final heatmap.png"))
+            self.visualizer.initialize(sample_path=path)
+            self.visualizer.save_prediction_pipeline(os.path.join(self.debug_folder, "final result"))
 
         end_time = datetime.now()
         timedelta = end_time - self.start_time
@@ -186,13 +183,13 @@ class BaseAttack(ABC, Logger):
         attack_parameters["verbosity"] = verbosity
 
         setup_parameters = dict()
-        setup_parameters["target_image"] = image
+        setup_parameters["target_image_path"] = image.path
         setup_parameters["target_image_mask"] = mask
-        setup_parameters["source_image"] = None
+        setup_parameters["source_image_path"] = None
         setup_parameters["source_image_mask"] = None
         setup_parameters["target_forgery_mask"] = None
 
-        return attack_parameters,setup_parameters
+        return attack_parameters, setup_parameters
 
     @classmethod
     def name(cls):

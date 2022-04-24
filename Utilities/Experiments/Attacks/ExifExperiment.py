@@ -43,8 +43,8 @@ class ExifExperiment(BaseExperiment):
 
             output_path = os.path.join(self.debug_foler, Path(original_image.path).stem)
 
-            self.visualizer.complete_pipeline(original_image, original_mask, initial_heatmap, target_mask, final_heatmap,
-                                              final_mask_original, output_path)
+            self.visualizer.save_prediction_pipeline(original_image, original_mask, initial_heatmap, target_mask, final_heatmap,
+                                                     final_mask_original, output_path)
 
         if not self.test_authentic:
             self.f1_original_forgery.append(f1_score(original_mask.flatten(), final_mask_original.flatten()))

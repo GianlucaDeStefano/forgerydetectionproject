@@ -13,7 +13,6 @@ from Utilities.Image.functions import visuallize_matrix_values
 
 
 class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
-
     name = "LOTS Attack"
 
     def __init__(self, steps: int, alpha: float, patch_size=(8, 8),
@@ -34,13 +33,12 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
             faster execution to test the code
         """
 
-        super().__init__(steps, alpha, 0,quality_factor, regularization_weight, plot_interval, debug_root, verbosity)
+        super().__init__(steps, alpha, 0, quality_factor, regularization_weight, plot_interval, debug_root, verbosity)
 
         self.patch_size = patch_size
         self.padding_size = padding_size
 
         self.gradient_normalization_margin = 8
-
 
     def _on_before_attack(self):
         """
@@ -143,7 +141,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
         # analyze the image using batch of patches
         for base_index in tqdm(range(0, len(img_patches), self.batch_size)):
 
-            # retieve this batch's patches form the list
+            # retrieve this batch's patches form the list
             patches = img_patches[base_index:min(len(img_patches), base_index + self.batch_size)]
 
             # retrieve the noise patches from the list
@@ -161,7 +159,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
             patches_gradient, batch_loss = self._get_gradients_of_patches(patches, targets, perturbations)
 
             # add this patch's loss contribution
-            cumulative_loss += np.sum(batch_loss)/(len(img_patches)//self.batch_size)
+            cumulative_loss += np.sum(batch_loss) / (len(img_patches) // self.batch_size)
 
             for i, patch in enumerate(patches):
                 # Add the contribution of this patch to the image wide gradient removing the padding
@@ -177,7 +175,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
         :param y_true: target representation
         :return: loss value
         """
-        return tf.norm(y_pred-y_true, ord='euclidean', axis=[1,2])
+        return tf.norm(y_pred - y_true, ord='euclidean', axis=[1, 2])
 
     def regularizer_function(self, perturbation=None):
         """
@@ -190,4 +188,4 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
         if perturbation is None:
             return 0
 
-        return tf.norm(perturbation, ord='euclidean', axis=[1,2])
+        return tf.norm(perturbation, ord='euclidean', axis=[1, 2])

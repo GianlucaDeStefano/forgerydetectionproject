@@ -69,6 +69,6 @@ class ExifTransferabilityExperiment(TransferabilityExperiment):
         self.logger_module.info("target forgery F1:{:.2} MCC:{:.2}".format(st.mean(self.target_forgery_f1_results),
                                                                            st.mean(self.target_forgery_mcc_results)))
 
-        self.visualizer.complete_pipeline(attacked_image, original_forgery_mask, initial_heatmap, target_forgery_mask,
-                                          heatmap,mask,
-                                          os.path.join(self.attacked_results_dir, sample_name))
+        self.visualizer.save_prediction_pipeline(attacked_image, original_forgery_mask, initial_heatmap, target_forgery_mask,
+                                                 heatmap, mask,
+                                                 os.path.join(self.attacked_results_dir, sample_name))

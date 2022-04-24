@@ -61,16 +61,16 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
 
         self.k = 5
 
-    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
-              source_image_mask: Picture = None,target_forgery_mask : Picture = None):
+    def setup(self, target_image_path: Picture, target_image_mask: Picture, source_image_path: Picture = None,
+              source_image_mask: Picture = None, target_forgery_mask: Picture = None):
         """
-        :param source_image: image from which we will compute the target representation
+        :param source_image_path: image from which we will compute the target representation
         :param source_image_mask: mask of the imae from which we will compute the target representation
         :param target_forgery_mask: mask highlighting the section of the image that should be identified as forged after the attack
         :return:
         """
 
-        super().setup(target_image, target_image_mask,source_image,source_image_mask,None)
+        super().setup(target_image_path, target_image_mask, source_image_path, source_image_mask, None)
 
         self.target_forgery_mask = target_forgery_mask
 

@@ -1,21 +1,22 @@
 import argparse
 import os
 from abc import ABC, abstractmethod
-
 import numpy as np
 import tensorflow as tf
 from cv2 import PSNR
 
 from Attacks.BaseIterativeAttack import BaseIterativeAttack
-from Detectors.DetectorEngine import DeterctorEngine
+from Detectors.DetectorEngine import DetectorEngine
 from Utilities.Image.Picture import Picture
+from Utilities.Plots import plot_graph
+from Utilities.Visualizers.BaseVisualizer import BaseVisualizer
 
 
 def normalize_gradient(gradient, margin=17):
     """
     Normalize the gradient cutting away the values on the borders
-    :param margin: margin to use along the bordes
-    :param gradient: gradient to normalize
+    @param margin: margin to use along the bordes
+    @param gradient: gradient to normalize
     :return: normalized gradient
     """
 
@@ -40,26 +41,27 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
 
     name = "Base Mimicking Attack"
 
-    def __init__(self, detector: DeterctorEngine, steps: int, alpha: float, momentum_coeficient: float = 0.5,
+    def __init__(self, visualizer: BaseVisualizer, steps: int, alpha: float, momentum_coeficient: float = 0.5,
                  regularization_weight=0.05, plot_interval=5, additive_attack=True,
                  debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
-        :param detector: name of the detector to be used to visualize the results
-        :param steps: number of attack iterations to perform
-        :param alpha: strength of the attack
-        :param momentum_coeficient: [0,1] how relevant is the velocity ferived from past gradients for computing the
+        @param visualizer: instance of the visualizer class wrapping the functionalities of the targeted detector
+        @param steps: number of attack iterations to perform
+        @param alpha: strength of the attack
+        @param momentum_coeficient: [0,1] how relevant is the velocity ferived from past gradients for computing the
             current gradient? 0 -> not relevant, 1-> is the only thing that matters
-        :param regularization_weight: [0,1] importance of the regularization factor in the loss function
-        :param plot_interval: how often (# steps) should the step-visualizations be generated?
-        :param additive_attack: show we feed the result of the iteration i as the input of the iteration 1+1?
-        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
-        :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
+        @param regularization_weight: [0,1] importance of the regularization factor in the loss function
+        @param plot_interval: how often (# steps) should the step-visualizations be generated?
+        @param additive_attack: show we feed the result of the iteration i as the input of the iteration 1+1?
+        @param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
+        @param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
-        super(BaseWhiteBoxAttack, self).__init__(detector, steps, plot_interval, additive_attack,
+        super(BaseWhiteBoxAttack, self).__init__(visualizer, steps, plot_interval, additive_attack,
                                                  debug_root, verbosity)
 
         # save the source image and its mask
+        self.source_image_path = None
         self.source_image = None
         self.source_image_mask = None
 
@@ -88,23 +90,26 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         assert (0 <= momentum_coeficient <= 1)
         self.momentum_coeficient = momentum_coeficient
 
-    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
-              source_image_mask: Picture = None,target_forgery_mask : Picture = None):
+    def setup(self, target_image_path: Picture, target_image_mask: Picture, source_image_path: Picture = None,
+              source_image_mask: Picture = None, target_forgery_mask: Picture = None):
         """
-        :param source_image: image from which we will compute the target representation
-        :param source_image_mask: mask of the imae from which we will compute the target representation
-        :param target_forgery_mask: mask highlighting the section of the image that should be identified as forged after the attack
+        @param target_image_path: path fo the sample to process
+        @param target_image_mask: np.array containing a binary mask where 0 -> pristine 1-> forged pixel
+        @param source_image_path: image from which we will compute the target representation
+        @param source_image_mask: mask of the image from which we will compute the target representation
+        @param target_forgery_mask: mask highlighting the section of the image that should be identified as forged after the attack
         :return:
         """
 
-        super().setup(target_image, target_image_mask)
+        super().setup(target_image_path, target_image_mask)
 
-        if source_image is None:
-            source_image = target_image
+        if source_image_path is None:
+            source_image_path = target_image_path
             source_image_mask = target_image_mask
 
         # save the source image and its mask
-        self.source_image = source_image
+        self.source_image = source_image_path
+        self.source_image = self.visualizer.metadata["sample"]
         self.source_image_mask = source_image_mask
 
         # create list for tracking the loss during iterations
@@ -120,34 +125,37 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         """
 
         super(BaseWhiteBoxAttack, self)._on_before_attack()
-        self.logger_module.info("Source image: {}".format(self.source_image.path))
+        self.logger_module.info("Source image: {}".format(self.source_image_path))
         self.logger_module.info("Alpha: {}".format(self.alpha))
         self.logger_module.info("Momentum coefficient:{}".format(self.momentum_coeficient))
         self.logger_module.info("Regularization weight:{}".format(self.regularization_weight))
 
         # compute the target representation
-        self.target_representation = self._compute_target_representation(self.source_image, self.source_image_mask)
-
+        self.target_representation = self._compute_target_representation(Picture(value=self.source_image),
+                                                                         self.source_image_mask)
 
     def _on_after_attack_step(self, attacked_image: Picture, *args, **kwargs):
         """
         At each step update the graph of the loss and of the PSNR
-        :param attacked_image:
-        :param args:
-        :param kwargs:
+        @param attacked_image:
+        @param args:
+        @param kwargs:
         :return:
         """
 
+        print(self.target_image.shape, self.target_image.dtype, self.target_image.min(), self.target_image.max())
+        print(attacked_image.shape, attacked_image.dtype, attacked_image.min(), attacked_image.max())
+
         # compute the PSNR between the initial image
-        psnr = PSNR(self.target_image, np.array(attacked_image, np.int))
+        psnr = PSNR(np.array(self.target_image,dtype=np.float32), np.array(attacked_image,dtype=np.float32))
         self.psnr_steps.append(psnr)
 
         super()._on_after_attack_step(attacked_image)
 
-        self.detector.plot_graph(self.loss_steps[1:], "Loss", "Attack iteration",
-                                 os.path.join(self.debug_folder, "loss"))
-        self.detector.plot_graph(self.psnr_steps[1:], "PSNR", "Attack iteration",
-                                 os.path.join(self.debug_folder, "psnr"))
+        plot_graph(self.loss_steps[1:], "Loss", "Attack iteration",
+                   os.path.join(self.debug_folder, "loss"))
+        plot_graph(self.psnr_steps[1:], "PSNR", "Attack iteration",
+                   os.path.join(self.debug_folder, "psnr"))
 
         # write the loss and psnr into the log
         self.logger_module.info("Loss: {:.2f}".format(self.loss_steps[-1]))
@@ -158,9 +166,9 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         """
         Function to compute and return the gradient of the image w.r.t  the given target representation.
         The old perturbation is used for computing the l2 regularization
-        :param image: image on which to calculate the gradient
-        :param target: target representation
-        :param old_perturbation: old_perturbation that has already been applied to the image, it is used for computing the
+        @param image: image on which to calculate the gradient
+        @param target: target representation
+        @param old_perturbation: old_perturbation that has already been applied to the image, it is used for computing the
             regularization.
         :return: image_gradient, cumulative_loss
         """
@@ -174,8 +182,8 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
                                        target_representation_source_image_mask: Picture):
         """
         Function to compute the target representation our attack are going to try to mimic
-        :param target_representation_source_image: image source of the target representation
-        :param target_representation_source_image_mask: mask of the image source of the target representation
+        @param target_representation_source_image: image source of the target representation
+        @param target_representation_source_image_mask: mask of the image source of the target representation
         :return: target representation, depending on the attack this may be a numpy array, a tuple of arrays, ...
         """
         raise NotImplementedError
@@ -195,9 +203,9 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         """
         Specify a loss function to drive the image we are attacking towards the target representation
         The default loss is the l2-norm
-        :param y_pred: last output of the model
-        :param y_true: target representation
-        :param perturbation:perturbation for which to compute the regularization value
+        @param y_pred: last output of the model
+        @param y_true: target representation
+        @param perturbation:perturbation for which to compute the regularization value
         :return: loss value
         """
 
@@ -210,8 +218,8 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         """
         Specify a loss function to drive the image we are attacking towards the target representation
         The default loss is the l2-norm
-        :param y_pred: last output of the model
-        :param y_true: target representation
+        @param y_pred: last output of the model
+        @param y_true: target representation
         :return: loss value
         """
         raise NotImplementedError
@@ -219,7 +227,7 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
     def regularizer_function(self, perturbation=None):
         """
         Compute te regularization value to add to the loss function
-        :param perturbation:perturbation for which to compute the regularization value
+        @param perturbation:perturbation for which to compute the regularization value
         :return: regularization value
         """
 
@@ -234,14 +242,14 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         """
         Read arguments from the command line or ask for them if they are not present, validate them raising
         an exception if they are invalid, it is called by the launcher script
-        :param args: args dictionary containing the arguments passed while launching the program
+        @param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        attack_parameters,setup_parameters = BaseIterativeAttack.read_arguments(dataset_root)
+        attack_parameters, setup_parameters = BaseIterativeAttack.read_arguments(dataset_root)
         parser = argparse.ArgumentParser()
         parser.add_argument("-a", '--alpha', default=5, type=float, help='Strength of the attack')
         args = parser.parse_known_args()[0]
 
         attack_parameters["alpha"] = float(args.alpha)
 
-        return attack_parameters,setup_parameters
+        return attack_parameters, setup_parameters

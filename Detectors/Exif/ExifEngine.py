@@ -1,42 +1,112 @@
 import os
 import pathlib
-
+import cv2
 import numpy as np
 import tensorflow as tf
-
-from Detectors.DetectorEngine import DeterctorEngine
+from Detectors.DetectorEngine import DetectorEngine
 from Detectors.Exif import demo
-from Utilities.Image.Picture import Picture
 
 
-class ExifEngine(DeterctorEngine):
+class ExifEngine(DetectorEngine):
+    weights_path = os.path.join(pathlib.Path(__file__).parent, './ckpt/exif_final/exif_final.ckpt')
 
-    def __init__(self):
+    def __init__(self, dense=False):
         tf.compat.v1.disable_eager_execution()
         super().__init__("ExifEngine")
+        self.patch_per_dim = 50
+        self.model = demo.Demo(ckpt_path=self.weights_path, use_gpu=0, quality=3.0, num_per_dim=self.patch_per_dim)
+        self.dense = dense
 
-        ckpt_path = os.path.join(pathlib.Path(__file__).parent, './ckpt/exif_final/exif_final.ckpt')
-        self.model = demo.Demo(ckpt_path=ckpt_path, use_gpu=0, quality=3.0, num_per_dim=30)
-
-    def detect(self, image: Picture, target_mask: Picture = None) -> tuple:
-        res = self.model.run(image, use_ncuts=True, blue_high=True)
-        return res[0], res[1]
-
-    def get_feature_representation(self, patches: list):
+    def destroy(self):
         """
-        Compute the feature representation on the fiven patches
-        :param patches: list of patches for which we have to compute the target reptresentation
-        :return: numpy array in the shape #P x 4096 where #P is the number of patches
+        @return:
         """
-        # transform the list of patches into a #P x 128 x 128 x 3 numpy array
-        patch = np.array(patches)
+        # check if a session object exists
+        if self.model.solver.sess:
 
-        # transform the numpy array into a tensorflow tensor, casting it to the type required by exif
-        tensor_patch = tf.convert_to_tensor(patch, dtype=tf.float32)
+            # close tf section if open
+            if not self.model.solver.sess._closed:
+                self.model.solver.sess.close()
 
-        # foreach patch, extract the corresponding 4096 exif dimensional vector
-        patches_features = self.model.solver.net.extract_features_resnet50(tensor_patch, "test", reuse=True)
+        del self.model
 
-        return patches_features
+    def reset(self):
+        """
+        Reset Exif to a pristine state
+        @return: None
+        """
+        self.metadata = dict()
 
+        if not self.model.solver.sess or self.model.solver.sess._closed:
+            self.model = demo.Demo(ckpt_path=self.weights_path, use_gpu=0, quality=3.0, num_per_dim=self.patch_per_dim)
 
+    def initialize(self, sample_path = None, sample=None, reset_instance=True):
+        """
+        Initialize the detector to handle a new sample.
+
+        @param sample_path: str
+            Path of the sample to analyze
+        @param sample: numpy.array
+            Preloaded sample to use (to be useful sample_path has to be None)
+        @param reset_instance: Bool
+            A flag indicating if this detector's metadata should be reinitialized before loading the new sample
+        """
+
+        # Generic initialization of the detector engine
+        super(ExifEngine, self).initialize(sample_path, sample, reset_instance)
+
+        # Make sure the necessary data has been loaded
+        assert ("sample_path" in self.metadata.keys() or self.metadata["sample"])
+
+        # check if a sample instance has been given
+        if self.metadata["sample"] is None:
+
+            # no instance given, load it from the path
+
+            # read the necessary metadata
+            sample_path = self.metadata["sample_path"]
+
+            # Load the sample
+            sample = cv2.imread(sample_path)[:, :, [2, 1, 0]]
+            self.metadata["sample"] = sample
+
+    def extract_features(self):
+        # check if the features have already been extracted
+        if "features" in self.metadata:
+            return self.metadata
+
+        # Make sure the necessary data has been loaded
+        assert ("sample" in self.metadata.keys())
+
+        # read the necessary metadata
+        sample = self.metadata["sample"]
+
+        if self.dense:
+            self.metadata["features"] = self.model.run_vote_extract_features(sample)
+        else:
+            self.metadata["features"] = self.model.run_extract_features(sample)
+
+        return self.metadata
+
+    def process_features(self, compute_mask=False):
+        # check if python attack_image.py --image splicing-70.pngthe features have already been processed
+        if "heatmap" in self.metadata:
+            return self.metadata
+
+        # read the necessary metadata
+        sample = self.metadata["sample"]
+        features = self.metadata["features"]
+
+        # compute the heatmap
+        if self.dense:
+            self.metadata["heatmap"] = self.model.run_vote_cluster(features)[0]
+        else:
+            self.metadata["heatmap"] = self.model.run_cluster_heatmap(sample, features, False)
+
+            if compute_mask:
+                self.metadata["mask"] = self.model.run_cluster_mask(sample, features)
+
+        if np.mean(self.metadata["heatmap"] > 0.5) > 0.5:
+            self.metadata["heatmap"] = 1.0 - self.metadata["heatmap"]
+
+        return self.metadata

@@ -119,6 +119,6 @@ class NoiseprintTransferabilityExperiment(TransferabilityExperiment):
             st.mean(self.original_forgery_target_threshold_f1_results),
             st.mean(self.original_forgery_target_threshold_mcc_results)))
 
-        self.visualizer.complete_pipeline(attacked_image, original_forgery_mask, original_heatmap, target_forgery_mask,
-                                          heatmap,
-                                          os.path.join(self.attacked_results_dir, sample_name))
+        self.visualizer.save_prediction_pipeline(attacked_image, original_forgery_mask, original_heatmap, target_forgery_mask,
+                                                 heatmap,
+                                                 os.path.join(self.attacked_results_dir, sample_name))

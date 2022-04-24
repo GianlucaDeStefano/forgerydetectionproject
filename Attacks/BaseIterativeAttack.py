@@ -4,18 +4,18 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from Attacks.BaseAttack import BaseAttack
-from Detectors.DetectorEngine import DeterctorEngine
 from Utilities.Image import Picture
+from Utilities.Visualizers.BaseVisualizer import BaseVisualizer
 
 
 class BaseIterativeAttack(BaseAttack, ABC):
     name = "Base Iterative Attack"
 
-    def __init__(self, detector: DeterctorEngine, steps: int,
+    def __init__(self, visualizer: BaseVisualizer, steps: int,
                  plot_interval: int = 5, additive_attack=True, debug_root: str = "./Data/Debug/",
                  verbosity: int = 2):
         """
-        :param detector: name of the detector to be used to visualize the results
+        :param visualizer: instance of the visualizer class wrapping the functionalities of the targeted detector
         :param steps: number of attack iterations to perform
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param additive_attack: showl we feed the result of the iteration i as the input of the iteration 1+1?
@@ -24,8 +24,9 @@ class BaseIterativeAttack(BaseAttack, ABC):
             faster execution to test the code
         """
 
-        super().__init__(detector, debug_root, verbosity)
+        super().__init__(visualizer, debug_root, verbosity)
 
+        self.steps_debug_folder = None
         assert (steps > 0)
 
         self.steps = steps
@@ -37,17 +38,15 @@ class BaseIterativeAttack(BaseAttack, ABC):
         # counter of the attack iterations that have been applied to the image
         self.step_counter = 0
 
-
-    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
-              source_image_mask: Picture = None,target_forgery_mask : Picture = None):
+    def setup(self, target_image_path: Picture, target_image_mask: Picture):
         """
-        :param source_image: image from which we will compute the target representation
-        :param source_image_mask: mask of the imae from which we will compute the target representation
-        :param target_forgery_mask: mask highlighting the section of the image that should be identified as forged after the attack
-        :return:
+        Setup the pipeline for execution
+        @param target_image_path: path fo the sample to process
+        @param target_image_mask: np.array containing a binary mask where 0 -> pristine 1-> forged pixel
+        @return:
         """
 
-        super().setup(target_image, target_image_mask,source_image,source_image_mask,target_forgery_mask)
+        super().setup(target_image_path, target_image_mask)
 
         # create a folder where to store the data generated at each step
         self.steps_debug_folder = os.path.join(str(self.debug_folder), "steps")
@@ -109,11 +108,12 @@ class BaseIterativeAttack(BaseAttack, ABC):
         :param image: image before the attack step
         :return:
         """
+
+        self.visualizer.initialize(sample=attacked_image, reset_instance=False, reset_metadata=False)
+
         if self.plot_interval > 0 and (self.step_counter + 1) % self.plot_interval == 0 and not self.test:
-            self.detector.prediction_pipeline(attacked_image,
-                                              path=os.path.join(self.steps_debug_folder, str(self.step_counter + 1))
-                                              , original_picture=self.target_image, omask=self.target_image_mask,
-                                              note=self.step_note())
+            self.visualizer.save_prediction_pipeline(
+                path=os.path.join(self.steps_debug_folder, str(self.step_counter + 1)))
 
     def _on_before_attack(self):
         """
@@ -127,10 +127,8 @@ class BaseIterativeAttack(BaseAttack, ABC):
         self.logger_module.info("Additive attack: {}".format(self.additive_attack))
 
         if not self.test:
-            self.detector.prediction_pipeline(self.target_image,
-                                              path=os.path.join(self.steps_debug_folder, str(self.step_counter + 1))
-                                              , original_picture=self.target_image, omask=self.target_image_mask,
-                                              note=self.step_note())
+            self.visualizer.save_prediction_pipeline(
+                path=os.path.join(self.steps_debug_folder, str(self.step_counter + 1)))
 
     def step_note(self):
         """
@@ -154,7 +152,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        attack_parameters,setup_parameters = BaseAttack.read_arguments(dataset_root)
+        attack_parameters, setup_parameters = BaseAttack.read_arguments(dataset_root)
         parser = argparse.ArgumentParser()
         parser.add_argument("-s", '--steps', default=50, type=int, help='Number of attack steps to perform')
         parser.add_argument("-pi", '--plot_interval', default=5, type=int,
@@ -164,4 +162,4 @@ class BaseIterativeAttack(BaseAttack, ABC):
         attack_parameters["steps"] = int(args.steps)
         attack_parameters["plot_interval"] = int(args.plot_interval)
 
-        return attack_parameters,setup_parameters
+        return attack_parameters, setup_parameters

@@ -1,3 +1,4 @@
+import logging
 import os
 from abc import abstractmethod
 import matplotlib
@@ -16,9 +17,42 @@ class BaseVisualizer:
     using different Detectors
     """
 
-    def __init__(self, engine: DetectorEngine, name):
+    def __init__(self, engine: DetectorEngine):
+        """
+        @param engine: instance of the engine class to use
+        """
         self._engine = engine
-        self.name = name
+
+    def initialize(self, sample_path=None, sample=None, reset_instance=False,reset_metadata = True):
+        """
+        Initialize the visualizer to handle a new sample
+
+        @param sample_path: str
+            Path of the sample to analyze
+        @param sample: numpy.array
+            Preloaded sample to use (to be useful sample_path has to be None)
+        @param reset_instance: Bool
+            A flag indicating if this detector's metadata should be reinitialized before loading the new sample.
+            (useful if sample_path = None and sample != None)
+            Sometimes we need to maintain some hyperparameters from the metadata between detecto-runs
+            (e.g: quality factor for Noiseprint)
+        @param reset_metadata: Bool
+
+        """
+        self._engine.initialize(sample_path, sample, reset_instance,reset_metadata)
+
+    def process_sample(self, image_path):
+        self.reset()
+        self._engine.initialize(image_path)
+        self._engine.process(image_path)
+
+    def reset(self):
+        """
+        Reset the state of the visualizer to process a new sample
+        """
+        logging.log(logging.INFO, f"Resetting Detector : {self._engine.name}")
+        self._engine.reset()
+        logging.log(logging.INFO, f"Primal detector instance: {self._engine.name} successfully restored")
 
     @abstractmethod
     def predict(self, image: Picture, path=None):
@@ -28,46 +62,25 @@ class BaseVisualizer:
         raise NotImplementedError
 
     @abstractmethod
-    def prediction_pipeline(self, image: Picture, path=None, original_picture=None, note="", mask=None, debug=False,
-                            adversarial_noise=None):
+    def save_prediction_pipeline(self, path):
         """
         Function to print the output map of an image, together with every intermediate ste[, and save the final image
         it to the specified path
         """
         raise NotImplementedError
 
-    def compute_difference(self, original_image, image, enhance_factor=100):
-        return Picture(1 - np.abs(original_image - image) * enhance_factor).clip(0, 1).one_channel()
-
-    def plot_graph(self, data, label_y, label_x="", path=None, min_range_value=1, initial_value=1):
-        """
-        Generate and save a cartesian graph displaying the given list of datapoints
-        :param data: list of datapoints to display
-        :param label: label to print on the x axis
-        :param path: path to save the imae
-        :param display: should the image be opened when created?
-        :param min_range_value: minumum number of values to diaplay as index on the x axis
-        :param initial_value: base value on the x axis
-        :return:
-        """
-        plt.close()
-        plt.plot(data)
-
-        plt.ylabel(label_y)
-        plt.xlabel(label_x)
-
-        plt.xticks(range(min_range_value, len(data), max(initial_value, int(len(data) / 10))))
-        if path:
-            if not os.path.exists(os.path.split(path)[0]):
-                os.makedirs(os.path.split(path)[0])
-            plt.savefig(path)
-
-        plt.close()
-
     @abstractmethod
-    def complete_pipeline(self, image, mask, base_result, target_mask, final_heatmap, final_mask, path):
+    def save_heatmap(self, path):
+        """
+        Save the predicted heatmap as an image
+        @param path: path where to save the heatmap
+        @return: None
+        """
         raise NotImplementedError
 
-    @abstractmethod
-    def save_heatmap(self,heatmap,path):
-        raise NotImplementedError
+    @property
+    def metadata(self):
+        return self._engine.metadata
+
+def compute_difference(self, original_image, image, enhance_factor=100):
+    return Picture(1 - np.abs(original_image - image) * enhance_factor).clip(0, 1).one_channel()

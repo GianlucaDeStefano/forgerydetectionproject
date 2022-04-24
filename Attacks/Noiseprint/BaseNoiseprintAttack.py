@@ -6,6 +6,7 @@ import tensorflow as tf
 from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack, normalize_gradient
 from Detectors.Noiseprint.noiseprintEngine import NoiseprintEngine
 from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file
+from Detectors.Noiseprint.utility.utilityRead import one_2_three_channels, three_2_one_channel, imconver_int_2_float
 from Utilities.Image.Picture import Picture
 from Utilities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
 
@@ -34,23 +35,15 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
             faster execution to test the code
         """
 
-        detector = NoiseprintVisualizer()
+        visualizer = NoiseprintVisualizer()
 
-        super().__init__(detector, steps, alpha, momentum_coeficient, regularization_weight, plot_interval, False,
+        super().__init__(visualizer, steps, alpha, momentum_coeficient, regularization_weight, plot_interval, False,
                          debug_root, verbosity)
 
         self.quality_factor = quality_factor
 
-        # compute and save the quality factor to use if it has not been specifier or if it is invalid
-        self.inferred = False
-
-        # instantiate the noiseprint engine class
-        self._engine = detector._engine
-
-        if not quality_factor or quality_factor < 51 or quality_factor > 101:
-            self.inferred = True
-        else:
-            self._engine.load_quality(self.quality_factor)
+        # reference directly the noiseprint engine class
+        self._engine = visualizer._engine
 
         # create variable to store the generated adversarial noise
         self.noise = None
@@ -58,32 +51,24 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         # create variable to store the momentum of the gradient
         self.moving_avg_gradient = None
 
-        # the ammount of margin to apply to the gradient before normalization
+        # the amount of margin to apply to the gradient before normalization
         self.gradient_normalization_margin = 0
 
         # the batch size to use
         self.batch_size = 512
 
-    def setup(self, target_image: Picture, target_image_mask: Picture, source_image: Picture = None,
+    def setup(self, target_image_path: Picture, target_image_mask: Picture, source_image_path: Picture = None,
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):
 
-        super().setup(target_image, target_image_mask, source_image, source_image_mask,target_forgery_mask)
+        super().setup(target_image_path, target_image_mask, source_image_path, source_image_mask, target_forgery_mask)
 
         # create variable to store the generated adversarial noise
-        self.noise = np.zeros((target_image.shape[0], target_image.shape[1]))
+        self.noise = np.zeros((self.target_image.shape[0], self.target_image.shape[1]))
 
         # create variable to store the momentum of the gradient
-        self.moving_avg_gradient = np.zeros((target_image.shape[0], target_image.shape[1]))
+        self.moving_avg_gradient = np.zeros((self.target_image.shape[0], self.target_image.shape[1]))
 
-        if self.inferred:
-
-            try:
-                self.quality_factor = jpeg_quality_of_file(target_image.path)
-            except:
-                self.quality_factor = 101
-
-            # load the desired model
-            self._engine.load_quality(self.quality_factor)
+        self.quality_factor = self._engine.metadata["quality_level"]
 
     def _on_before_attack(self):
         """
@@ -93,7 +78,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
 
         super()._on_before_attack()
 
-        self.logger_module.info("Quality factor to be used: {} {}".format(self.quality_factor, "(inferred)" if self.inferred else ""))
+        self.logger_module.info("Quality factor to be used: {} {}".format(self.quality_factor, "(inferred)"))
 
     def _get_gradients_of_patches(self, patches_list: list, target_list: list, perturbations=None):
         """
@@ -229,13 +214,12 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
             (5) -> return the image
         :return: attacked image
         """
+        image_to_attack = np.array(image_to_attack, dtype=np.float32)
 
-        # compute the attacked image using the original image and the cumulative noise to reduce
-        # rounding artifacts caused by translating the noise from one to 3 channels and vice versa multiple times
-        image_one_channel = Picture((image_to_attack.one_channel() - self.noise).clip(0, 255)).to_float()
+        transformed_image = imconver_int_2_float((three_2_one_channel(image_to_attack) - self.noise).clip(0, 255))
 
         # compute the gradient
-        image_gradient, loss = self._get_gradient_of_image(image_one_channel, self.target_representation,
+        image_gradient, loss = self._get_gradient_of_image(transformed_image, self.target_representation,
                                                            Picture(self.noise))
 
         # save loss value to plot it
@@ -258,7 +242,8 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         Use attacked_image_monochannel to get the one channel version of the image withoud rounding errors
         :return:
         """
-        return Picture((self.target_image - Picture(self.noise).three_channels(1 / 3, 1 / 3, 1 / 3)).clip(0, 255))
+        return Picture(self.target_image - one_2_three_channels(self.noise)).clip(0, 255)
+
 
     @property
     def attacked_image_monochannel(self):
