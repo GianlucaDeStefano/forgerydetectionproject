@@ -2,14 +2,14 @@ from pathlib import Path
 
 from Datasets.Columbia.ColumbiaDataset import ColumbiaDataset
 from Datasets.ColumbiaUncompressed.ColumbiaUncompressedDataset import ColumbiaUncompressedDataset
-from Datasets.DSO.DsoDataset import DsoDatasetDataset
+from Datasets.DSO.DsoDataset import DsoDataset
 from Datasets.Dataset import ImageNotFoundException, mask_2_binary
 from Datasets.RIT.RitDataset import RitDataset
 from Detectors.Noiseprint.utility.utilityRead import imread2f
 from Utilities.Image.Picture import Picture
 
 supported_datasets = dict(columbia=ColumbiaDataset, rit=RitDataset, columbiaUncompressed=ColumbiaUncompressedDataset
-                          , dso=DsoDatasetDataset)
+                          , dso=DsoDataset)
 
 class ImageNotFoundError(Exception):
     """Exception raised when no image by a given nme has been found in the datasets

@@ -19,7 +19,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         :param steps: number of attack iterations to perform
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param additive_attack: showl we feed the result of the iteration i as the input of the iteration 1+1?
-        :param debug_root: root folder insede which to create a folder to store the data produced by the pipeline
+        :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
         """
@@ -53,10 +53,10 @@ class BaseIterativeAttack(BaseAttack, ABC):
 
         os.makedirs(self.steps_debug_folder)
 
-    def execute(self) -> Picture:
+    def execute(self) -> tuple:
         """
         Start the attack pipeline using the data passed in the initialization
-        :return: attacked image
+        :return: last attacked image,best attacked image
         """
         # execute pre-attack operations
         pristine_image = self.target_image
@@ -64,13 +64,17 @@ class BaseIterativeAttack(BaseAttack, ABC):
         # execute post-attack operations
         self._on_before_attack()
 
+        best_image = None
+
+        best_loss = float('inf')
+
         # iterate the attack for the given amount of steps
         attacked_image = pristine_image
         for self.step_counter in range(0, self.steps):
 
             # print logs
-            self.logger_module.info("\n### Step: {} ###".format(self.step_counter))
             step_start_time = datetime.now()
+            self.logger_module.info("\n### Step: {} ###".format(self.step_counter))
             self.logger_module.info(" start at: {}".format(step_start_time))
 
             # if the attack is not additive, remove the effect of the previous iteration
@@ -81,7 +85,12 @@ class BaseIterativeAttack(BaseAttack, ABC):
             self._on_before_attack_step(attacked_image)
 
             # execute one step of the attack
-            attacked_image = self.attack(attacked_image)
+            attacked_image, loss = self.attack(attacked_image)
+
+            # save result with the lowest loss
+            if loss < best_loss:
+                best_loss = loss
+                best_image = attacked_image.copy()
 
             # execute post-step operations
             self._on_after_attack_step(attacked_image)
@@ -92,7 +101,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         # execute post-attack operations
         self._on_after_attack(attacked_image)
 
-        return attacked_image
+        return attacked_image, best_image
 
     def _on_before_attack_step(self, image: Picture, *args, **kwargs):
         """

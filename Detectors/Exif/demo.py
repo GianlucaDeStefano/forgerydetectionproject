@@ -311,7 +311,7 @@ def run_vote_no_threads(image, solver, exif_to_use, n_anchors=1, num_per_dim=Non
 
 class Demo():
     def __init__(self, ckpt_path='/data/scratch/minyoungg/ckpt/exif_medifor/exif_medifor.ckpt', use_gpu=0,
-                 quality=3.0, patch_size=128, num_per_dim=35):
+                 quality=3.0, patch_size=128, num_per_dim=30):
         self.quality = quality  # sample ratio
         self.solver, nc, params = load_models.initialize_exif(ckpt=ckpt_path, init=False, use_gpu=use_gpu)
         params["im_size"] = patch_size
@@ -373,7 +373,7 @@ class Demo():
         for hSt in np.linspace(0, h - patch_size, num_per_dim).astype(int):
             for wSt in np.linspace(0, w - patch_size, num_per_dim).astype(int):
                 res = run_vote_no_threads(im, self.solver, None, n_anchors=1, num_per_dim=None,
-                                          patch_size=128, batch_size=64, sample_ratio=self.quality,
+                                          patch_size=128, batch_size=32, sample_ratio=self.quality,
                                           override_anchor=(hSt, wSt))['out']['responses'][0]
                 all_results.append(res)
         return all_results

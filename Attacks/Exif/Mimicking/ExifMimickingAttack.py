@@ -20,15 +20,12 @@ for gpu in gpus:
 class ExifMimickingAttack(BaseExifAttack):
     name = "Exif mimicking attack"
 
-    def __init__(self, target_image: Picture, target_image_mask: Picture, source_image: Picture,
-                 source_image_mask: Picture, steps: int, alpha: float = 1, detector: ExifVisualizer = None,
+    def __init__(self, steps: int, alpha: float = 1, detector: ExifVisualizer = None,
                  regularization_weight=0.05, plot_interval=1, patch_size=(128, 128), batch_size: int = 128,
                  debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform
         :param alpha: strength of the attack
-        :param detector: instance of the detector class to use to process the results, usefull also to share weights
-            between multiple instances of the attack
         :param regularization_weight: [0,1] importance of the regularization factor in the loss function
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
         :param patch_size: Width and Height of the patches we are using to compute the Exif parameters
@@ -39,14 +36,8 @@ class ExifMimickingAttack(BaseExifAttack):
             faster execution to test the code
         """
 
-        assert (target_image.shape == source_image.shape)
-
-        super().__init__(steps, alpha, detector, regularization_weight, plot_interval, patch_size, batch_size,
+        super().__init__(steps, alpha, regularization_weight, plot_interval, patch_size, batch_size,
                          debug_root, verbosity)
-
-        stride = (max(source_image.shape[0], source_image.shape[1]) - self.patch_size[0]) // 30
-
-        self.stride = (stride, stride)
 
     def _compute_target_representation(self, target_representation_source_image: Picture,
                                        target_representation_source_image_mask: Picture):

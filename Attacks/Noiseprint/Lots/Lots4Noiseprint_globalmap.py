@@ -35,12 +35,12 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
             faster execution to test the code
         """
 
-        super().__init__(steps, alpha, 0, quality_factor,                        regularization_weight, plot_interval, debug_root, verbosity)
+        super().__init__(steps, alpha, 0, quality_factor, regularization_weight, plot_interval, debug_root, verbosity)
 
         self.patch_size = patch_size
         self.padding_size = padding_size
 
-        self.gradient_normalization_margin = 8
+        self.gradient_normalization_margin = 0
 
     def _on_before_attack(self):
         """

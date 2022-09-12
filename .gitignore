@@ -1,6 +1,6 @@
 #exclude folders containing data (e.g datasets)
 *.zip
-
+RESULTS/*
 Data/*
 !Data/custom
 lib/

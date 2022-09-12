@@ -1,82 +1,76 @@
-import os
+import os.path
+import traceback
 from abc import abstractmethod
+from collections import defaultdict
+from os import listdir
+from os.path import join, isfile, basename
+from statistics import mean
 
-from tqdm import tqdm
+import numpy as np
 
-from Datasets import mask_2_binary, Dataset
+from Datasets.Dataset import resize_mask
+from Utilities.Experiments.BaseExperiment import BaseExperiment
 from Utilities.Image.Picture import Picture
-from Utilities.Logger.Logger import Logger
+from Utilities.Visualizers.BaseVisualizer import BaseVisualizer
 
 
-class TransferabilityExperiment(Logger):
-    """
-    This class is made to test the actual transferability of the applied forgeries between detectors
-    """
+class TransferabilityExperiment(BaseExperiment):
 
-    def __init__(self, debug_root, data_root_folder, original_dataset: Dataset, visualizer):
-        """
-        :param debug_root: str
-            debug root folder where to save the logs
-        :param data_root_folder: str
-            folder containing the data to process
-        :param original_dataset: Dataset
-            original dataset of the samples to test (used to retrieve the original mask)
-        :param visualizer: Visualizer
-            The visualizer class of the detector we want to use to test the samples
-        """
+    def __init__(self, visualizer: BaseVisualizer, debug_root, dataset, attacked_samples_folder_path):
+        self.attacked_samples_folder_path = attacked_samples_folder_path
+        samples = [os.path.join(self.attacked_samples_folder_path, f) for f in listdir(attacked_samples_folder_path) if
+                   isfile(join(attacked_samples_folder_path, f))]
 
-        self.debug_root = debug_root
+        super().__init__(visualizer, debug_root, samples, dataset)
 
-        self.original_results_dir = os.path.join(self.debug_root, "original")
-        os.makedirs(self.original_results_dir)
+        self.target_masks_folder_old = os.path.join(self.attacked_samples_folder_path, "targetForgeryMasks")
 
-        self.attacked_results_dir = os.path.join(self.debug_root, "attacked other detector")
-        os.makedirs(self.attacked_results_dir)
+        # create folder to store the detector's result on the pristine sample
+        self.pristine_results_folder = os.path.join(self.debug_root, "pristine")
+        os.makedirs(self.pristine_results_folder)
 
-        self.data_root_folder = data_root_folder
-        self.original_dataset = original_dataset
-        self.visualizer = visualizer
+        # create folder to store the computed detector's result
+        self.pristine_visualizations = os.path.join(self.pristine_results_folder, "visualizations")
+        os.makedirs(self.pristine_visualizations)
 
-    @property
-    def target_masks_folder(self):
-        """
-        Returns the path of the folder containing all the target masks
-        """
-        return os.path.join(self.data_root_folder, "masks")
+        # create folder to store the computed detector's heatmaps
+        self.pristine_heatmaps = os.path.join(self.pristine_results_folder, "heatmaps")
+        os.makedirs(self.pristine_heatmaps)
 
-    @property
-    def attacked_images_folder(self):
-        """
-        Returns the path of the folder containing all the attacked images
-        """
-        return os.path.join(self.data_root_folder, "output")
+        # create folder to store the attacked samples
+        self.attacked_samples_folder = os.path.join(self.debug_root, "attackedSamples")
+        os.makedirs(self.attacked_samples_folder)
 
-    @abstractmethod
-    def _compute_scores(self, sample_name, original_image, attacked_image, original_forgery_mask, target_forgery_mask):
-        raise NotImplementedError
+        # create folder to store the computed random target forgery masks
+        self.target_masks_folder = os.path.join(self.attacked_samples_folder, "targetForgeryMasks")
+        os.makedirs(self.target_masks_folder)
 
-    def execute(self):
-        """
-        Execute the experiment
-        """
+    def process_sample(self, sample_path, gt_mask):
+        filename = basename(sample_path)
 
-        for sample_name in tqdm(os.listdir(self.attacked_images_folder)):
+        sample_name = basename(sample_path)
 
-            if "png" not in sample_name or "tmp" in sample_name or "output" in sample_name:
-                continue
+        pristine_sample = Picture(path=sample_path)
 
-            # load sample
-            attacked_image = Picture(path=os.path.join(self.attacked_images_folder, sample_name))
+        original_forgery_mask = Picture(resize_mask(gt_mask, (pristine_sample.shape[1], pristine_sample.shape[0])))
 
-            # load target forgery mask
-            target_forgery_mask = mask_2_binary(Picture(os.path.join(self.target_masks_folder, sample_name)))
+        target_forgery_mask_path = os.path.join(self.target_masks_folder_old, sample_name)
 
-            # load original forgery mask
-            original_sample_path = self.original_dataset.get_image(sample_name)
-            original_image = Picture(path=original_sample_path)
+        target_forgery_mask = Picture(target_forgery_mask_path)
+        target_forgery_mask = np.rint(Picture(target_forgery_mask[:, :, 0]) / 255)
 
-            original_forgery_mask, _ = self.original_dataset.get_mask_of_image(original_sample_path)
+        self.visualizer.process_sample(sample_path)
+        heatmap = self.visualizer.metadata["heatmap"]
 
-            # obtain predicted heatmap and mask
-            self._compute_scores(sample_name, original_image, attacked_image, original_forgery_mask,
-                                 target_forgery_mask)
+        self.visualizer.save_prediction_pipeline(os.path.join(self.pristine_visualizations, sample_name),
+                                                 mask=original_forgery_mask)
+
+        # save pristine heatmap
+        pristine_heatmap_path = os.path.join(self.pristine_heatmaps, filename.split(".")[0] + ".npy")
+        np.save(pristine_heatmap_path, np.array(heatmap))
+
+        target_forgery_mask_path = os.path.join(self.target_masks_folder, basename(sample_path))
+        Picture(target_forgery_mask * 255).save(target_forgery_mask_path)
+
+        del heatmap
+

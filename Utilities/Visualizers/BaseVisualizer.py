@@ -23,7 +23,7 @@ class BaseVisualizer:
         """
         self._engine = engine
 
-    def initialize(self, sample_path=None, sample=None, reset_instance=False,reset_metadata = True):
+    def initialize(self, sample_path=None, sample=None, reset_instance=False, reset_metadata=True):
         """
         Initialize the visualizer to handle a new sample
 
@@ -32,27 +32,19 @@ class BaseVisualizer:
         @param sample: numpy.array
             Preloaded sample to use (to be useful sample_path has to be None)
         @param reset_instance: Bool
+            A flag indicating if this detector's internal classes should be completely scrapped and reloaded
+        @param reset_metadata: Bool
             A flag indicating if this detector's metadata should be reinitialized before loading the new sample.
             (useful if sample_path = None and sample != None)
             Sometimes we need to maintain some hyperparameters from the metadata between detecto-runs
             (e.g: quality factor for Noiseprint)
-        @param reset_metadata: Bool
 
         """
-        self._engine.initialize(sample_path, sample, reset_instance,reset_metadata)
+        self._engine.initialize(sample_path, sample, reset_instance, reset_metadata)
 
-    def process_sample(self, image_path):
-        self.reset()
-        self._engine.initialize(image_path)
+    def process_sample(self, image_path,reset_instance=False):
+        self._engine.initialize(image_path, reset_instance=reset_instance, reset_metadata=True)
         self._engine.process(image_path)
-
-    def reset(self):
-        """
-        Reset the state of the visualizer to process a new sample
-        """
-        logging.log(logging.INFO, f"Resetting Detector : {self._engine.name}")
-        self._engine.reset()
-        logging.log(logging.INFO, f"Primal detector instance: {self._engine.name} successfully restored")
 
     @abstractmethod
     def predict(self, image: Picture, path=None):
@@ -62,7 +54,7 @@ class BaseVisualizer:
         raise NotImplementedError
 
     @abstractmethod
-    def save_prediction_pipeline(self, path):
+    def save_prediction_pipeline(self, path,mask=None):
         """
         Function to print the output map of an image, together with every intermediate ste[, and save the final image
         it to the specified path
@@ -78,9 +70,21 @@ class BaseVisualizer:
         """
         raise NotImplementedError
 
+    def get_mask(self):
+        """
+        Computes the mask of the forged area (if necessary) and then returns it
+        @return: np.array
+        """
+        return self.metadata["mask"]
+
     @property
     def metadata(self):
         return self._engine.metadata
+
+    def reset_metadata(self):
+        del self._engine.metadata
+        self._engine.metadata = dict()
+
 
 def compute_difference(self, original_image, image, enhance_factor=100):
     return Picture(1 - np.abs(original_image - image) * enhance_factor).clip(0, 1).one_channel()

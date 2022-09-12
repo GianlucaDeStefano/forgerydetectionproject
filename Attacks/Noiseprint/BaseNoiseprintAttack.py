@@ -9,6 +9,7 @@ from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file
 from Detectors.Noiseprint.utility.utilityRead import one_2_three_channels, three_2_one_channel, imconver_int_2_float
 from Utilities.Image.Picture import Picture
 from Utilities.Visualizers.NoiseprintVisualizer import NoiseprintVisualizer
+from tensorflow.python.ops.gen_math_ops import squared_difference
 
 
 class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
@@ -214,24 +215,24 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
             (5) -> return the image
         :return: attacked image
         """
-        image_to_attack = np.array(image_to_attack, dtype=np.float32)
 
-        transformed_image = imconver_int_2_float((three_2_one_channel(image_to_attack) - self.noise).clip(0, 255))
+        # format the image to attack in the required shape and format
+        image_one_channel = Picture((image_to_attack.one_channel() - self.noise).clip(0, 255)).to_float()
 
         # compute the gradient
-        image_gradient, loss = self._get_gradient_of_image(transformed_image, self.target_representation,
+        image_gradient, loss = self._get_gradient_of_image(image_one_channel, self.target_representation,
                                                            Picture(self.noise))
 
         # save loss value to plot it
         self.loss_steps.append(loss)
 
         # normalize the gradient
-        image_gradient = normalize_gradient(image_gradient, self.gradient_normalization_margin) * self.alpha
+        image_gradient = normalize_gradient(image_gradient, 0) * self.alpha
 
         # add this iteration contribution to the cumulative noise
         self.noise += image_gradient
 
-        return self.attacked_image
+        return self.attacked_image, loss
 
     @property
     def attacked_image(self):
@@ -244,7 +245,6 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         """
         return Picture(self.target_image - one_2_three_channels(self.noise)).clip(0, 255)
 
-
     @property
     def attacked_image_monochannel(self):
         """
@@ -252,4 +252,27 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         rounding artifacts caused by translating the nosie from one to 3 channels and vie versa multiple times
         :return:
         """
-        return Picture((self.target_image.one_channel() - self.noise).clip(0, 1))
+        return Picture((self.target_image.one_channel() - self.noise / 255).clip(0, 1))
+
+    def loss_function(self, y_pred, y_true):
+        """
+        Specify a loss function to drive the image we are attacking towards the target representation
+        The default loss is the l2-norm
+        :param y_pred: last output of the model
+        :param y_true: target representation
+        :return: loss value
+        """
+        return tf.reduce_sum(squared_difference(y_pred, y_true), [1, 2])
+
+    def regularizer_function(self, perturbation=None):
+        """
+        Compute te regularization value to add to the loss function
+        :param perturbation:perturbation for which to compute the regularization value
+        :return: regularization value
+        """
+
+        # if no perturbation is given return 0
+        if perturbation is None:
+            return 0
+
+        return tf.norm(perturbation, ord='euclidean')

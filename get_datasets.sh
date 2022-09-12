@@ -29,20 +29,6 @@ fi
 
 echo " - Columbia uncompressed dataset is ready"
 
-#download the realistic image tampering dataset
-echo "Preparing 'realistic image tampering'"
-if [ ! -f "./Data/Datasets/RIT/readme.md" ]
-then
-gdown https://drive.google.com/u/0/uc?id=0B73Fq3C_nT4aOThud0NYWUR2MTQ -O realistic-tampering-dataset.zip
-unzip -qq realistic-tampering-dataset.zip -d .
-mkdir -p ./Data/Datasets/RIT/
-mv ./data-images/* ./Data/Datasets/RIT/
-rm realistic-tampering-dataset.zip
-rm -r ./data-images/
-fi
-
-echo "Datasets setup successfully"
-
 echo "Preparing DSO-1 Dataset"
 if [ ! -f "./Data/Datasets/DSO/masks" ]
 then

@@ -14,18 +14,19 @@ from tensorflow.python.keras.models import Model
 # Bias layer necessary because noiseprint applies bias after batch-normalization.
 from tqdm import tqdm
 
-from Detectors.DetectorEngine import DetectorEngine
+from Detectors.DetectorEngine import DetectorEngine, find_optimal_mask
 from Detectors.Noiseprint.noiseprint_blind import noiseprint_blind_post, genMappFloat
 from Detectors.Noiseprint.utility.utility import jpeg_quality_of_file
 from Detectors.Noiseprint.utility.utilityRead import jpeg_qtableinv, imread2f, three_2_one_channel, \
     imread2int_pil, imconver_int_2_float
 from Utilities.Image.Picture import Picture
+import multiprocessing as mp
 
 
 class NoiseprintEngine(DetectorEngine):
     _save_path = os.path.join(os.path.dirname(__file__), './weights/net_jpg%d/')
-    slide = 1024  # 3072
-    large_limit = 1050000  # 9437184
+    slide = 512  # 3072
+    large_limit = 262144  # 9437184
     overlap = 34
 
     force_reload_quality = True
@@ -35,12 +36,12 @@ class NoiseprintEngine(DetectorEngine):
         super().__init__("Noiseprint")
 
         self._model = _full_conv_net()
+        self._fixed_quality_level = quality_level
         self._loaded_quality = quality_level
         self._session = None
         self.i = 0
         if setup_on_init:
             self.reset()
-
 
     def destroy(self):
         """
@@ -82,6 +83,15 @@ class NoiseprintEngine(DetectorEngine):
             self._loaded_quality = None
 
     @staticmethod
+    def load_sample(sample_path):
+        """
+        Method that specifies the correct procedure to load a sample from memory
+        @param sample_path: sample to load
+        @return: loaded sample
+        """
+        return imread2int_pil(sample_path, channel=3, dtype=np.float32)
+
+    @staticmethod
     def transform_sample(pristine_sample):
         """
         Apply the detector-specific transformations necessary to transform a sample into
@@ -91,13 +101,24 @@ class NoiseprintEngine(DetectorEngine):
         @return:
         """
 
-        assert(len(pristine_sample.shape))
-        assert(np.min(pristine_sample) >= 0 and 255 >= np.max(pristine_sample) > 1)
+        assert (len(pristine_sample.shape) == 3)
+        assert (np.min(pristine_sample) >= 0 and 255 >= np.max(pristine_sample) > 1)
 
         one_channel_image = three_2_one_channel(pristine_sample)
-        scaled_image = imconver_int_2_float(one_channel_image,np.float32)
-        print(scaled_image.shape,scaled_image.dtype,scaled_image.min(),scaled_image.max())
+        scaled_image = imconver_int_2_float(one_channel_image, np.float32)
+
         return scaled_image
+
+    @property
+    def transformed_sample(self):
+        """
+        Sample loaded and transformed, ready to be processed by the noiseprint models
+        @return:
+        """
+        # Make sure the necessary data has been loaded
+        assert ("sample" in self.metadata.keys())
+
+        return self.transform_sample(self.metadata["sample"])
 
     def initialize(self, sample_path=None, sample=None, reset_instance=False, reset_metadata=True):
         """
@@ -121,10 +142,8 @@ class NoiseprintEngine(DetectorEngine):
 
         if not reset_metadata and sample is not None:
             # In case the metadata have not been completely widped,
-            # delete still the entries containing noiseprint, heatmap and mask to ensure a fair new run
+            # delete still the entries containing noiseprint to ensure a fair new run
             if "noiseprint" in self.metadata: del self.metadata["noiseprint"]
-            if "heatmap" in self.metadata: del self.metadata["heatmap"]
-            if "mask" in self.metadata: del self.metadata["mask"]
 
         # Make sure the necessary data has been loaded
         assert (self.metadata["sample_path"] or self.metadata["sample"] is not None)
@@ -139,19 +158,22 @@ class NoiseprintEngine(DetectorEngine):
             sample_path = self.metadata["sample_path"]
 
             # Load the sample
-            sample = imread2int_pil(sample_path, channel=3)
+            sample = self.load_sample(sample_path)
             self.metadata["sample"] = sample
-            print(sample.dtype,sample.min(),sample.max())
-            # Infer the quality level to use if necessary or specified
+
+            # Infer the quality level to use only if necessary
             if self._loaded_quality is None or self.force_reload_quality:
 
-                try:
-                    # Infer the quality level from the quantization table
-                    self._loaded_quality = jpeg_qtableinv(sample_path)
-                except Exception as E:
-                    self.logger_module.info(
-                        f"Impossible to infer quality from file for the following error:\n {E} \n adopting default quality level 101")
-                    self._loaded_quality = 101
+                if not self._fixed_quality_level:
+                    try:
+                        # Infer the quality level from the quantization table
+                        self._loaded_quality = jpeg_qtableinv(sample_path)
+                    except Exception as E:
+                        self.logger_module.info(
+                            f"Impossible to infer quality from file for the following error:\n {E} \n adopting default quality level 101")
+                        self._loaded_quality = 101
+                else:
+                    self._loaded_quality = self._fixed_quality_level
 
                 # Load the model with the desired quality level
                 self.load_quality(self._loaded_quality)
@@ -169,7 +191,7 @@ class NoiseprintEngine(DetectorEngine):
             Dictionary containing all the metadata and results generated during the process
         """
 
-        # check if the featuresvhave already been extracted
+        # check if the features have already been extracted
         if "noiseprint" in self.metadata:
             return self.metadata
 
@@ -177,7 +199,7 @@ class NoiseprintEngine(DetectorEngine):
         assert ("sample" in self.metadata.keys())
 
         # read the necessary metadata
-        sample = self.transform_sample(self.metadata["sample"])
+        sample = self.transformed_sample
 
         # produce the noiseprint
         noiseprint = self.predict(sample)
@@ -186,7 +208,7 @@ class NoiseprintEngine(DetectorEngine):
 
         return self.metadata
 
-    def process_features(self):
+    def generate_heatmap(self):
         """
         Function extracting the necessary features from the sample and saving them into the
         output dict object
@@ -211,10 +233,44 @@ class NoiseprintEngine(DetectorEngine):
         mapp, valid, range0, range1, imgsize, other = noiseprint_blind_post(noiseprint, sample)
         heatmap = genMappFloat(mapp, valid, range0, range1, imgsize)
 
+        # Normalize the heatmap between the range [0,1]
+        heatmap = (heatmap - heatmap.min())
+        heatmap = heatmap / heatmap.max()
+
+        # More than halp of the pixels are above the 0.5 threshold, flip them
+        if np.mean(heatmap > 0.5) > 0.5:
+            heatmap = 1 - heatmap
+
         # Save the heatmap into the metadata object
         self.metadata["heatmap"] = heatmap
 
         return self.metadata
+
+    def generate_mask(self, threshold=None, gt_mask=None, metric=None):
+        """
+        Returns the mask of the forged area computing it from the heatmap
+        @param threshold: threshold to use to segment the heatmap
+        @param gt_mask: ground truth mask used to compute the optimal threshold (works only if metric != None)
+        @param metric: metric function used to compute the optimal threshold (works only if gt_mask != None)
+        @return: mask of the forged area
+        """
+        assert (self.metadata["heatmap"] is not None)
+        mask = None
+        if threshold is not None:
+            mask = np.where(self.metadata["heatmap"] > threshold, 1, 0)
+        elif metric is not None and gt_mask is not None:
+            mask,threshold = find_optimal_mask(self.metadata["heatmap"], gt_mask, metric)
+        else:
+            raise ValueError
+
+        mask = np.array(np.rint(mask), dtype=np.uint8)
+
+        if np.mean(mask == 1) > 0.5:
+            mask = 1 - mask
+
+        self.metadata["mask"] = mask
+
+        return mask,threshold
 
     def load_quality(self, quality):
         """
@@ -357,8 +413,12 @@ def normalize_noiseprint(noiseprint, margin=34):
     :param margin: margin size defining the central area, default to the overlap size 34
     :return: the normalized noiseprint data, 2-D numpy array with the same size of the input noiseprint data
     """
-    v_min = np.min(noiseprint[margin:-margin, margin:-margin])
-    v_max = np.max(noiseprint[margin:-margin, margin:-margin])
+    v_min = noiseprint.min()
+    v_max = noiseprint.max()
+    if margin > 0:
+        v_min = np.min(noiseprint[margin:-margin, margin:-margin])
+        v_max = np.max(noiseprint[margin:-margin, margin:-margin])
+
     return ((noiseprint - v_min) / (v_max - v_min)).clip(0, 1)
 
 
@@ -386,7 +446,7 @@ def find_best_theshold(heatmap, mask, measure):
     manager = multiprocessing.Manager()
 
     gap = min(max(10, int(heatmap.max() / 50)), 100)
-    min_t = 0
+    min_t = max(int(heatmap.min()), -25600)
     max_t = min(int(heatmap.max()), 25600)
     max_index = -1
 

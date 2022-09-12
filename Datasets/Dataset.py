@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import cv2
 import numpy as np
 
 
@@ -89,3 +90,18 @@ class Dataset(ABC):
         :return:
         """
         raise NoMaskAvailableException
+
+
+def resize_mask(mask, target_shape):
+    """
+    It can happen that the shapes of the tensors of an image and its mask may differ
+    USe this function to resize the mask to the desired shape
+    @return: np.array
+    """
+
+    assert (len(target_shape) == 2)
+
+    # if mask and image have different sizes reshape the  mask (it happens in the DSo dataset)
+    mask = np.rint(cv2.resize(np.array(mask, dtype=np.float32), dsize=target_shape))
+    mask = np.array(mask, np.uint8)
+    return mask

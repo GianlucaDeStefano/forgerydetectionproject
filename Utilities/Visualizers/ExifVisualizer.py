@@ -23,11 +23,17 @@ class InvalidImageShape(Exception):
 
 class ExifVisualizer(BaseVisualizer):
 
-    def __init__(self):
-        super().__init__(ExifEngine())
+    def __init__(self, dense: bool = False):
+        super().__init__(ExifEngine(dense))
 
-    def save_prediction_pipeline(self,path):
-        fig, axs = plt.subplots(1, 2, figsize=(20, 5))
+    def save_prediction_pipeline(self, path, mask=None):
+
+        cols = 2
+
+        if mask is not None:
+            cols += 1
+
+        fig, axs = plt.subplots(1, cols, figsize=(cols * 5, 5))
 
         for ax in axs:
             ax.set_xticks([])
@@ -35,8 +41,18 @@ class ExifVisualizer(BaseVisualizer):
 
         axs[0].imshow(self.metadata["sample"])
 
+        if "features" not in self.metadata:
+            self._engine.extract_features()
+
+        if "heatmap" not in self.metadata:
+            self._engine.generate_heatmap()
+
         axs[1].imshow(self.metadata["heatmap"], cmap='jet', vmin=0.0, vmax=1.0)
 
+        if mask is not None:
+            axs[2].imshow(mask, clim=[0, 1], cmap="gray")
+
         plt.savefig(path, bbox_inches='tight')
-        plt.show()
-        print("done")
+        plt.close("all")
+
+        del fig, axs

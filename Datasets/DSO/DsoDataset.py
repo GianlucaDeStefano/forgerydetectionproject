@@ -8,10 +8,10 @@ from Datasets.Dataset import Dataset, ImageNotFoundException, mask_2_binary
 from Utilities.Image.Picture import Picture
 
 
-class DsoDatasetDataset(Dataset):
+class DsoDataset(Dataset):
 
     def __init__(self, root):
-        super(DsoDatasetDataset, self).__init__(os.path.join(root,"DSO"), False, "DSO dataset", ["png"])
+        super(DsoDataset, self).__init__(os.path.join(root, "DSO"), False, "DSO dataset", ["png"])
 
     def get_authentic_images(self, target_shape=None):
         """

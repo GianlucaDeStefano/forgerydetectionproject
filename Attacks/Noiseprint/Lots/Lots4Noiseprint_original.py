@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 import tensorflow as tf
 from Attacks.Noiseprint.Lots.BaseLots4Noiseprint import BaseLots4Noiseprint
+from Detectors.Noiseprint.noiseprintEngine import normalize_noiseprint
 from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint, normalize_noiseprint_no_margins
 from Utilities.Image.Picture import Picture
 from Utilities.Image.functions import visuallize_matrix_values
@@ -38,7 +39,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
         self.patch_size = patch_size
         self.padding_size = padding_size
 
-        self.gradient_normalization_margin = 8
+        self.gradient_normalization_margin = 0
 
     def _on_before_attack(self):
         """
@@ -103,7 +104,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
         t_no_padding = authentic_patches[0].no_paddings(target_patch)
 
         # save a visualization of the target representation
-        normalized_noiseprint = normalize_noiseprint_no_margins(t_no_padding)
+        normalized_noiseprint = normalize_noiseprint(t_no_padding,0)
 
         plt.imsave(fname=os.path.join(self.debug_folder, "image-target.png"), arr=normalized_noiseprint,
                    cmap='gray',

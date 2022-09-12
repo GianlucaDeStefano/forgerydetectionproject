@@ -5,7 +5,6 @@ import numpy as np
 from Attacks.Noiseprint.BaseNoiseprintAttack import BaseNoiseprintAttack
 from Attacks.Noiseprint.Mimiking.BaseMimickin4Noiseprint import BaseMimicking4Noiseprint
 from Datasets import get_image_and_mask, ImageNotFoundError
-from Detectors.Noiseprint.utility.utility import prepare_image_noiseprint
 from Utilities.Image.Picture import Picture
 
 
@@ -18,13 +17,13 @@ class NoiseprintMimickingAttack(BaseMimicking4Noiseprint):
             This type of attack tries to "paste" noiseprint generated fon an authentic image on top of a
             forged one. The target representation is simply the noiseprint of the authentic image
         """
-        image = prepare_image_noiseprint(target_representation_source_image)
 
-        # generate an image wise noiseprint representation on the entire image
-        original_noiseprint = Picture(self._engine.predict(image))
+        ready_source_tr = self._engine.transform_sample(target_representation_source_image)
+
+        # generate an image wide noiseprint representation on the entire image
+        original_noiseprint = Picture(self._engine.predict(ready_source_tr))
+
         return original_noiseprint
-
-
 
     @staticmethod
     def read_arguments(dataset_root) -> tuple:
@@ -34,7 +33,7 @@ class NoiseprintMimickingAttack(BaseMimicking4Noiseprint):
         :param args: args dictionary containing the arguments passed while launching the program
         :return: kwargs to pass to the attack
         """
-        attack_parameters,setup_parameters = BaseNoiseprintAttack.read_arguments(dataset_root)
+        attack_parameters, setup_parameters = BaseNoiseprintAttack.read_arguments(dataset_root)
 
         parser = argparse.ArgumentParser()
         parser.add_argument('--source_image', required=True,
@@ -51,11 +50,10 @@ class NoiseprintMimickingAttack(BaseMimicking4Noiseprint):
 
             if image_path.exists():
                 image = Picture(str(image_path))
-                mask = np.where(np.all(image == (255,255,255), axis=-1), 1, 0)
             else:
                 raise
 
-        setup_parameters["source_image"] = image
-        setup_parameters["source_image_mask"] = mask
+        setup_parameters["source_image_path"] = image.path
+        setup_parameters["source_image_mask"] = None
 
-        return attack_parameters,setup_parameters
+        return attack_parameters, setup_parameters

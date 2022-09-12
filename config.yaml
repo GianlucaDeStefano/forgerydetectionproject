@@ -1,6 +1,6 @@
 global:
     debug:
-        path: ./Data/Debug/
+        path: ./Data/SampleAnalysis/
     datasets:
         root: ./Data/Datasets/
         columbia: ./Data/Datasets/ColumbiaUncompressed/

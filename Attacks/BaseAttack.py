@@ -40,15 +40,14 @@ class BaseAttack(ABC, Logger):
         # save the verbosity level (0 -> no logs,1 -> quick logs, 2-> full logs)
         self.verbosity = verbosity
 
-        # save debug root folder
-        self.debug_root = debug_root
+        self._debug_root = debug_root
 
         # create debug folder
         self.debug_folder = None
 
         self.start_time = datetime.now()
 
-    def setup(self, target_image_path: Picture, target_image_mask: Picture):
+    def setup(self, target_image_path: str, target_image_mask: Picture):
         """
         Setup the pipeline for execution
         @param target_image_path: path fo the sample to process
@@ -57,17 +56,16 @@ class BaseAttack(ABC, Logger):
         """
 
         print("\nSETUP \n")
+        self.debug_folder = create_debug_folder(self._debug_root)
 
         # load the sample in the visualizer
-        self.visualizer.initialize(target_image_path, None, False, True)
+        self.visualizer.initialize(target_image_path, None, True, True)
 
         # prepare the instance of the input image and its mask
-        self.target_image = self.visualizer.metadata["sample"]
+        self.target_image = Picture(self.visualizer.metadata["sample"])
         self.target_image_path = self.visualizer.metadata["sample_path"]
         self.target_image_mask = target_image_mask
 
-        # create a debug folder where to save the results of the pipeline
-        self.debug_folder = create_debug_folder(self.debug_root)
 
     @property
     def is_ready(self):
@@ -118,7 +116,6 @@ class BaseAttack(ABC, Logger):
         :return:
         """
         print("FINAL metadata")
-        print(attacked_image.shape, attacked_image.dtype, attacked_image.min(), attacked_image.max())
 
         path = os.path.join(self.debug_folder, "attacked_image.png")
         attacked_image.save(path)
@@ -128,7 +125,7 @@ class BaseAttack(ABC, Logger):
 
         psnr = PSNR(pristine_image, attacked_image_n)
 
-        print(f"FINAL PSNR:{psnr:.02f}")
+        self.logger_module.info(f"FINAL PSNR:{psnr:.02f}")
 
         if not self.test:
             self.visualizer.initialize(sample_path=path)

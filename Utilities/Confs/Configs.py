@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import os
@@ -32,16 +33,19 @@ class Configs(Logger):
         self.category = category
         self.timestamp = time.time()
 
+        setup_logging(self.debug_root)
+
         # set up usefull environment variables
         os.environ["DEBUG-ROOT"] = self.debug_root
         os.environ["CACHE"] = self.create_debug_folder("cache")
+
+        # log current time in the log file
+        self.logger_module.info(f"Starting execution at: {datetime.time()}")
 
         # Write in the logs the config that we are using
         self.logger_module.info("Configs:")
         self.logger_module.info(f"Debug root folder: {self.debug_root}")
         self.logger_module.info(json.dumps(self._config_dict, sort_keys=True, indent=4))
-
-        setup_logging(self.debug_root)
 
     @property
     def debug_root(self):

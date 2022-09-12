@@ -38,4 +38,4 @@ class BaseMimicking4Exif(BaseExifAttack, ABC):
         # add this iteration contribution to the cumulative noise
         self.noise += image_gradient
 
-        return self.attacked_image
+        return Picture(np.array(np.rint(self.attacked_image), dtype=np.uint8)), loss

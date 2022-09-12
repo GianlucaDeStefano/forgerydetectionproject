@@ -8,6 +8,7 @@ from cv2 import PSNR
 from Attacks.BaseIterativeAttack import BaseIterativeAttack
 from Detectors.DetectorEngine import DetectorEngine
 from Utilities.Image.Picture import Picture
+from Utilities.Image.functions import create_random_nonoverlapping_mask
 from Utilities.Plots import plot_graph
 from Utilities.Visualizers.BaseVisualizer import BaseVisualizer
 
@@ -65,6 +66,9 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         self.source_image = None
         self.source_image_mask = None
 
+        # Create object to store the target forgery mask (That is the forgery we want to inprint in an image)
+        self.target_forgery_mask = None
+
         # save the regularization weight
         self.regularization_weight = regularization_weight
 
@@ -100,17 +104,47 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         @param target_forgery_mask: mask highlighting the section of the image that should be identified as forged after the attack
         :return:
         """
+        self.target_image_path = None
+        self.source_image = None
+        self.target_image = None
+        self.target_forgery_mask = None
+        self.source_image_mask = None
+        self.source_image_path = None
 
         super().setup(target_image_path, target_image_mask)
 
-        if source_image_path is None:
-            source_image_path = target_image_path
-            source_image_mask = target_image_mask
+        # if a ad hoc source image is given load it and print its initial results
+        if source_image_path is not None and target_image_path != source_image_path:
+            # Load the source image in the visualizer
+            self.visualizer.initialize(source_image_path)
+
+            # Read the loaded data
+            self.source_image = self.visualizer.metadata["sample"]
+
+            # Print the detector's results on the loaded sample
+            self.visualizer.save_prediction_pipeline(os.path.join(self.debug_folder, "initial result source.png"))
+
+        # reload the target sample in the visualizer
+        self.visualizer.initialize(target_image_path)
+
+        # If no source image is given use the target image as source
+        if self.source_image is None:
+            self.source_image = self.visualizer.metadata["sample"]
 
         # save the source image and its mask
-        self.source_image = source_image_path
-        self.source_image = self.visualizer.metadata["sample"]
         self.source_image_mask = source_image_mask
+        if self.source_image_mask is None:
+            self.source_image_mask = self.target_image_mask
+
+        # If no target forgery maks is given and if it is not false, generate one randomly
+        self.target_forgery_mask = target_forgery_mask
+        if target_forgery_mask is None:
+            self.logger_module.warn("No target forgery mask has been given, it will be generated randomly")
+
+            self.target_forgery_mask = create_random_nonoverlapping_mask(self.target_image_mask)
+
+            Picture(self.target_forgery_mask*255).save(os.path.join(self.debug_folder, "computed target forgery "
+                                                                                       "mask.png"))
 
         # create list for tracking the loss during iterations
         self.loss_steps = [9999]
@@ -143,11 +177,8 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         :return:
         """
 
-        print(self.target_image.shape, self.target_image.dtype, self.target_image.min(), self.target_image.max())
-        print(attacked_image.shape, attacked_image.dtype, attacked_image.min(), attacked_image.max())
-
         # compute the PSNR between the initial image
-        psnr = PSNR(np.array(self.target_image,dtype=np.float32), np.array(attacked_image,dtype=np.float32))
+        psnr = PSNR(np.array(self.target_image, dtype=np.float32), np.array(attacked_image, dtype=np.float32))
         self.psnr_steps.append(psnr)
 
         super()._on_after_attack_step(attacked_image)
@@ -194,7 +225,7 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         Compute the attacked image using the original image and the cumulative noise to reduce
         rounding artifacts caused by translating the noise from one to 3 channels and vie versa multiple times,
         still this operation here is done once so some rounding error is still present.
-        Use attacked_image_monochannel to get the one channel version of the image withoud rounding errors
+        Use attacked_image_monochannel to get the one channel version of the image without rounding errors
         :return:
         """
         return Picture((self.target_image - Picture(self.noise)).clip(0, 255))
@@ -210,9 +241,9 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         """
 
         loss = tf.cast(self.loss_function(y_pred, y_true), tf.float64)
-        perturbation = tf.cast(self.regularizer_function(perturbation) * self.regularization_weight, tf.float64)
+        # perturbation = tf.cast(self.regularizer_function(perturbation) * self.regularization_weight, tf.float64)
 
-        return loss + perturbation
+        return loss
 
     def loss_function(self, y_pred, y_true):
         """
