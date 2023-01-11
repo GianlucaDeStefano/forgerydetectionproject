@@ -107,7 +107,7 @@ class NoiseprintEngine(DetectorEngine):
         one_channel_image = three_2_one_channel(pristine_sample)
         scaled_image = imconver_int_2_float(one_channel_image, np.float32)
 
-        return scaled_image
+        return tf.convert_to_tensor(scaled_image)
 
     @property
     def transformed_sample(self):

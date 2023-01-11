@@ -1,7 +1,7 @@
 import logging
 import time
 from abc import abstractmethod
-from multiprocessing import Pool
+from multiprocessing import Pool, get_context
 
 import numpy as np
 
@@ -191,13 +191,12 @@ def find_optimal_mask(heatmap, gt_mask, metric, test_flipped=True):
 
     # test also the flipped heatmap
     if test_flipped:
-        print("TESTING FLIPPED MASK")
         for t in range(0, n_iterations, 1):
             threshold = t / n_iterations
             processes.append((threshold, 1 - heatmap, target_mask, metric))
 
     results = None
-    with Pool(6) as pool:
+    with get_context("fork").Pool(6) as pool:
         results = pool.starmap(test_threshold, processes)
         pool.close()
 

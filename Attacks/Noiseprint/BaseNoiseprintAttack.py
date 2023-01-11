@@ -240,7 +240,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         Compute the attacked image using the original image and the cumulative noise to reduce
         rounding artifacts caused by translating the noise from one to 3 channels and vie versa multiple times,
         still this operation here is done once so some rounding error is still present.
-        Use attacked_image_monochannel to get the one channel version of the image withoud rounding errors
+        Use attaczked_image_monochannel to get the one channel version of the image withoud rounding errors
         :return:
         """
         return Picture(self.target_image - one_2_three_channels(self.noise)).clip(0, 255)
@@ -262,6 +262,7 @@ class BaseNoiseprintAttack(BaseWhiteBoxAttack, ABC):
         :param y_true: target representation
         :return: loss value
         """
+
         return tf.reduce_sum(squared_difference(y_pred, y_true), [1, 2])
 
     def regularizer_function(self, perturbation=None):

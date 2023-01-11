@@ -1,16 +1,9 @@
 import argparse
 import os
-
-from Attacks.Exif.Mimicking.ExifMimickingIntelligentAttack import ExifIntelligentAttack
-from Attacks.Noiseprint.Mimiking.NoiseprintMimickingIntelligentGlobal import NoiseprintGlobalIntelligentMimickingAttack
-from Datasets.ColumbiaUncompressed.ColumbiaUncompressedDataset import ColumbiaUncompressedDataset
-from Datasets.DSO.DsoDataset import DsoDataset
-from Utilities.Experiments.Attacks.MimicryExperiment import MimicryExperiment
-from Utilities.Experiments.Impilability.ImpilabilityExperiment import ImpilabilityExperiment
 from Utilities.Experiments.MetricGeneration import MetricGenerator
 from Utilities.Confs.Configs import Configs
 
-experiment_root = "/home/gianluca/Deep-detectors-attacks/Data/DebugFinale/"
+experiment_root = "/Users/gianlucadestefano/Desktop/TESI/RISULTATI/LOTS/"
 
 for experiment_path in [ f.path for f in os.scandir(experiment_root) if f.is_dir() ]:
 

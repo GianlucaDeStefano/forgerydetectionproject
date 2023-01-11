@@ -49,7 +49,6 @@ class Dataset(ABC):
         self.supported_formats = supported_formats
         self.root = root
 
-        print(name)
         if not name or name == "":
             raise Exception("A database needs a name")
 

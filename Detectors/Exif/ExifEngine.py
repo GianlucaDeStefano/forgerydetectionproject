@@ -13,8 +13,9 @@ class ExifEngine(DetectorEngine):
 
     def __init__(self, dense=False,use_gpu=0):
 
-        self.patch_per_dim = 30
+        self.patch_per_dim = 25
         self.model = None
+        print("DENSE: ",dense)
         self.dense = dense
         self.use_gpu = use_gpu
 
@@ -163,7 +164,6 @@ class ExifEngine(DetectorEngine):
         if threshold is not None:
 
             assert ("heatmap" in self.metadata and self.metadata["heatmap"] is not None)
-            print(f"Thresholding at: {threshold}")
             heatmap = self.metadata["heatmap"]
             mask = segment_heatmap(heatmap, threshold)
         elif gt_mask is not None and metric is not None:
@@ -171,7 +171,6 @@ class ExifEngine(DetectorEngine):
             assert ("heatmap" in self.metadata and self.metadata["heatmap"] is not None)
             heatmap = self.metadata["heatmap"]
             print("Finding best threshold using the gt mask")
-            print(heatmap.min(),heatmap.max())
             mask = find_optimal_mask(heatmap.copy(), gt_mask, metric)
         else:
 
@@ -181,8 +180,6 @@ class ExifEngine(DetectorEngine):
             # read the necessary metadata
             sample = self.metadata["sample"]
             features = self.metadata["features"]
-
-            print("using unsupervised method")
 
             mask = self.model.run_cluster_mask(sample, features)
         mask = np.array(np.rint(mask), dtype=np.uint8)

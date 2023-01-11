@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops.gen_math_ops import squared_difference
 
-from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack
+from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack, normalize_gradient
 from Utilities.Image.Picture import Picture
 from Utilities.Visualizers.ExifVisualizer import ExifVisualizer
 
@@ -14,7 +14,8 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         This class is used to implement white box attacks on the Exif-Sc detector
     """
 
-    def __init__(self, steps: int, alpha: float, regularization_weight=0.05, plot_interval=5, patch_size=(128, 128), batch_size: int = 64,
+    def __init__(self, steps: int, alpha: float, regularization_weight=0.05, plot_interval=5, patch_size=(128, 128),
+                 batch_size: int = 64,
                  debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform
@@ -56,11 +57,8 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
 
         self.stride = None
 
-
-
     def setup(self, target_image_path: Picture, target_image_mask: Picture, source_image_path: Picture = None,
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):
-
         super().setup(target_image_path, target_image_mask, source_image_path, source_image_mask, target_forgery_mask)
 
         self._engine = self.visualizer._engine.model.solver.net
@@ -103,11 +101,10 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         """
 
         # perform feed forward pass
-        print(self.x.shape)
         feature_representation = self._engine.extract_features_resnet50(self.x, "test", reuse=True)
 
         # compute the loss with respect to the target representation
-        loss = tf.norm(feature_representation - self.y, 2,axis=(1))
+        loss = tf.norm(feature_representation - self.y, 2, axis=(1))
 
         # construct the gradients object
         gradients = tf.gradients(loss, self.x)
@@ -136,3 +133,33 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
             return 0
 
         return 0
+
+    def attack(self, image_to_attack: Picture, *args, **kwargs):
+        """
+        Perform step of the attack executing the following steps:
+            (1) -> prepare the image to be used by noiseprint
+            (2) -> compute the gradient
+            (3) -> normalize the gradient
+            (4) -> apply the gradient to the image with the desired strength
+            (5) -> return the image
+        :return: attacked image
+        """
+
+        # compute the attacked image using the original image and the cumulative noise to reduce
+        # rounding artifacts caused by translating the noise from one to 3 channels and vice versa multiple times
+        image_one_channel = Picture((image_to_attack - self.noise).clip(0, 255)).to_float()
+
+        # compute the gradient
+        image_gradient, loss = self._get_gradient_of_image(image_one_channel, self.target_representation,
+                                                           Picture(self.noise))
+
+        # save loss value to plot it
+        self.loss_steps.append(loss)
+
+        # normalize the gradient
+        image_gradient = normalize_gradient(image_gradient, 0) * self.alpha
+
+        # add this iteration contribution to the cumulative noise
+        self.noise += image_gradient
+
+        return Picture(np.array(np.rint(self.attacked_image), dtype=np.uint8)), loss

@@ -18,7 +18,7 @@ from Utilities.Visualizers.ExifVisualizer import ExifVisualizer
 class ExifIntelligentAttack(BaseMimicking4Exif):
     name = "Exif mimicking attack"
 
-    def __init__(self, steps: int, alpha: float = 1,regularization_weight=0.05, plot_interval=1, patch_size=(128, 128),
+    def __init__(self, steps: int, alpha: float = 5,regularization_weight=0, plot_interval=1, patch_size=(128, 128),
                  batch_size: int = 64,
                  debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
@@ -189,7 +189,7 @@ class ExifIntelligentAttack(BaseMimicking4Exif):
             # add the batch loss to the cumulative loss
             loss += batch_loss.tolist()
 
-            # construct an image wide gradient map by combining the gradients computed on sing epatches
+            # construct an image wide gradient map by combining the gradients computed on singe patches
             for i, patch_gradient in enumerate(list(batch_gradients[0])):
                 gradient_map = batch_patches[i].add_to_image(gradient_map, patch_gradient)
                 count_map = batch_patches[i].add_to_image(count_map, np.ones(patch_gradient.shape))

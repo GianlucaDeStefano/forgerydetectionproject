@@ -1,5 +1,6 @@
 import os.path
 import traceback
+from pathlib import Path
 from statistics import mean
 
 import cv2
@@ -7,12 +8,13 @@ import matplotlib
 import sklearn as sklearn
 from sklearn.metrics import f1_score
 from sklearn.metrics import matthews_corrcoef as mcc
+from tqdm import tqdm
 
 from Detectors.DetectorEngine import find_optimal_mask
 from Utilities.Experiments.MetricGeneration import visualize_heatmap
 from Utilities.Image.Picture import Picture
 
-#matplotlib.use('TKAgg')
+# matplotlib.use('TKAgg')
 from matplotlib import pyplot as plt
 from collections import defaultdict
 from os import listdir
@@ -29,7 +31,7 @@ from Utilities.Logger.Logger import Logger
 
 class AnalyzeSamples(Logger):
 
-    def __init__(self, execution_data_root, configs, dataset=None):
+    def __init__(self, execution_data_root, configs, dataset=None, use_target_mask=True):
         self.execution_data_root = execution_data_root
 
         self.logger_module.info(f"Execution data root: {execution_data_root}")
@@ -214,7 +216,7 @@ class AnalyzeSamples(Logger):
 
     def process(self):
 
-        for sample_path in self.get_samples_to_process()[:30]:
+        for sample_path in tqdm(self.get_samples_to_process()):
 
             self.reset_metrics()
 
@@ -231,16 +233,20 @@ class AnalyzeSamples(Logger):
                 target_forgery_mask_name = target_forgery_mask_name.split('.')[0] + '.tif'
 
             target_forgery_mask = self.get_target_forgery_mask(target_forgery_mask_name)
+            if not target_forgery_mask:
+                target_forgery_mask = np.zeros(original_forgery_mask.shape)
 
             original_heatmap = self.get_pristine_heatmap(sample_name)
             attacked_heatmap = self.get_attacked_heatmap(sample_name)
 
             Picture(original_forgery_mask).save(os.path.join(sample_debug_root, "original_forgery_mask.png"))
             Picture(target_forgery_mask).save(os.path.join(sample_debug_root, "target_forgery_mask.png"))
-            visualize_heatmap(original_heatmap,os.path.join(sample_debug_root, "original_heatmap.png"))
-            visualize_heatmap(attacked_heatmap,os.path.join(sample_debug_root, "attacked_heatmap.png"))
+            visualize_heatmap(original_heatmap, os.path.join(sample_debug_root, "original_heatmap.png"))
+            visualize_heatmap(attacked_heatmap, os.path.join(sample_debug_root, "attacked_heatmap.png"))
 
-            complete_analysis_visualization(Picture(sample_path),original_forgery_mask,original_heatmap,target_forgery_mask,attacked_heatmap,path=os.path.join(sample_debug_root,"complete_visualization.png"))
+            complete_analysis_visualization(Picture(sample_path), original_forgery_mask, original_heatmap,
+                                            target_forgery_mask, attacked_heatmap,
+                                            path=os.path.join(sample_debug_root, "complete_visualization.png"))
 
             # compute metric on the pristine heatmap
             median_bg, median_gt, median_decoy, visibility_decoy, visibility_gt = self.compute_metric_of_heatmap(
@@ -249,8 +255,8 @@ class AnalyzeSamples(Logger):
 
             self.metrics["median-bg"].append(median_bg)
             self.metrics["median-gt"].append(median_gt)
-            self.metrics["median-decoy"].append(median_decoy)
-            self.metrics["visibility-decoy"].append(visibility_decoy)
+            #self.metrics["median-decoy"].append(median_decoy)
+            #self.metrics["visibility-decoy"].append(visibility_decoy)
             self.metrics["visibility-gt"].append(visibility_gt)
 
             # compute metric on the attacked heatmap
@@ -260,22 +266,24 @@ class AnalyzeSamples(Logger):
 
             self.metrics["median-bg-attacked"].append(median_bg_attacked)
             self.metrics["median-gt-attacked"].append(median_gt_attacked)
-            self.metrics["median-decoy-attacked"].append(median_decoy_attacked)
-            self.metrics["visibility-decoy-attacked"].append(visibility_decoy_attacked)
+            #self.metrics["median-decoy-attacked"].append(median_decoy_attacked)
+            #self.metrics["visibility-decoy-attacked"].append(visibility_decoy_attacked)
             self.metrics["visibility-gt-attacked"].append(visibility_gt_attacked)
 
             self.compute_thresholding_metrics(original_heatmap, attacked_heatmap, original_forgery_mask,
                                               target_forgery_mask, sample_debug_root)
 
-            with open(os.path.join(sample_debug_root,'statistics.txt'), 'w') as f:
-                for key, values in self.metrics.items():
-                    f.write(f"{key}: {mean(values):.4f}\n")
+        with open(os.path.join(self.configs.debug_root, 'statistics.txt'), 'w') as f:
+            for key, values in self.metrics.items():
+
+                if len(values)==0:
+                    continue
+                f.write(f"{key}: {mean(values):.4f}\n")
 
     def compute_metric_of_heatmap(self, heatmap, original_forgery_mask, target_forgery_mask):
 
         assert (heatmap.min() == 0 and heatmap.max() == 1)
         assert (original_forgery_mask.min() == 0 and original_forgery_mask.max() == 1)
-        assert (target_forgery_mask.min() == 0 and target_forgery_mask.max() == 1)
 
         combined_mask = (original_forgery_mask + target_forgery_mask) > 0
 
@@ -322,14 +330,14 @@ class AnalyzeSamples(Logger):
                                                                              combined_mask, mask_f1_0)
 
         self.metrics["dr_gt_f1_0"].append(dr_gt_f1_0)
-        self.metrics["dr_decoy_f1_0"].append(dr_decoy_f1_0)
+        #self.metrics["dr_decoy_f1_0"].append(dr_decoy_f1_0)
         self.metrics["dr_bg_f1_0"].append(dr_bg_f1_0)
 
         dr_gt_mcc_0, dr_decoy_mcc_0, dr_bg_mcc_0 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
                                                                                 combined_mask, mask_mcc_0)
         self.metrics["dr_gt_mcc_0"].append(dr_gt_mcc_0)
-        self.metrics["dr_decoy_mcc_0"].append(dr_decoy_mcc_0)
+        #self.metrics["dr_decoy_mcc_0"].append(dr_decoy_mcc_0)
         self.metrics["dr_bg_mcc_0"].append(dr_bg_mcc_0)
 
         # EXPERIMENT 1
@@ -343,21 +351,21 @@ class AnalyzeSamples(Logger):
         self.metrics["original_forgery_f1s_1"].append(attacked_f1_original_mask_original_t)
         self.metrics["original_forgery_mccs_1"].append(attacked_mcc_original_mask_original_t)
 
-        self.metrics["target_forgery_f1s_1"].append(attacked_f1_target_mask_original_t)
-        self.metrics["target_forgery_mccs_1"].append(attacked_mcc_target_mask_original_t)
+        # self.metrics["target_forgery_f1s_1"].append(attacked_f1_target_mask_original_t)
+        # self.metrics["target_forgery_mccs_1"].append(attacked_mcc_target_mask_original_t)
 
         dr_gt_f1_1, dr_decoy_f1_1, dr_bg_f1_1 = self.compute_detection_rates(original_forgery_mask, target_forgery_mask,
                                                                              combined_mask, mask_f1_1)
 
         self.metrics["dr_gt_f1_1"].append(dr_gt_f1_1)
-        self.metrics["dr_decoy_f1_1"].append(dr_decoy_f1_1)
+        #self.metrics["dr_decoy_f1_1"].append(dr_decoy_f1_1)
         self.metrics["dr_bg_f1_1"].append(dr_bg_f1_1)
 
         dr_gt_mcc_1, dr_decoy_mcc_1, dr_bg_mcc_1 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
                                                                                 combined_mask, mask_mcc_1)
         self.metrics["dr_gt_mcc_1"].append(dr_gt_mcc_1)
-        self.metrics["dr_decoy_mcc_1"].append(dr_decoy_mcc_1)
+        #self.metrics["dr_decoy_mcc_1"].append(dr_decoy_mcc_1)
         self.metrics["dr_bg_mcc_1"].append(dr_bg_mcc_1)
 
         # EXPERIMENT 2
@@ -369,14 +377,14 @@ class AnalyzeSamples(Logger):
         self.metrics["original_forgery_f1s_2"].append(attacked_f1_original_mask_original_recomputed_t)
         self.metrics["original_forgery_mccs_2"].append(attacked_mcc_original_mask_original_recomputed_t)
 
-        self.metrics["target_forgery_f1s_2"].append(attacked_f1_target_mask_original_recomputed_t)
-        self.metrics["target_forgery_mccs_2"].append(attacked_mcc_target_mask_original_recomputed_t)
+        # self.metrics["target_forgery_f1s_2"].append(attacked_f1_target_mask_original_recomputed_t)
+        # self.metrics["target_forgery_mccs_2"].append(attacked_mcc_target_mask_original_recomputed_t)
 
         dr_gt_f1_2, dr_decoy_f1_2, dr_bg_f1_2 = self.compute_detection_rates(original_forgery_mask, target_forgery_mask,
                                                                              combined_mask, mask_f1_2)
 
         self.metrics["dr_gt_f1_2"].append(dr_gt_f1_2)
-        self.metrics["dr_decoy_f1_2"].append(dr_decoy_f1_2)
+        #self.metrics["dr_decoy_f1_2"].append(dr_decoy_f1_2)
         self.metrics["dr_bg_f1_2"].append(dr_bg_f1_2)
 
         dr_gt_mcc_2, dr_decoy_mcc_2, dr_bg_mcc_2 = self.compute_detection_rates(original_forgery_mask,
@@ -384,10 +392,11 @@ class AnalyzeSamples(Logger):
                                                                                 combined_mask, mask_mcc_2)
 
         self.metrics["dr_gt_mcc_2"].append(dr_gt_mcc_2)
-        self.metrics["dr_decoy_mcc_2"].append(dr_decoy_mcc_2)
+        #self.metrics["dr_decoy_mcc_2"].append(dr_decoy_mcc_2)
         self.metrics["dr_bg_mcc_2"].append(dr_bg_mcc_2)
 
         # EXPERIMENT 3
+        """
         attacked_f1_target_mask_target_recomputed_t, attacked_f1_original_mask_target_recomputed_t, _, mask_f1_3 = compute_score(
             heatmap_attacked, target_forgery_mask, f1_score, original_forgery_mask, test_flipped=False)
         attacked_mcc_target_mask_target_recomputed_t, attacked_mcc_original_mask_target_recomputed_t, _, mask_mcc_3 = compute_score(
@@ -405,14 +414,14 @@ class AnalyzeSamples(Logger):
         self.metrics["dr_gt_f1_3"].append(dr_gt_f1_3)
         self.metrics["dr_decoy_f1_3"].append(dr_decoy_f1_3)
         self.metrics["dr_bg_f1_3"].append(dr_bg_f1_3)
-
+        
         dr_gt_mcc_3, dr_decoy_mcc_3, dr_bg_mcc_3 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
                                                                                 combined_mask, mask_mcc_3)
         self.metrics["dr_gt_mcc_3"].append(dr_gt_mcc_3)
         self.metrics["dr_decoy_mcc_3"].append(dr_decoy_mcc_3)
         self.metrics["dr_bg_mcc_3"].append(dr_bg_mcc_3)
-
+        """
         # EXPERIMENT 4:
 
         otsu_threshold, otsu_mask = cv2.threshold(np.array(np.rint(heatmap_attacked * 255), dtype=np.uint8), 0, 255,
@@ -424,15 +433,15 @@ class AnalyzeSamples(Logger):
         self.metrics["original_forgery_mccs_4"].append(mcc(original_forgery_mask.flatten(), otsu_mask.flatten()))
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["target_forgery_f1s_4"].append(f1_score(target_forgery_mask.flatten(), otsu_mask.flatten()))
-        self.metrics["target_forgery_mccs_4"].append(mcc(target_forgery_mask.flatten(), otsu_mask.flatten()))
+        # self.metrics["target_forgery_f1s_4"].append(f1_score(target_forgery_mask.flatten(), otsu_mask.flatten()))
+        # self.metrics["target_forgery_mccs_4"].append(mcc(target_forgery_mask.flatten(), otsu_mask.flatten()))
 
         dr_gt_mcc_4, dr_decoy_mcc_4, dr_bg_mcc_4 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
                                                                                 combined_mask, otsu_mask)
 
         self.metrics["dr_gt_4"].append(dr_gt_mcc_4)
-        self.metrics["dr_decoy_4"].append(dr_decoy_mcc_4)
+        #self.metrics["dr_decoy_4"].append(dr_decoy_mcc_4)
         self.metrics["dr_bg_4"].append(dr_bg_mcc_4)
 
         # EXPERIMENT 5:
@@ -445,18 +454,19 @@ class AnalyzeSamples(Logger):
         self.metrics["original_forgery_mccs_5"].append(mcc(original_forgery_mask.flatten(), mask_5.flatten()))
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["target_forgery_f1s_5"].append(f1_score(target_forgery_mask.flatten(), mask_5.flatten()))
-        self.metrics["target_forgery_mccs_5"].append(mcc(target_forgery_mask.flatten(), mask_5.flatten()))
+        # self.metrics["target_forgery_f1s_5"].append(f1_score(target_forgery_mask.flatten(), mask_5.flatten()))
+        # self.metrics["target_forgery_mccs_5"].append(mcc(target_forgery_mask.flatten(), mask_5.flatten()))
 
         dr_gt_mcc_5, dr_decoy_mcc_5, dr_bg_mcc_5 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
                                                                                 combined_mask, mask_5)
 
         self.metrics["dr_gt_5"].append(dr_gt_mcc_5)
-        self.metrics["dr_decoy_5"].append(dr_decoy_mcc_5)
+        #self.metrics["dr_decoy_5"].append(dr_decoy_mcc_5)
         self.metrics["dr_bg_5"].append(dr_bg_mcc_5)
 
         # EXPERIMENT 6
+        """
         # Use as threshold the value of the quantile corresponding to the area of the decoy mask
         q = 1 - (target_forgery_mask.sum() / target_forgery_mask.size)
         heatmap_attacked = np.asarray(heatmap_attacked)
@@ -480,6 +490,7 @@ class AnalyzeSamples(Logger):
         self.metrics["dr_bg_6"].append(dr_bg_mcc_6)
 
         self.metrics["quantile_6"].append(q)
+        """
 
         # EXPERIMENT 7
         # Use as threshold the value of the quantile 0.8
@@ -490,28 +501,29 @@ class AnalyzeSamples(Logger):
         self.metrics["original_forgery_mccs_7"].append(mcc(original_forgery_mask.flatten(), mask_7.flatten()))
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["target_forgery_f1s_7"].append(f1_score(target_forgery_mask.flatten(), mask_7.flatten()))
-        self.metrics["target_forgery_mccs_7"].append(mcc(target_forgery_mask.flatten(), mask_7.flatten()))
+        # self.metrics["target_forgery_f1s_7"].append(f1_score(target_forgery_mask.flatten(), mask_7.flatten()))
+        # self.metrics["target_forgery_mccs_7"].append(mcc(target_forgery_mask.flatten(), mask_7.flatten()))
 
         dr_gt_mcc_7, dr_decoy_mcc_7, dr_bg_mcc_7 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
                                                                                 combined_mask, mask_7)
 
         self.metrics["dr_gt_7"].append(dr_gt_mcc_7)
-        self.metrics["dr_decoy_7"].append(dr_decoy_mcc_7)
+        #self.metrics["dr_decoy_7"].append(dr_decoy_mcc_7)
         self.metrics["dr_bg_7"].append(dr_bg_mcc_7)
 
         self.metrics["auc_gt_pre"].append(
             sklearn.metrics.roc_auc_score(original_forgery_mask.flatten(), heatmap_pristine.flatten()))
-        self.metrics["auc_dec_pre"].append(
-            sklearn.metrics.roc_auc_score(target_forgery_mask.flatten(), heatmap_pristine.flatten()))
+        # self.metrics["auc_dec_pre"].append(
+        #    sklearn.metrics.roc_auc_score(target_forgery_mask.flatten(), heatmap_pristine.flatten()))
 
         self.metrics["auc_gt_post"].append(
             sklearn.metrics.roc_auc_score(original_forgery_mask.flatten(), heatmap_attacked.flatten()))
-        self.metrics["auc_dec_post"].append(
-            sklearn.metrics.roc_auc_score(target_forgery_mask.flatten(), heatmap_attacked.flatten()))
+        # self.metrics["auc_dec_post"].append(
+        #    sklearn.metrics.roc_auc_score(target_forgery_mask.flatten(), heatmap_attacked.flatten()))
 
-        roc_curves_visualization(heatmap_pristine, original_forgery_mask, heatmap_attacked, target_forgery_mask, os.path.join(sample_debug_root, "roc_graph.png"))
+        roc_curves_visualization(heatmap_pristine, original_forgery_mask, heatmap_attacked, target_forgery_mask,
+                                 os.path.join(sample_debug_root, "roc_graph.png"))
 
     def get_samples_to_process(self):
         return [join(self.attacked_samples_folder, f) for f in listdir(self.attacked_samples_folder) if
@@ -555,56 +567,62 @@ class AnalyzeSamples(Logger):
 
     def get_target_forgery_mask(self, sample_name):
 
+        sample_path = join(self.attacked_samples_target_forgery_masks_folder, sample_name)
+
+        if not Path(sample_path).exists():
+            return False
+
         taregt_forgery_mask = cv2.imread(
-            join(self.attacked_samples_target_forgery_masks_folder, sample_name)) / (3 * 255)
+            sample_path) / (3 * 255)
 
         if taregt_forgery_mask.shape[2] == 3:
             taregt_forgery_mask = np.rint(
                 taregt_forgery_mask[:, :, 0] + taregt_forgery_mask[:, :, 1] + taregt_forgery_mask[:, :, 2])
         return taregt_forgery_mask
 
-def complete_analysis_visualization(image,gt,heatmap_pristine,decoy_map,heatmap_attacked,path):
-        fig, axs = plt.subplots(1, 5, figsize=(5, 25))
 
-        axs[0].imshow(image)
-        axs[0].axis('off')
+def complete_analysis_visualization(image, gt, heatmap_pristine, decoy_map, heatmap_attacked, path):
+    fig, axs = plt.subplots(1, 5, figsize=(5, 25))
 
-        axs[1].imshow(gt, clim=[0, 1], cmap='gray')
-        axs[1].axis('off')
+    axs[0].imshow(image)
+    axs[0].axis('off')
 
-        axs[2].imshow(heatmap_pristine, clim=[0, 1], cmap='jet')
-        axs[2].axis('off')
+    axs[1].imshow(gt, clim=[0, 1], cmap='gray')
+    axs[1].axis('off')
 
-        axs[3].imshow(decoy_map, clim=[0, 1], cmap='gray')
-        axs[3].axis('off')
+    axs[2].imshow(heatmap_pristine, clim=[0, 1], cmap='jet')
+    axs[2].axis('off')
 
-        axs[4].imshow(heatmap_attacked, clim=[0, 1], cmap='jet')
-        axs[4].axis('off')
+    axs[3].imshow(decoy_map, clim=[0, 1], cmap='gray')
+    axs[3].axis('off')
 
-        if path:
+    axs[4].imshow(heatmap_attacked, clim=[0, 1], cmap='jet')
+    axs[4].axis('off')
 
-            plt.savefig(path, dpi=600, bbox_inches='tight')
+    if path:
+        plt.savefig(path, dpi=600, bbox_inches='tight')
 
-        plt.show()
-        plt.close()
+    plt.show()
+    plt.close()
 
-def roc_curves_visualization(heatmap_pristine,original_forgery_mask,heatmap_attacked,target_forgery_mask,path):
+
+def roc_curves_visualization(heatmap_pristine, original_forgery_mask, heatmap_attacked, target_forgery_mask, path):
     # PLOT rocks graph
     auc_gt_pre_fpr, auc_gt_pre_tpr, threshold = sklearn.metrics.roc_curve(original_forgery_mask.flatten(),
                                                                           heatmap_pristine.flatten())
-    auc_dec_pre_fpr, auc_dec_pre_tpr, threshold = sklearn.metrics.roc_curve(target_forgery_mask.flatten(),
-                                                                            heatmap_pristine.flatten())
+    # auc_dec_pre_fpr, auc_dec_pre_tpr, threshold = sklearn.metrics.roc_curve(target_forgery_mask.flatten(),
+    #                                                                        heatmap_pristine.flatten())
     auc_gt_post_fpr, auc_gt_post_tpr, threshold = sklearn.metrics.roc_curve(original_forgery_mask.flatten(),
                                                                             heatmap_attacked.flatten())
-    auc_dec_post_fpr, auc_dec_post_tpr, threshold = sklearn.metrics.roc_curve(target_forgery_mask.flatten(),
-                                                                              heatmap_attacked.flatten())
+    # auc_dec_post_fpr, auc_dec_post_tpr, threshold = sklearn.metrics.roc_curve(target_forgery_mask.flatten(),
+    #                                                                          heatmap_attacked.flatten())
 
     plt.figure(facecolor=(1, 1, 1))
     plt.title('Receiver Operating Characteristic')
     plt.plot(auc_gt_pre_fpr, auc_gt_pre_tpr, 'C1', label='Gt before attack')
-    plt.plot(auc_dec_pre_fpr, auc_dec_pre_tpr, 'C1', label='Decoy before attack', linestyle=":")
+    # plt.plot(auc_dec_pre_fpr, auc_dec_pre_tpr, 'C1', label='Decoy before attack', linestyle=":")
     plt.plot(auc_gt_post_fpr, auc_gt_post_tpr, 'C2', label='GT after attack')
-    plt.plot(auc_dec_post_fpr, auc_dec_post_tpr, 'C2', label='Decoy after attack', linestyle=":")
+    # plt.plot(auc_dec_post_fpr, auc_dec_post_tpr, 'C2', label='Decoy after attack', linestyle=":")
     plt.legend(loc='lower right')
     plt.plot([0, 1], [0, 1], 'r--')
     plt.xlim([0, 1])
@@ -614,6 +632,8 @@ def roc_curves_visualization(heatmap_pristine,original_forgery_mask,heatmap_atta
     plt.savefig(path)
     plt.show()
     plt.close()
+
+
 def compute_score(heatmap, target_mask, metric, second_mask=None, threshold=None, test_flipped=True):
     """
     Given an heatmap a target mask, and a metric find the theshold that when used on the heatmap produces the optimal mask
@@ -631,6 +651,10 @@ def compute_score(heatmap, target_mask, metric, second_mask=None, threshold=None
     first_score = None
     second_score = None
     mask = None
+
+    if target_mask.max() == 0:
+        return 0, 0, 1, mask
+
     if threshold is not None:
         mask = np.where(heatmap > threshold, 1, 0)
         first_score = metric(mask.flatten(), target_mask.flatten())

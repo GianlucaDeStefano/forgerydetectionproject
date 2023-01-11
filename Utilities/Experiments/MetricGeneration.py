@@ -563,14 +563,17 @@ def visualize_heatmap(heatmap,path=""):
         plt.savefig(path,dpi=600,bbox_inches='tight')
 
     plt.show()
+    plt.close(fig)
 
+def visualize_mask(mask):
 
-def visualize_mask(heatmap):
+    print(mask.min(),mask.max(),mask.shape)
     fig, axs = plt.subplots(1, 1, figsize=(5, 5))
 
-    axs.imshow(heatmap, clim=[0, 1], cmap='gray')
+    axs.imshow(mask, clim=[0, 1], cmap='gray')
 
     plt.show()
+    plt.close(fig)
 
 
 

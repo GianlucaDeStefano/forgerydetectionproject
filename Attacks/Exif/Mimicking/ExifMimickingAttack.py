@@ -20,8 +20,8 @@ for gpu in gpus:
 class ExifMimickingAttack(BaseExifAttack):
     name = "Exif mimicking attack"
 
-    def __init__(self, steps: int, alpha: float = 1, detector: ExifVisualizer = None,
-                 regularization_weight=0.05, plot_interval=1, patch_size=(128, 128), batch_size: int = 128,
+    def __init__(self, steps: int, alpha: float = 5, detector: ExifVisualizer = None,
+                 regularization_weight=0, plot_interval=1, patch_size=(128, 128), batch_size: int = 128,
                  debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform

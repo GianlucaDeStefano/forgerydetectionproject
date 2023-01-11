@@ -97,7 +97,7 @@ class Lots4NoiseprintAttackOriginal(BaseLots4Noiseprint):
                 target_patch += noiseprint_patch / len(authentic_patches)
 
                 # add the result to the map of patches
-                patches_map = patches[i].no_paddings().add_to_image(patches_map)
+                #spatches_map = patches[i].no_paddings().add_to_image(patches_map)
 
         self.logger_module.info("Target representation generated")
 

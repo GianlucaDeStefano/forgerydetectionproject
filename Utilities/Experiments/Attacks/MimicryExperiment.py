@@ -71,18 +71,12 @@ class MimicryExperiment(BaseExperiment):
         self.visualizer.save_prediction_pipeline(os.path.join(self.pristine_visualizations, filename),
                                                  original_forgery_mask)
 
-        print(original_forgery_mask is None)
-
-        print(Picture(path=sample_path).shape, gt_mask.shape, target_forgery_mask.shape)
-
         # compute the pristine heatmap
         heatmap_pristine = self.visualizer.metadata["heatmap"]
 
         # save pristine heatmap
         pristine_heatmap_path = os.path.join(self.pristine_heatmaps, filename.split(".")[0] + ".npy")
         np.save(pristine_heatmap_path, np.array(heatmap_pristine))
-
-        print("Executing the attack ...")
 
         # execute the attack
         _, attacked_sample = self.attack.execute()
@@ -105,6 +99,7 @@ class MimicryExperiment(BaseExperiment):
 
         del heatmap_attacked, heatmap_pristine
 
+        self.visualizer.reset_metadata()
 
 def compute_score(heatmap, target_mask, metric, second_mask=None, threshold=None, test_flipped=True):
     """
