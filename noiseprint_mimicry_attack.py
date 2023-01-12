@@ -3,6 +3,7 @@ import os
 
 from Attacks.Exif.Mimicking.ExifMimickingIntelligentAttack import ExifIntelligentAttack
 from Attacks.Noiseprint.Mimiking.NoiseprintMimickingIntelligentGlobal import NoiseprintGlobalIntelligentMimickingAttack
+from Datasets.ColumbiaUncompressed.ColumbiaUncompressedDataset import ColumbiaUncompressedDataset
 from Datasets.DSO.DsoDataset import DsoDataset
 from Utilities.Experiments.Attacks.MimicryExperiment import MimicryExperiment
 
@@ -23,7 +24,7 @@ configs = Configs("config.yaml", f"Attack-Noiseprint-{dataset_name}")
 if dataset_name == 'DSO':
     dataset = DsoDataset(configs["global"]["datasets"]["root"])
 elif dataset_name == 'Columbia':
-    dataset = DsoDataset(configs["global"]["datasets"]["root"])
+    dataset = ColumbiaUncompressedDataset(configs["global"]["datasets"]["root"])
 else:
     raise Exception('Unknown Dataset')
 

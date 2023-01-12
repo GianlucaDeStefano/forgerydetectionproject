@@ -2,7 +2,7 @@
 *.zip
 RESULTS/*
 Data/*
-!Data/custom
+!Data/custom/
 lib/
 !Detectors/Exif/lib
 
