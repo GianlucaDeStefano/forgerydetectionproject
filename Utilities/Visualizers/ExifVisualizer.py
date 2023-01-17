@@ -23,7 +23,7 @@ class InvalidImageShape(Exception):
 
 class ExifVisualizer(BaseVisualizer):
 
-    def __init__(self, dense: bool = False):
+    def __init__(self, dense: bool = True):
         super().__init__(ExifEngine(dense))
 
     def save_prediction_pipeline(self, path, mask=None):

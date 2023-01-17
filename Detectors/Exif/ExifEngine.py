@@ -11,11 +11,11 @@ from Detectors.Exif import demo
 class ExifEngine(DetectorEngine):
     weights_path = os.path.join(pathlib.Path(__file__).parent, './ckpt/exif_final/exif_final.ckpt')
 
-    def __init__(self, dense=False,use_gpu=0):
+    def __init__(self, dense=True,use_gpu=0):
 
-        self.patch_per_dim = 25
+        self.patch_per_dim = 30
         self.model = None
-        print("DENSE: ",dense)
+
         self.dense = dense
         self.use_gpu = use_gpu
 
@@ -110,7 +110,7 @@ class ExifEngine(DetectorEngine):
         # read the necessary metadata
         sample = self.metadata["sample"]
 
-        if self.dense:
+        if not self.dense:
             self.metadata["features"] = self.model.run_vote_extract_features(sample)
         else:
             self.metadata["features"] = self.model.run_extract_features(sample)
@@ -132,18 +132,13 @@ class ExifEngine(DetectorEngine):
 
         # compute the heatmap
         heatmap = None
-        if self.dense:
+        if not self.dense:
             heatmap = self.model.run_vote_cluster(features)[0]
         else:
             heatmap = self.model.run_cluster_heatmap(sample, features, False)
 
-        # Normalize the heatmap between the range [0,1]
-        heatmap = (heatmap - heatmap.min())
-        heatmap = heatmap / heatmap.max()
-
-        # More than halp of the pixels are above the 0.5 threshold, flip them
-        if np.mean(heatmap) > 0.5:
-            heatmap = 1 - heatmap
+        if np.mean(heatmap > 0.5) > 0.5:
+            heatmap = 1.0 - heatmap
 
         self.metadata["heatmap"] = heatmap
 
