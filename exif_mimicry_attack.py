@@ -16,7 +16,7 @@ if args.gpu is not None:
 from Utilities.Confs.Configs import Configs
 
 dataset_name = args.dataset
-configs = Configs("config.yaml", f"Attack-Noiseprint-{dataset_name}")
+configs = Configs("config.yaml", f"Attack-Exif-{dataset_name}")
 
 if dataset_name == 'DSO':
     dataset = DsoDataset(configs["global"]["datasets"]["root"])
