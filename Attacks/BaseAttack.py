@@ -58,9 +58,6 @@ class BaseAttack(ABC, Logger):
         print("\nSETUP \n")
         self.debug_folder = create_debug_folder(self._debug_root)
 
-        # load the sample in the visualizer
-        self.visualizer.initialize(target_image_path, None, True, True)
-
         # prepare the instance of the input image and its mask
         self.target_image = Picture(self.visualizer.metadata["sample"])
         self.target_image_path = self.visualizer.metadata["sample_path"]

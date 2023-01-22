@@ -45,50 +45,50 @@ class LotsExperiment(BaseExperiment):
         os.makedirs(self.attacked_heatmaps)
 
     def process_sample(self, sample_path, gt_mask):
-        try:
-            filename = basename(sample_path)
 
-            # establish original and target forgery masks
-            pristine_sample = Picture(path=sample_path)
+        filename = basename(sample_path)
 
-            # load the original forgery mask and enforce that its width and height are the same of the given sample by resizing it
-            original_forgery_mask = Picture(resize_mask(gt_mask, (pristine_sample.shape[1], pristine_sample.shape[0])))
+        # establish original and target forgery masks
+        pristine_sample = Picture(path=sample_path)
 
-            # setup the attack
-            self.attack.setup(sample_path, original_forgery_mask, sample_path, original_forgery_mask)
+        # load the original forgery mask and enforce that its width and height are the same of the given sample by resizing it
+        original_forgery_mask = Picture(resize_mask(gt_mask, (pristine_sample.shape[1], pristine_sample.shape[0])))
 
-            # save result of the detector on the pristine image
-            self.visualizer.save_prediction_pipeline(os.path.join(self.pristine_visualizations, filename),
-                                                     original_forgery_mask)
+        # setup the attack
+        self.attack.setup(sample_path, original_forgery_mask, sample_path, original_forgery_mask)
 
-            # compute the pristine heatmap
-            heatmap_pristine = self.visualizer.metadata["heatmap"]
+        # save result of the detector on the pristine image
+        self.visualizer.save_prediction_pipeline(os.path.join(self.pristine_visualizations, filename),
+                                                 original_forgery_mask)
 
-            # save pristine heatmap
-            pristine_heatmap_path = os.path.join(self.pristine_heatmaps, filename.split(".")[0] + ".npy")
-            np.save(pristine_heatmap_path, np.array(heatmap_pristine))
+        # compute the pristine heatmap
+        heatmap_pristine = self.visualizer.metadata["heatmap"]
 
-            print("Executing the attack ...")
+        # save pristine heatmap
+        pristine_heatmap_path = os.path.join(self.pristine_heatmaps, filename.split(".")[0] + ".npy")
+        np.save(pristine_heatmap_path, np.array(heatmap_pristine))
 
-            # execute the attack
-            _, attacked_sample = self.attack.execute()
+        print("Executing the attack ...")
 
-            # save the attacked sample in the file system
-            attacked_sample_path = os.path.join(self.attacked_samples_folder, filename)
-            attacked_sample.save(attacked_sample_path)
+        # execute the attack
+        last_attacked_sample, attacked_sample = self.attack.execute()
 
-            # compute the attacked heatmap
-            self.visualizer.process_sample(attacked_sample_path)
-            heatmap_attacked = self.visualizer.metadata["heatmap"]
+        # save the attacked sample in the file system
+        attacked_sample_path = os.path.join(self.attacked_samples_folder, filename)
+        attacked_sample.save(attacked_sample_path)
 
-            # save attacked heatmap
-            attacked_heatmap_path = os.path.join(self.attacked_heatmaps, filename.split(".")[0] + ".npy")
-            np.save(attacked_heatmap_path, np.array(heatmap_attacked))
+        # compute the attacked heatmap
+        self.visualizer.process_sample(attacked_sample_path)
+        heatmap_attacked = self.visualizer.metadata["heatmap"]
 
-            # save result of the detector on the attacked image
-            self.visualizer.save_prediction_pipeline(os.path.join(self.attacked_visualizations, filename),original_forgery_mask)
+        # save attacked heatmap
+        attacked_heatmap_path = os.path.join(self.attacked_heatmaps, filename.split(".")[0] + ".npy")
+        np.save(attacked_heatmap_path, np.array(heatmap_attacked))
 
-            del heatmap_attacked, heatmap_pristine
+        # save result of the detector on the attacked image
+        self.visualizer.save_prediction_pipeline(os.path.join(self.attacked_visualizations, filename),
+                                                 original_forgery_mask)
 
-        except:
-            pass
+        del heatmap_pristine, heatmap_attacked
+        del last_attacked_sample, pristine_sample, attacked_sample
+        del original_forgery_mask

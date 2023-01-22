@@ -94,7 +94,7 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         assert (0 <= momentum_coeficient <= 1)
         self.momentum_coeficient = momentum_coeficient
 
-    def setup(self, target_image_path: Picture, target_image_mask: Picture, source_image_path: Picture = None,
+    def setup(self, target_image_path: str, target_image_mask: Picture, source_image_path: Picture = None,
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):
         """
         @param target_image_path: path fo the sample to process
@@ -111,11 +111,10 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
         self.source_image_mask = None
         self.source_image_path = None
 
-        super().setup(target_image_path, target_image_mask)
-
         # if a ad hoc source image is given load it and print its initial results
         if source_image_path is not None and target_image_path != source_image_path:
             # Load the source image in the visualizer
+            print('####SETTING UP THE ATTACK###')
             self.visualizer.initialize(source_image_path)
 
             # Read the loaded data
@@ -126,6 +125,9 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
 
         # reload the target sample in the visualizer
         self.visualizer.initialize(target_image_path)
+
+        super().setup(target_image_path, target_image_mask)
+
 
         # If no source image is given use the target image as source
         if self.source_image is None:
@@ -145,7 +147,6 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
 
             Picture(self.target_forgery_mask*255).save(os.path.join(self.debug_folder, "computed target forgery "
                                                                                        "mask.png"))
-
         # create list for tracking the loss during iterations
         self.loss_steps = [9999]
 
