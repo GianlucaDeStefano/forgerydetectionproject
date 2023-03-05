@@ -1,5 +1,9 @@
 import argparse
 import os
+
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 from os.path import join
 
 from Attacks.Exif.Mimicking.ExifMimickingIntelligentAttack import ExifIntelligentAttack
@@ -12,8 +16,8 @@ from Utilities.Experiments.MetricGeneration import MetricGenerator
 from Utilities.Confs.Configs import Configs
 from Utilities.Experiments.MetricTransferabilityGeneration import MetricGeneratorTransferability
 
-experiment_root = "/home/gianluca/Deep-detectors-attacks/Data/DebugFinale/"
-experiment_root_transferability = "/home/gianluca/Deep-detectors-attacks/Data/DebugTransferability/"
+experiment_root = "/home/c01gide/CISPA-home/tesi/Data/SampleAnalysis/Mimicry"
+experiment_root_transferability = "/home/c01gide/CISPA-home/tesi/Data/SampleAnalysis/Transferability"
 
 for experiment_path in [f.path for f in os.scandir(experiment_root_transferability) if f.is_dir()]:
 
