@@ -1,9 +1,13 @@
-import argparse
 import os
+
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
+
 from Utilities.Experiments.MetricGeneration import MetricGenerator
 from Utilities.Confs.Configs import Configs
 
-experiment_root = "/Users/gianlucadestefano/Desktop/TESI/RISULTATI/LOTS/"
+experiment_root = "/home/c01gide/CISPA-home/tesi/Data/SampleAnalysis"
 
 for experiment_path in [ f.path for f in os.scandir(experiment_root) if f.is_dir() ]:
 
