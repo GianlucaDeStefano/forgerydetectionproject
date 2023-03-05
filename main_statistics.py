@@ -7,7 +7,7 @@ os.chdir(dname)
 from Utilities.Experiments.MetricGeneration import MetricGenerator
 from Utilities.Confs.Configs import Configs
 
-experiment_root = "/home/c01gide/CISPA-home/tesi/Data/SampleAnalysis"
+experiment_root = "/home/c01gide/CISPA-home/tesi/Data/SampleAnalysis/Mimicry"
 
 for experiment_path in [ f.path for f in os.scandir(experiment_root) if f.is_dir() ]:
 
