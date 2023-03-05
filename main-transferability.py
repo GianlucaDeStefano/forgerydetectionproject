@@ -27,7 +27,7 @@ from Utilities.Confs.Configs import Configs
 
 configs = Configs("config.yaml", "Attack-ExifAfterNoiseprint-DSO retested on Noiseprint")
 
-dataset = ColumbiaUncompressedDataset(configs["global"]["datasets"]["root"])
+dataset = DsoDataset(configs["global"]["datasets"]["root"])
 
 experiment = TransferabilityExperiment(NoiseprintVisualizer(),debug_root=configs.create_debug_folder("outputs"),dataset=dataset,
                                        attacked_samples_folder_path="/home/c01gide/CISPA-home/tesi/Data/SampleAnalysis/Attack-ExifAfterNoiseprint-DSO/1677914982.4525623/outputs/attackedSamples")
