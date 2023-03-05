@@ -20,11 +20,11 @@ if args.gpu is not None:
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 from Utilities.Confs.Configs import Configs
 
-configs = Configs("config.yaml", "Attack-Noiseprint-Columbia retested on Exif")
+configs = Configs("config.yaml", "Attack-ExifAfterNoiseprint-DSO retested on Noiseprint")
 
 dataset = ColumbiaUncompressedDataset(configs["global"]["datasets"]["root"])
 
-experiment = TransferabilityExperiment(ExifVisualizer(),debug_root=configs.create_debug_folder("outputs"),dataset=dataset,
-                                       attacked_samples_folder_path="/home/gianluca/Deep-detectors-attacks/Data/DebugFinale/Attack-Noiseprint-Columbia/1656678906.9858212/outputs/attackedSamples")
+experiment = TransferabilityExperiment(NoiseprintVisualizer(),debug_root=configs.create_debug_folder("outputs"),dataset=dataset,
+                                       attacked_samples_folder_path="/home/c01gide/CISPA-home/tesi/Data/SampleAnalysis/Attack-ExifAfterNoiseprint-DSO/1677914982.4525623/outputs/attackedSamples")
 
 experiment.process()

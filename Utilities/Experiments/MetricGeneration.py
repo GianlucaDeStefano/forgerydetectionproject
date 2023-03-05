@@ -210,53 +210,51 @@ class MetricGenerator(Logger):
 
         for sample_path in self.get_samples_to_process():
 
-            try:
-                sample_name = basename(sample_path)
+            sample_name = basename(sample_path)
 
-                original_forgery_mask = self.get_original_forgery_mask(sample_path)
+            original_forgery_mask = self.get_original_forgery_mask(sample_path)
 
-                target_forgery_mask_name = sample_name
-                if "Columbia" in self.execution_data_root:
-                    target_forgery_mask_name = target_forgery_mask_name.split('.')[0] + '.tif'
+            target_forgery_mask_name = sample_name
+            if "Columbia" in self.execution_data_root:
+                target_forgery_mask_name = target_forgery_mask_name.split('.')[0] + '.tif'
 
-                target_forgery_mask = self.get_target_forgery_mask(target_forgery_mask_name)
+            target_forgery_mask = self.get_target_forgery_mask(target_forgery_mask_name)
 
-                original_heatmap = normalize_heatmap(self.get_pristine_heatmap(sample_name))
-                attacked_heatmap = normalize_heatmap(self.get_attacked_heatmap(sample_name))
+            original_heatmap = normalize_heatmap(self.get_pristine_heatmap(sample_name))
+            attacked_heatmap = normalize_heatmap(self.get_attacked_heatmap(sample_name))
 
-                visualize_histogram(original_heatmap)
-                visualize_histogram(attacked_heatmap)
+            visualize_histogram(original_heatmap)
+            visualize_histogram(attacked_heatmap)
 
-                # compute metric on the pristine heatmap
-                median_bg, median_gt, median_decoy, visibility_decoy, visibility_gt = self.compute_metric_of_heatmap(
-                    original_heatmap, original_forgery_mask,
-                    target_forgery_mask)
+            # compute metric on the pristine heatmap
+            median_bg, median_gt, median_decoy, visibility_decoy, visibility_gt = self.compute_metric_of_heatmap(
+                original_heatmap, original_forgery_mask,
+                target_forgery_mask)
 
-                self.metrics["median-bg"].append(median_bg)
-                self.metrics["median-gt"].append(median_gt)
-                self.metrics["median-decoy"].append(median_decoy)
-                self.metrics["visibility-decoy"].append(visibility_decoy)
-                self.metrics["visibility-gt"].append(visibility_gt)
+            self.metrics["median-bg"].append(median_bg)
+            self.metrics["median-gt"].append(median_gt)
+            self.metrics["median-decoy"].append(median_decoy)
+            self.metrics["visibility-decoy"].append(visibility_decoy)
+            self.metrics["visibility-gt"].append(visibility_gt)
 
-                # compute metric on the attacked heatmap
-                median_bg_attacked, median_gt_attacked, median_decoy_attacked, visibility_decoy_attacked, visibility_gt_attacked = self.compute_metric_of_heatmap(
-                    attacked_heatmap, original_forgery_mask,
-                    target_forgery_mask)
+            # compute metric on the attacked heatmap
+            median_bg_attacked, median_gt_attacked, median_decoy_attacked, visibility_decoy_attacked, visibility_gt_attacked = self.compute_metric_of_heatmap(
+                attacked_heatmap, original_forgery_mask,
+                target_forgery_mask)
 
-                self.metrics["median-bg-attacked"].append(median_bg_attacked)
-                self.metrics["median-gt-attacked"].append(median_gt_attacked)
-                self.metrics["median-decoy-attacked"].append(median_decoy_attacked)
-                self.metrics["visibility-decoy-attacked"].append(visibility_decoy_attacked)
-                self.metrics["visibility-gt-attacked"].append(visibility_gt_attacked)
+            self.metrics["median-bg-attacked"].append(median_bg_attacked)
+            self.metrics["median-gt-attacked"].append(median_gt_attacked)
+            self.metrics["median-decoy-attacked"].append(median_decoy_attacked)
+            self.metrics["visibility-decoy-attacked"].append(visibility_decoy_attacked)
+            self.metrics["visibility-gt-attacked"].append(visibility_gt_attacked)
 
-                self.compute_thresholding_metrics(original_heatmap, attacked_heatmap, original_forgery_mask,
-                                                  target_forgery_mask)
-            except Exception as e:
-                print("Exception: e")
-                print(traceback.format_exc())
+            self.compute_thresholding_metrics(original_heatmap, attacked_heatmap, original_forgery_mask,
+                                              target_forgery_mask)
 
         for key, values in self.metrics.items():
             self.logger_module.info(f"key: {key}: {mean(values):.4f}")
+
+        # Dump metrics:
 
     def compute_metric_of_heatmap(self, heatmap, original_forgery_mask, target_forgery_mask):
 
