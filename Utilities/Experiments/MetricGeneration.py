@@ -221,8 +221,8 @@ class MetricGenerator(Logger):
 
                 target_forgery_mask = self.get_target_forgery_mask(target_forgery_mask_name)
 
-                original_heatmap = self.get_pristine_heatmap(sample_name)
-                attacked_heatmap = self.get_attacked_heatmap(sample_name)
+                original_heatmap = normalize_heatmap(self.get_pristine_heatmap(sample_name))
+                attacked_heatmap = normalize_heatmap(self.get_attacked_heatmap(sample_name))
 
                 visualize_histogram(original_heatmap)
                 visualize_histogram(attacked_heatmap)
@@ -596,10 +596,10 @@ def compute_score(heatmap, target_mask, metric, second_mask=None, threshold=None
     @param test_flipped: use also the flipped heatmap to select the optimal mask
     @return: tuple (metric(target_mask),metric(second_mask),used_threshold)
     """
-    assert heatmap.min() == 0 and heatmap.max() == 1
+    assert heatmap.min() >= 0 and heatmap.max() <= 1
 
     first_score = None
-    second_score = None
+    second_score = 0
     mask = None
     if threshold is not None:
         mask = np.where(heatmap > threshold, 1, 0)
@@ -614,3 +614,7 @@ def compute_score(heatmap, target_mask, metric, second_mask=None, threshold=None
             second_score = metric(mask.flatten(), second_mask.flatten())
 
     return float(first_score), float(second_score), threshold, mask
+
+def normalize_heatmap(heatmap):
+    heatmap = heatmap - heatmap.min()
+    return heatmap / heatmap.max()

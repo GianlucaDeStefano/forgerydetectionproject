@@ -128,7 +128,6 @@ class BaseWhiteBoxAttack(BaseIterativeAttack, ABC):
 
         super().setup(target_image_path, target_image_mask)
 
-
         # If no source image is given use the target image as source
         if self.source_image is None:
             self.source_image = self.visualizer.metadata["sample"]

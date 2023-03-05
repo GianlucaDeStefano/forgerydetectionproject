@@ -1,17 +1,10 @@
 import os.path
-import traceback
 from os.path import basename
-from statistics import mean
-import cv2
 import numpy as np
 from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack
 from Datasets.Dataset import resize_mask
-from Detectors.DetectorEngine import find_optimal_mask
 from Utilities.Experiments.BaseExperiment import BaseExperiment
 from Utilities.Image.Picture import Picture
-from Utilities.Image.functions import create_random_nonoverlapping_mask
-from sklearn.metrics import f1_score
-from sklearn.metrics import matthews_corrcoef as mcc
 
 
 class LotsExperiment(BaseExperiment):
@@ -45,7 +38,6 @@ class LotsExperiment(BaseExperiment):
         os.makedirs(self.attacked_heatmaps)
 
     def process_sample(self, sample_path, gt_mask):
-
         filename = basename(sample_path)
 
         # establish original and target forgery masks
@@ -55,7 +47,7 @@ class LotsExperiment(BaseExperiment):
         original_forgery_mask = Picture(resize_mask(gt_mask, (pristine_sample.shape[1], pristine_sample.shape[0])))
 
         # setup the attack
-        self.attack.setup(sample_path, original_forgery_mask, sample_path, original_forgery_mask)
+        self.attack.setup(sample_path, original_forgery_mask)
 
         # save result of the detector on the pristine image
         self.visualizer.save_prediction_pipeline(os.path.join(self.pristine_visualizations, filename),
@@ -71,11 +63,11 @@ class LotsExperiment(BaseExperiment):
         print("Executing the attack ...")
 
         # execute the attack
-        last_attacked_sample, attacked_sample = self.attack.execute()
+        last_attacked_sample, best_attacked_sample = self.attack.execute()
 
         # save the attacked sample in the file system
         attacked_sample_path = os.path.join(self.attacked_samples_folder, filename)
-        attacked_sample.save(attacked_sample_path)
+        best_attacked_sample.save(attacked_sample_path)
 
         # compute the attacked heatmap
         self.visualizer.process_sample(attacked_sample_path)
@@ -89,6 +81,8 @@ class LotsExperiment(BaseExperiment):
         self.visualizer.save_prediction_pipeline(os.path.join(self.attacked_visualizations, filename),
                                                  original_forgery_mask)
 
+        del pristine_sample, last_attacked_sample, best_attacked_sample
         del heatmap_pristine, heatmap_attacked
-        del last_attacked_sample, pristine_sample, attacked_sample
         del original_forgery_mask
+
+        self.visualizer.reset_metadata()

@@ -17,7 +17,7 @@ class Lots4NoiseprintAttackGlobalMap(BaseLots4Noiseprint):
 
     name = "LOTS global map Attack"
 
-    def __init__(self, steps: int, alpha: float, patch_size=(0, 0), padding_size=(0, 0, 0, 0),
+    def __init__(self, steps: int, alpha: float, patch_size=(8, 8), padding_size=(0, 0, 0, 0),
                  quality_factor=None, regularization_weight=0.0, plot_interval: int = 5,
                  debug_root: str = "./Data/Debug/",
                  verbosity: int = 2):

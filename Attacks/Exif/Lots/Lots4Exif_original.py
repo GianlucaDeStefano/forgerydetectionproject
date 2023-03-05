@@ -69,6 +69,8 @@ class Lots4ExifOriginal(BaseLots4Exif):
                 gradient_map = batch_patches[i].add_to_image(gradient_map, patch_gradient)
                 count_map = batch_patches[i].add_to_image(count_map, np.ones(patch_gradient.shape))
 
+        del x_tensor,y_tensor,batch_gradients
+
         gradient_map[np.isnan(gradient_map)] = 0
 
         # average the patches contribution foreach pixel in the gradient

@@ -15,7 +15,7 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
     """
 
     def __init__(self, steps: int, alpha: float, regularization_weight=0.05, plot_interval=5, patch_size=(128, 128),
-                 batch_size: int = 64,
+                 batch_size: int = 128,
                  debug_root: str = "./Data/Debug/", verbosity: int = 2):
         """
         :param steps: number of attack iterations to perform
@@ -61,6 +61,10 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):
         super().setup(target_image_path, target_image_mask, source_image_path, source_image_mask, target_forgery_mask)
 
+        del self.noise
+        del self.x
+        del self.y
+
         self._engine = self.visualizer._engine.model.solver.net
         self._sess = self.visualizer._engine.model.solver.sess
 
@@ -71,8 +75,6 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
         self.noise = np.zeros(self.visualizer.metadata["sample"].shape)
 
         # create variable to store the momentum of the gradient
-        self.moving_avg_gradient = np.zeros(self.visualizer.metadata["sample"].shape)
-
         stride = (max(self.visualizer.metadata["sample"].shape[:2]) - self.patch_size[0]) // 30
 
         self.stride = (stride, stride)
@@ -161,5 +163,7 @@ class BaseExifAttack(BaseWhiteBoxAttack, ABC):
 
         # add this iteration contribution to the cumulative noise
         self.noise += image_gradient
+
+        del image_gradient
 
         return Picture(np.array(np.rint(self.attacked_image), dtype=np.uint8)), loss

@@ -42,6 +42,7 @@ class ExifEngine(DetectorEngine):
             if not self.model.solver.sess._closed:
                 self.model.solver.sess.close()
 
+        tf.keras.backend.clear_session()
         del self.model
 
         gc.collect()
@@ -137,10 +138,14 @@ class ExifEngine(DetectorEngine):
         else:
             heatmap = self.model.run_cluster_heatmap(sample, features, False)
 
-        if np.mean(heatmap > 0.5) > 0.5:
+        if np.mean(heatmap) > 0.5:
             heatmap = 1.0 - heatmap
 
         self.metadata["heatmap"] = heatmap
+
+        del sample
+        del features
+        del heatmap
 
         return self.metadata
 

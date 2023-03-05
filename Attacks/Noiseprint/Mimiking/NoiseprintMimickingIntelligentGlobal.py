@@ -34,7 +34,6 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
 
         self.patch_size = patch_size
 
-        # for this technique no padding is needed
         self.padding_size = (8, 8, 8, 8)
 
         self.k = 5
@@ -132,7 +131,7 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
         for target_mask_patch in target_mask_patches:
 
             if target_mask_patch.max() == 0:
-                target_map = target_mask_patch.add_to_image(target_map, average_authentic_patch * self.k)
+                target_map = target_mask_patch.add_to_image(target_map, np.zeros(average_authentic_patch.shape))
             else:
                 target_map = target_mask_patch.add_to_image(target_map, average_forged_patch * self.k)
 

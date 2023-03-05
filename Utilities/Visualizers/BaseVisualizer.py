@@ -23,7 +23,7 @@ class BaseVisualizer:
         """
         self._engine = engine
 
-    def initialize(self, sample_path=None, sample=None, reset_instance=False, reset_metadata=True):
+    def initialize(self, sample_path=None, sample=None, reset_instance=True, reset_metadata=True):
         """
         Initialize the visualizer to handle a new sample
 
@@ -42,7 +42,7 @@ class BaseVisualizer:
         """
         self._engine.initialize(sample_path, sample, reset_instance, reset_metadata)
 
-    def process_sample(self, image_path,reset_instance=False):
+    def process_sample(self, image_path, reset_instance=True):
         self._engine.initialize(image_path, reset_instance=reset_instance, reset_metadata=True)
         self._engine.process(image_path)
 
@@ -54,7 +54,7 @@ class BaseVisualizer:
         raise NotImplementedError
 
     @abstractmethod
-    def save_prediction_pipeline(self, path,mask=None):
+    def save_prediction_pipeline(self, path, mask=None):
         """
         Function to print the output map of an image, together with every intermediate ste[, and save the final image
         it to the specified path

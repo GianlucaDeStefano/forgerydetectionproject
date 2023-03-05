@@ -11,6 +11,7 @@ from Detectors.Exif.ExifEngine import ExifEngine
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
 config.gpu_options.per_process_gpu_memory_fraction = 1
+config.allow_soft_placement = True
 session = tf.compat.v1.Session(config=config)
 tf.compat.v1.keras.backend.set_session(session)
 

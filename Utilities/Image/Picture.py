@@ -44,7 +44,8 @@ class Picture(Patch):
         if len(self.shape) == 2 or (len(self.shape) == 3 and self.shape[2] == 1):
             return self
         else:
-            return Picture(red_weight * self[:, :, 0] + green_weight * self[:, :, 1] + blue_weight * self[:, :, 2],path=self.path)
+            return Picture(red_weight * self[:, :, 0] + green_weight * self[:, :, 1] + blue_weight * self[:, :, 2],
+                           path=self.path)
 
     def three_channels(self, red_weight=0.299, green_weight=0.587, blue_weight=0.114):
         """
@@ -60,7 +61,7 @@ class Picture(Patch):
                 ar[:, :, 0] = self[:, :] / (3 * red_weight)
                 ar[:, :, 1] = self[:, :] / (3 * green_weight)
                 ar[:, :, 2] = self[:, :] / (3 * blue_weight)
-                return Picture(ar,self.path)
+                return Picture(ar, self.path)
             except:
                 raise IncompatibeShapeException("'1 to 3 channels'", self.shape)
 
@@ -78,7 +79,7 @@ class Picture(Patch):
         """
 
         if stride is None:
-            stride = (patch_shape[0],patch_shape[1])
+            stride = (patch_shape[0], patch_shape[1])
 
         assert (len(stride) == 2)
 
@@ -186,7 +187,7 @@ class Picture(Patch):
         return patches
 
     def get_authentic_patches(self, mask, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False,
-                              zero_padding=True,stride=None):
+                              zero_padding=True, stride=None):
 
         """
         Divide the image into patches, returning only the authentic ones, we define a patch authenic if it contains no
@@ -204,8 +205,8 @@ class Picture(Patch):
         assert (self.shape[1] == mask.shape[1])
 
         # divide image and mask into patches
-        img_patches = self.divide_in_patches(patch_shape, padding, force_shape, zero_padding,stride)
-        mask_patches = mask.divide_in_patches(patch_shape, padding, force_shape, zero_padding,stride)
+        img_patches = self.divide_in_patches(patch_shape, padding, force_shape, zero_padding, stride)
+        mask_patches = mask.divide_in_patches(patch_shape, padding, force_shape, zero_padding, stride)
         assert (len(img_patches) == len(mask_patches))
 
         recomposed_mask = np.zeros(self.one_channel().shape)
@@ -220,7 +221,8 @@ class Picture(Patch):
 
         return authentic_patches
 
-    def get_forged_patches(self, mask, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False, zero_padding=True,stride=None):
+    def get_forged_patches(self, mask, patch_shape: tuple, padding=(0, 0, 0, 0), force_shape=False, zero_padding=True,
+                           stride=None):
         """
         Divide the image into patches, returning only the forged ones, we define a patch forgered if it contains no
         authentic pixels
@@ -245,7 +247,7 @@ class Picture(Patch):
         # disgard patches containing true data
         forged_patches = []
         for i in range(len(img_patches)):
-            if (1-mask_patches[i]).sum() == 0:
+            if (1 - mask_patches[i]).sum() == 0:
                 forged_patches.append(img_patches[i])
             else:
                 recomposed_mask = mask_patches[i].add_to_image(recomposed_mask)
@@ -261,17 +263,17 @@ class Picture(Patch):
         im.save(path)
 
     def to_float(self):
-        return Picture((np.array(self, np.float) / 256).clip(0,1), path=self.path)
+        return Picture((np.array(self, np.float) / 256).clip(0, 1), path=self.path)
 
     def to_int(self):
         return Picture(np.rint(self) * 256, path=self.path)
 
     def astype(self, dtype, order='K', casting='unsafe', subok=True, copy=True):
-        return Picture(np.array(self).astype(dtype, order, casting, subok, copy),path= self.path)
+        return Picture(np.array(self).astype(dtype, order, casting, subok, copy), path=self.path)
 
     @property
     def path(self):
-        if hasattr(self,"_path"):
+        if hasattr(self, "_path"):
             return self._path
         return ""
 
@@ -287,6 +289,6 @@ class Picture(Patch):
             array[:, vertical_pad[0]] = self[:vertical_pad[0]]
             array[:, -horizontal_pad[1]:] = self[-horizontal_pad[1]:]
             array[vertical_pad[0]:-vertical_pad[1], horizontal_pad[0], horizontal_pad[1]] = self
-            return Picture(array,path=self.path)
+            return Picture(array, path=self.path)
 
-        return Picture(np.pad(self, pad_width, mode, **kwargs),path=self.path)
+        return Picture(np.pad(self, pad_width, mode, **kwargs), path=self.path)

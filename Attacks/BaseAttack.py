@@ -117,16 +117,9 @@ class BaseAttack(ABC, Logger):
         path = os.path.join(self.debug_folder, "attacked_image.png")
         attacked_image.save(path)
 
-        pristine_image = np.asarray(cv2.imread(self.target_image_path), dtype=np.uint8)
-        attacked_image_n = np.asarray(cv2.imread(path), dtype=np.uint8)
-
-        psnr = PSNR(pristine_image, attacked_image_n)
-
-        self.logger_module.info(f"FINAL PSNR:{psnr:.02f}")
-
         if not self.test:
             self.visualizer.initialize(sample_path=path)
-            self.visualizer.save_prediction_pipeline(os.path.join(self.debug_folder, "final result"))
+            #self.visualizer.save_prediction_pipeline(os.path.join(self.debug_folder, "final result"))
 
         end_time = datetime.now()
         timedelta = end_time - self.start_time

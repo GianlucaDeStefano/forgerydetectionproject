@@ -38,7 +38,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         # counter of the attack iterations that have been applied to the image
         self.step_counter = 0
 
-    def setup(self, target_image_path: str, target_image_mask: Picture):
+    def setup(self, target_image_path: Picture, target_image_mask: Picture):
         """
         Setup the pipeline for execution
         @param target_image_path: path fo the sample to process

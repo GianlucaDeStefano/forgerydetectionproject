@@ -98,6 +98,8 @@ class MimicryExperiment(BaseExperiment):
                                                  target_forgery_mask)
 
         del heatmap_attacked, heatmap_pristine
+        del original_forgery_mask, target_forgery_mask
+        del pristine_sample, attacked_sample
 
         self.visualizer.reset_metadata()
 

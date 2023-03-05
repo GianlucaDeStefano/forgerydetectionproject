@@ -11,11 +11,11 @@ from Utilities.Experiments.Attacks.MimicryExperiment import MimicryExperiment
 configs = Configs("config.yaml", "Mimicry attacks")
 
 datasets = [
-    ColumbiaUncompressedDataset(configs["global"]["datasets"]["root"]),
+    #ColumbiaUncompressedDataset(configs["global"]["datasets"]["root"]),
     DsoDataset(configs["global"]["datasets"]["root"]),
 ]
 
-attacks = [NoiseprintGlobalIntelligentMimickingAttack, ExifIntelligentAttack]
+attacks = [NoiseprintGlobalIntelligentMimickingAttack,ExifIntelligentAttack]
 
 for attack in attacks:
 
@@ -39,6 +39,8 @@ for attack in attacks:
 
             # run the experiment
             experiment.process()
+
+            del experiment
 
         except Exception as e:
             traceback.print_exc()

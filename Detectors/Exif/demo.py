@@ -372,6 +372,7 @@ class Demo():
         all_results = []
         for hSt in np.linspace(0, h - patch_size, num_per_dim).astype(int):
             for wSt in np.linspace(0, w - patch_size, num_per_dim).astype(int):
+                print('CHECKPOINT: 2')
                 res = run_vote_no_threads(im, self.solver, None, n_anchors=1, num_per_dim=None,
                                           patch_size=128, batch_size=32, sample_ratio=self.quality,
                                           override_anchor=(hSt, wSt))['out']['responses'][0]

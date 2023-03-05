@@ -1,6 +1,10 @@
 import argparse
 import os
 
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
+
 from Attacks.Exif.Mimicking.ExifMimickingIntelligentAttack import ExifIntelligentAttack
 from Attacks.Noiseprint.Mimiking.NoiseprintMimickingIntelligentGlobal import NoiseprintGlobalIntelligentMimickingAttack
 from Datasets.ColumbiaUncompressed.ColumbiaUncompressedDataset import ColumbiaUncompressedDataset
@@ -22,9 +26,9 @@ from Utilities.Confs.Configs import Configs
 
 configs = Configs("config.yaml", "Attack-ExifAfterNoiseprint-Columbia")
 
-dataset = ColumbiaUncompressedDataset(configs["global"]["datasets"]["root"])
+dataset = DsoDataset(configs["global"]["datasets"]["root"])
 
-attacked_samples_folder_path = "/home/gianluca/Deep-detectors-attacks/Data/DebugFinale/Attack-Noiseprint-Columbia/1656678906.9858212/outputs/attackedSamples"
+attacked_samples_folder_path = "./Data/SampleAnalysis/Mimicry attacks/1677885480.17385/Noiseprint intelligent mimicking attack/DSO dataset/outputs/attackedSamples"
 
 samples = [sample_path for sample_path  in dataset.get_forged_images()]
 
