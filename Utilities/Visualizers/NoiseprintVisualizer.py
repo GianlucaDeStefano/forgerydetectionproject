@@ -19,7 +19,7 @@ class InvalidImageShape(Exception):
             "The function {} does not support the given image shape: {}".format(function_name, given_shape))
 
 
-class (BaseVisualizer):
+class NoiseprintVisualizer(BaseVisualizer):
 
     def __init__(self, quality_level=None):
         super().__init__(NoiseprintEngine(quality_level=quality_level))
