@@ -1,11 +1,13 @@
 import numpy as np
 
-mask = np.array([1, 1, 0])
+heatmap = np.array([(i)/10 for i in range(11)])
 
-hetamap = np.array([0, 1, 0])
+print(heatmap)
 
-dr_gt = np.ma.masked_where(mask == 0, hetamap).sum() / mask.sum()
+percentile = np.quantile(np.array(heatmap), 0.8)
 
-dr_bg = np.ma.masked_where(mask == 1, hetamap).sum() / (mask == 0).sum()
+print(percentile)
 
-print(dr_gt,dr_bg)
+mask = np.where(heatmap >= percentile, 1, 0)
+
+print(mask)

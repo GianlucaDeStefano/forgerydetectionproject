@@ -44,7 +44,7 @@ class BaseVisualizer:
 
     def process_sample(self, image_path, reset_instance=True):
         self._engine.initialize(image_path, reset_instance=reset_instance, reset_metadata=True)
-        self._engine.process(image_path)
+        return self._engine.process(image_path)
 
     @abstractmethod
     def predict(self, image: Picture, path=None):

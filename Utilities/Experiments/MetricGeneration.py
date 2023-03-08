@@ -422,7 +422,6 @@ class MetricGenerator(Logger):
 
         # EXPERIMENT 5:
         # Use a threshold of 0.5 to segment the attacked heatmap
-
         mask_5 = np.where(heatmap_attacked > 0.5, 1, 0)
 
         # F1 and MCC values of the original forgery mask after the attack using thresholds computed using OTSU
@@ -470,11 +469,12 @@ class MetricGenerator(Logger):
         # Use as threshold the value of the quantile 0.8
         percentile = np.quantile(np.array(heatmap_attacked), 0.8)
         mask_7 = np.where(heatmap_attacked > percentile, 1, 0)
-        # F1 and MCC values of the original forgery mask after the attack using thresholds computed using OTSU
+
+        # F1 and MCC values of the original forgery mask after the attack using thresholds computed using the 0.8 quantile
         self.metrics["original_forgery_f1s_7"].append(f1_score(original_forgery_mask.flatten(), mask_7.flatten()))
         self.metrics["original_forgery_mccs_7"].append(mcc(original_forgery_mask.flatten(), mask_7.flatten()))
 
-        # F1 and MCC values of the target forgery mask after the attack using thresholds computed using OTSU
+        # F1 and MCC values of the target forgery mask after the attack using thresholds computed using the 0.8 quantile
         self.metrics["target_forgery_f1s_7"].append(f1_score(target_forgery_mask.flatten(), mask_7.flatten()))
         self.metrics["target_forgery_mccs_7"].append(mcc(target_forgery_mask.flatten(), mask_7.flatten()))
 
@@ -485,11 +485,6 @@ class MetricGenerator(Logger):
         self.metrics["dr_gt_7"].append(dr_gt_mcc_7)
         self.metrics["dr_decoy_7"].append(dr_decoy_mcc_7)
         self.metrics["dr_bg_7"].append(dr_bg_mcc_7)
-
-        print(original_forgery_mask.shape, original_forgery_mask.min(), original_forgery_mask.max())
-        print(target_forgery_mask.shape, target_forgery_mask.min(), target_forgery_mask.max())
-        print(heatmap_pristine.shape, heatmap_pristine.min(), heatmap_pristine.max())
-        print(heatmap_attacked.shape, heatmap_attacked.min(), heatmap_attacked.max())
 
         self.metrics["auc_gt_pre"].append(
             sklearn.metrics.roc_auc_score(original_forgery_mask.flatten(), heatmap_pristine.flatten()))
