@@ -52,7 +52,7 @@ class Configs(Logger):
         """
         :return: Returns the path to the folder created to contain the data generated during this run
         """
-        folder_path = abspath(join(self._config_dict["global"]["debug"]["path"], self.category, str(self.timestamp)))
+        folder_path = abspath(join(self._config_dict["global"]["debug"]["path"], self.category))
 
         if not Path(folder_path).exists():
             os.makedirs(folder_path)

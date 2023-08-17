@@ -1,3 +1,4 @@
+import gc
 import os.path
 import traceback
 from os import listdir
@@ -110,9 +111,13 @@ class ImpilabilityExperiment(BaseExperiment):
         self.visualizer.save_prediction_pipeline(os.path.join(self.attacked_visualizations, filename),
                                                  target_forgery_mask)
 
-        # self.attack._engine.reset(True, True)
-        del heatmap_attacked, heatmap_pristine
+        self.visualizer.reset_metadata()
 
+        del heatmap_attacked, heatmap_pristine
+        del original_forgery_mask, target_forgery_mask
+        del pristine_sample, attacked_sample
+
+        gc.collect()
 
 def compute_score(heatmap, target_mask, metric, second_mask=None, threshold=None, test_flipped=True):
     """

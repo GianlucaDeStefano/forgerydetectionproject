@@ -1,3 +1,4 @@
+import argparse
 import os
 
 abspath = os.path.abspath(__file__)
@@ -7,24 +8,23 @@ os.chdir(dname)
 from Utilities.Experiments.MetricGeneration import MetricGenerator
 from Utilities.Confs.Configs import Configs
 
-experiment_root = "/home/c01gide/CISPA-home/tesi/Data/SampleAnalysis/Mimicry"
 
-for experiment_path in [ f.path for f in os.scandir(experiment_root) if f.is_dir() ]:
+def analyze(experiment_root):
+    experiment_name = os.path.basename(os.path.normpath(experiment_root))
 
-    for execution_path in [ f.path for f in os.scandir(experiment_path) if f.is_dir() ]:
+    configs = Configs("config.yaml", 'Statistics-' + experiment_name)
 
-        if experiment_path == execution_path:
-            continue
+    experiment = MetricGenerator(experiment_root, configs)
 
-        experiment_name = os.path.basename(os.path.normpath(experiment_path))
+    experiment.process()
 
-        configs = Configs("config.yaml", 'Statistics-' + experiment_name)
 
-        try:
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog='Generate statistics from the results in the selected folder')
 
-            experiment = MetricGenerator(execution_path, configs)
+    parser.add_argument('-p', '--path', type=str, help='Path to the experiment root')
 
-            experiment.process()
-        except Exception as e:
-            print(e)
-        break
+    args = parser.parse_args()
+
+    analyze(args.path)

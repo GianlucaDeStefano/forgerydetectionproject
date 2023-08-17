@@ -36,7 +36,7 @@ class NoiseprintGlobalIntelligentMimickingAttack(BaseMimicking4Noiseprint):
 
         self.padding_size = (8, 8, 8, 8)
 
-        self.k = 5
+        self.k = 10
 
     def setup(self, target_image_path: Picture, target_image_mask: Picture, source_image_path: Picture = None,
               source_image_mask: Picture = None, target_forgery_mask: Picture = None):

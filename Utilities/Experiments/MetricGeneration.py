@@ -1,3 +1,5 @@
+import logging
+import os
 import traceback
 from statistics import mean
 
@@ -6,6 +8,7 @@ import matplotlib
 import sklearn as sklearn
 from sklearn.metrics import f1_score
 from sklearn.metrics import matthews_corrcoef as mcc
+from tqdm import tqdm
 
 from Detectors.DetectorEngine import find_optimal_mask
 
@@ -27,15 +30,19 @@ from Utilities.Logger.Logger import Logger
 class MetricGenerator(Logger):
 
     def __init__(self, execution_data_root, configs, dataset=None):
+
+        if execution_data_root[-1] == '/':
+            execution_data_root = execution_data_root[:-1]
+
         self.execution_data_root = execution_data_root
 
         self.logger_module.info(f"Execution data root: {execution_data_root}")
 
         if not dataset:
-            if "DSO" in self.execution_data_root:
+            if "dso" in os.path.basename(self.execution_data_root).lower():
                 # load dataset DSO
                 dataset = DsoDataset(configs["global"]["datasets"]["root"])
-            elif "Columbia" in self.execution_data_root:
+            elif "columbia" in os.path.basename(self.execution_data_root).lower():
                 # load datset columbia
                 dataset = ColumbiaUncompressedDataset(configs["global"]["datasets"]["root"])
             else:
@@ -208,7 +215,9 @@ class MetricGenerator(Logger):
 
     def process(self):
 
-        for sample_path in self.get_samples_to_process():
+        samples_to_process = self.get_samples_to_process()
+
+        for sample_path in tqdm(samples_to_process):
 
             sample_name = basename(sample_path)
 
@@ -252,8 +261,11 @@ class MetricGenerator(Logger):
                                               target_forgery_mask)
 
         for key, values in self.metrics.items():
-            self.logger_module.info(f"key: {key}: {mean(values):.4f}")
 
+            if len(values) != len(samples_to_process):
+                raise Warning(f'Key: {key} contains {len(values)} statistics while we expect {len(samples_to_process)}')
+
+            self.logger_module.info(f"key: {key}: {mean(values):.4f}")
         # Dump metrics:
 
     def compute_metric_of_heatmap(self, heatmap, original_forgery_mask, target_forgery_mask):
@@ -286,6 +298,7 @@ class MetricGenerator(Logger):
 
     def compute_thresholding_metrics(self, heatmap_pristine, heatmap_attacked, original_forgery_mask,
                                      target_forgery_mask):
+
         combined_mask = (original_forgery_mask + target_forgery_mask) > 0
 
         # EXPERIMENT 0:
@@ -490,11 +503,14 @@ class MetricGenerator(Logger):
             sklearn.metrics.roc_auc_score(original_forgery_mask.flatten(), heatmap_pristine.flatten()))
         self.metrics["auc_dec_pre"].append(
             sklearn.metrics.roc_auc_score(target_forgery_mask.flatten(), heatmap_pristine.flatten()))
+        
+        visualize_mask(original_forgery_mask)
+        visualize_heatmap(heatmap_attacked)
+        auc_gt_post = sklearn.metrics.roc_auc_score(original_forgery_mask.flatten(), heatmap_attacked.flatten())
+        self.metrics["auc_gt_post"].append(auc_gt_post)
 
-        self.metrics["auc_gt_post"].append(
-            sklearn.metrics.roc_auc_score(original_forgery_mask.flatten(), heatmap_attacked.flatten()))
-        self.metrics["auc_dec_post"].append(
-            sklearn.metrics.roc_auc_score(target_forgery_mask.flatten(), heatmap_attacked.flatten()))
+        auc_dec_post = sklearn.metrics.roc_auc_score(target_forgery_mask.flatten(), heatmap_attacked.flatten())
+        self.metrics["auc_dec_post"].append(auc_dec_post)
 
     def get_samples_to_process(self):
         return [join(self.attacked_samples_folder, f) for f in listdir(self.attacked_samples_folder) if
@@ -537,7 +553,6 @@ class MetricGenerator(Logger):
         return original_forgery_mask
 
     def get_target_forgery_mask(self, sample_name):
-
         taregt_forgery_mask = cv2.imread(
             join(self.attacked_samples_target_forgery_masks_folder, sample_name)) / (3 * 255)
 
@@ -560,15 +575,12 @@ def visualize_heatmap(heatmap,path=""):
 
 def visualize_mask(mask):
 
-    print(mask.min(),mask.max(),mask.shape)
     fig, axs = plt.subplots(1, 1, figsize=(5, 5))
 
     axs.imshow(mask, clim=[0, 1], cmap='gray')
 
     plt.show()
     plt.close(fig)
-
-
 
 
 def visualize_histogram(heatmap):
