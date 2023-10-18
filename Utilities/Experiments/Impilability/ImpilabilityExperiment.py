@@ -1,9 +1,7 @@
 import gc
 import os.path
-import traceback
 from os import listdir
 from os.path import basename, isfile, join
-from statistics import mean
 import cv2
 import numpy as np
 from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack
@@ -11,12 +9,6 @@ from Datasets.Dataset import resize_mask
 from Detectors.DetectorEngine import find_optimal_mask
 from Utilities.Experiments.BaseExperiment import BaseExperiment
 from Utilities.Image.Picture import Picture
-from Utilities.Image.functions import create_random_nonoverlapping_mask
-from sklearn.metrics import f1_score
-from sklearn.metrics import matthews_corrcoef as mcc
-
-
-
 class ImpilabilityExperiment(BaseExperiment):
 
     def __init__(self, attack: BaseWhiteBoxAttack, debug_root, dataset,attacked_samples_folder_path):

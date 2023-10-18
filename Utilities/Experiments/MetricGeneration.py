@@ -43,7 +43,7 @@ class MetricGenerator(Logger):
                 # load dataset DSO
                 dataset = DsoDataset(configs["global"]["datasets"]["root"])
             elif "columbia" in os.path.basename(self.execution_data_root).lower():
-                # load datset columbia
+                # load dataset columbia
                 dataset = ColumbiaUncompressedDataset(configs["global"]["datasets"]["root"])
             else:
                 raise Exception("Unknown dataset")
@@ -68,11 +68,11 @@ class MetricGenerator(Logger):
         # EXPERIMENT 0: metrics computed on the pristine sample
 
         # F1 and MCC values of the original forgery mask before the attack using the original thresholds
-        self.metrics["original_forgery_f1s_0"] = []
+        self.metrics["original_forgery_f1_0"] = []
         self.metrics["original_forgery_mcc_0"] = []
 
         # F1 and MCC values of the original forgery mask before the attack using the original thresholds
-        self.metrics["target_forgery_f1s_0"] = []
+        self.metrics["target_forgery_f1_0"] = []
         self.metrics["target_forgery_mcc_0"] = []
 
         self.metrics["dr_gt_f1_0"] = []
@@ -86,12 +86,12 @@ class MetricGenerator(Logger):
         # EXPERIMENT 1: metrics computed on the attacked sample using the same thresholds as in the experiment 0
 
         # F1 and MCC values of the original forgery mask after the attack using the original thresholds
-        self.metrics["original_forgery_f1s_1"] = []
-        self.metrics["original_forgery_mccs_1"] = []
+        self.metrics["original_forgery_f1_1"] = []
+        self.metrics["original_forgery_mcc_1"] = []
 
         # F1 and MCC values of the target forgery mask after the attack using the original thresholds
-        self.metrics["target_forgery_f1s_1"] = []
-        self.metrics["target_forgery_mccs_1"] = []
+        self.metrics["target_forgery_f1_1"] = []
+        self.metrics["target_forgery_mcc_1"] = []
 
         self.metrics["dr_gt_f1_1"] = []
         self.metrics["dr_decoy_f1_1"] = []
@@ -106,13 +106,13 @@ class MetricGenerator(Logger):
 
         # F1 and MCC values of the original forgery mask after the attack using thresholds computed on the attacked
         # heatmap with as target the original forgery
-        self.metrics["original_forgery_f1s_2"] = []
-        self.metrics["original_forgery_mccs_2"] = []
+        self.metrics["original_forgery_f1_2"] = []
+        self.metrics["original_forgery_mcc_2"] = []
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed on the attacked
         # heatmap with as target the original forgery
-        self.metrics["target_forgery_f1s_2"] = []
-        self.metrics["target_forgery_mccs_2"] = []
+        self.metrics["target_forgery_f1_2"] = []
+        self.metrics["target_forgery_mcc_2"] = []
 
         self.metrics["dr_gt_f1_2"] = []
         self.metrics["dr_decoy_f1_2"] = []
@@ -127,13 +127,13 @@ class MetricGenerator(Logger):
 
         # F1 and MCC values of the original forgery mask after the attack using thresholds computed on the attacked
         # heatmap with as target the target forgery
-        self.metrics["original_forgery_f1s_3"] = []
-        self.metrics["original_forgery_mccs_3"] = []
+        self.metrics["original_forgery_f1_3"] = []
+        self.metrics["original_forgery_mcc_3"] = []
 
         # F1 and MCC values of the target forgery mask after the attach using thresholds computed on the attacked
         # heatmap with as target the target forgery
-        self.metrics["target_forgery_f1s_3"] = []
-        self.metrics["target_forgery_mccs_3"] = []
+        self.metrics["target_forgery_f1_3"] = []
+        self.metrics["target_forgery_mcc_3"] = []
 
         self.metrics["dr_gt_f1_3"] = []
         self.metrics["dr_decoy_f1_3"] = []
@@ -146,12 +146,12 @@ class MetricGenerator(Logger):
         # EXPERIMENT 4: metric computed on the attacked sample computing the thresholds using the OTSU metric
 
         # F1 and MCC values of the original forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["original_forgery_f1s_4"] = []
-        self.metrics["original_forgery_mccs_4"] = []
+        self.metrics["original_forgery_f1_4"] = []
+        self.metrics["original_forgery_mcc_4"] = []
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["target_forgery_f1s_4"] = []
-        self.metrics["target_forgery_mccs_4"] = []
+        self.metrics["target_forgery_f1_4"] = []
+        self.metrics["target_forgery_mcc_4"] = []
 
         self.metrics["dr_gt_4"] = []
         self.metrics["dr_decoy_4"] = []
@@ -160,12 +160,12 @@ class MetricGenerator(Logger):
         # EXPERIMENT 5: metric computed on the attacked sample a threshold of 0.5
 
         # F1 and MCC values of the original forgery mask after the attack using a threshold of 0.5
-        self.metrics["original_forgery_f1s_5"] = []
-        self.metrics["original_forgery_mccs_5"] = []
+        self.metrics["original_forgery_f1_5"] = []
+        self.metrics["original_forgery_mcc_5"] = []
 
         # F1 and MCC values of the target forgery mask after the attack using a threshold of 0.5
-        self.metrics["target_forgery_f1s_5"] = []
-        self.metrics["target_forgery_mccs_5"] = []
+        self.metrics["target_forgery_f1_5"] = []
+        self.metrics["target_forgery_mcc_5"] = []
 
         self.metrics["dr_gt_5"] = []
         self.metrics["dr_decoy_5"] = []
@@ -175,12 +175,12 @@ class MetricGenerator(Logger):
         # area of the decoy
 
         # F1 and MCC values of the original forgery mask after the attack using as threshold the percentile of the decoy
-        self.metrics["original_forgery_f1s_6"] = []
-        self.metrics["original_forgery_mccs_6"] = []
+        self.metrics["original_forgery_f1_6"] = []
+        self.metrics["original_forgery_mcc_6"] = []
 
         # F1 and MCC values of the target forgery mask after the attack using as threshold the percentile of the decoy
-        self.metrics["target_forgery_f1s_6"] = []
-        self.metrics["target_forgery_mccs_6"] = []
+        self.metrics["target_forgery_f1_6"] = []
+        self.metrics["target_forgery_mcc_6"] = []
 
         self.metrics["dr_gt_6"] = []
         self.metrics["dr_decoy_6"] = []
@@ -190,12 +190,12 @@ class MetricGenerator(Logger):
         # EXPERIMENT 7: metric computed on the attacked sample computing the thresholds using the value at the 0.8 percentile
 
         # F1 and MCC values of the original forgery mask after the attack using as threshold a percentile of 0.8
-        self.metrics["original_forgery_f1s_7"] = []
-        self.metrics["original_forgery_mccs_7"] = []
+        self.metrics["original_forgery_f1_7"] = []
+        self.metrics["original_forgery_mcc_7"] = []
 
         # F1 and MCC values of the target forgery mask after the attack using as threshold a percentile of 0.8
-        self.metrics["target_forgery_f1s_7"] = []
-        self.metrics["target_forgery_mccs_7"] = []
+        self.metrics["target_forgery_f1_7"] = []
+        self.metrics["target_forgery_mcc_7"] = []
 
         self.metrics["dr_gt_7"] = []
         self.metrics["dr_decoy_7"] = []
@@ -263,7 +263,7 @@ class MetricGenerator(Logger):
         for key, values in self.metrics.items():
 
             if len(values) != len(samples_to_process):
-                raise Warning(f'Key: {key} contains {len(values)} statistics while we expect {len(samples_to_process)}')
+                raise self.logger_module.error(f'Key: {key} contains {len(values)} statistics while we expect {len(samples_to_process)}')
 
             self.logger_module.info(f"key: {key}: {mean(values):.4f}")
         # Dump metrics:
@@ -309,11 +309,11 @@ class MetricGenerator(Logger):
             heatmap_pristine, original_forgery_mask, mcc, target_forgery_mask)
 
         # save results w.r.t original forgery
-        self.metrics["original_forgery_f1s_0"].append(pristine_f1_original_mask)
+        self.metrics["original_forgery_f1_0"].append(pristine_f1_original_mask)
         self.metrics["original_forgery_mcc_0"].append(pristine_mcc_original_mask)
 
         # save results w.r.t target forgery
-        self.metrics["target_forgery_f1s_0"].append(pristine_f1_target_forgery_mask)
+        self.metrics["target_forgery_f1_0"].append(pristine_f1_target_forgery_mask)
         self.metrics["target_forgery_mcc_0"].append(pristine_mcc_target_forgery_mask)
 
         dr_gt_f1_0, dr_decoy_f1_0, dr_bg_f1_0 = self.compute_detection_rates(original_forgery_mask, target_forgery_mask,
@@ -338,11 +338,11 @@ class MetricGenerator(Logger):
             heatmap_attacked, original_forgery_mask, mcc, target_forgery_mask, original_f1_threshold,
             test_flipped=False)
 
-        self.metrics["original_forgery_f1s_1"].append(attacked_f1_original_mask_original_t)
-        self.metrics["original_forgery_mccs_1"].append(attacked_mcc_original_mask_original_t)
+        self.metrics["original_forgery_f1_1"].append(attacked_f1_original_mask_original_t)
+        self.metrics["original_forgery_mcc_1"].append(attacked_mcc_original_mask_original_t)
 
-        self.metrics["target_forgery_f1s_1"].append(attacked_f1_target_mask_original_t)
-        self.metrics["target_forgery_mccs_1"].append(attacked_mcc_target_mask_original_t)
+        self.metrics["target_forgery_f1_1"].append(attacked_f1_target_mask_original_t)
+        self.metrics["target_forgery_mcc_1"].append(attacked_mcc_target_mask_original_t)
 
         dr_gt_f1_1, dr_decoy_f1_1, dr_bg_f1_1 = self.compute_detection_rates(original_forgery_mask, target_forgery_mask,
                                                                              combined_mask, mask_f1_1)
@@ -364,11 +364,11 @@ class MetricGenerator(Logger):
         attacked_mcc_original_mask_original_recomputed_t, attacked_mcc_target_mask_original_recomputed_t, _, mask_mcc_2 = compute_score(
             heatmap_attacked, original_forgery_mask, mcc, target_forgery_mask, test_flipped=False)
 
-        self.metrics["original_forgery_f1s_2"].append(attacked_f1_original_mask_original_recomputed_t)
-        self.metrics["original_forgery_mccs_2"].append(attacked_mcc_original_mask_original_recomputed_t)
+        self.metrics["original_forgery_f1_2"].append(attacked_f1_original_mask_original_recomputed_t)
+        self.metrics["original_forgery_mcc_2"].append(attacked_mcc_original_mask_original_recomputed_t)
 
-        self.metrics["target_forgery_f1s_2"].append(attacked_f1_target_mask_original_recomputed_t)
-        self.metrics["target_forgery_mccs_2"].append(attacked_mcc_target_mask_original_recomputed_t)
+        self.metrics["target_forgery_f1_2"].append(attacked_f1_target_mask_original_recomputed_t)
+        self.metrics["target_forgery_mcc_2"].append(attacked_mcc_target_mask_original_recomputed_t)
 
         dr_gt_f1_2, dr_decoy_f1_2, dr_bg_f1_2 = self.compute_detection_rates(original_forgery_mask, target_forgery_mask,
                                                                              combined_mask, mask_f1_2)
@@ -391,11 +391,11 @@ class MetricGenerator(Logger):
         attacked_mcc_target_mask_target_recomputed_t, attacked_mcc_original_mask_target_recomputed_t, _, mask_mcc_3 = compute_score(
             heatmap_attacked, target_forgery_mask, mcc, original_forgery_mask, test_flipped=False)
 
-        self.metrics["original_forgery_f1s_3"].append(attacked_f1_original_mask_target_recomputed_t)
-        self.metrics["original_forgery_mccs_3"].append(attacked_mcc_original_mask_target_recomputed_t)
+        self.metrics["original_forgery_f1_3"].append(attacked_f1_original_mask_target_recomputed_t)
+        self.metrics["original_forgery_mcc_3"].append(attacked_mcc_original_mask_target_recomputed_t)
 
-        self.metrics["target_forgery_f1s_3"].append(attacked_f1_target_mask_target_recomputed_t)
-        self.metrics["target_forgery_mccs_3"].append(attacked_mcc_target_mask_target_recomputed_t)
+        self.metrics["target_forgery_f1_3"].append(attacked_f1_target_mask_target_recomputed_t)
+        self.metrics["target_forgery_mcc_3"].append(attacked_mcc_target_mask_target_recomputed_t)
 
         dr_gt_f1_3, dr_decoy_f1_3, dr_bg_f1_3 = self.compute_detection_rates(original_forgery_mask, target_forgery_mask,
                                                                              combined_mask, mask_f1_3)
@@ -418,12 +418,12 @@ class MetricGenerator(Logger):
 
         otsu_mask = np.rint(otsu_mask / 255)
         # F1 and MCC values of the original forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["original_forgery_f1s_4"].append(f1_score(original_forgery_mask.flatten(), otsu_mask.flatten()))
-        self.metrics["original_forgery_mccs_4"].append(mcc(original_forgery_mask.flatten(), otsu_mask.flatten()))
+        self.metrics["original_forgery_f1_4"].append(f1_score(original_forgery_mask.flatten(), otsu_mask.flatten()))
+        self.metrics["original_forgery_mcc_4"].append(mcc(original_forgery_mask.flatten(), otsu_mask.flatten()))
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["target_forgery_f1s_4"].append(f1_score(target_forgery_mask.flatten(), otsu_mask.flatten()))
-        self.metrics["target_forgery_mccs_4"].append(mcc(target_forgery_mask.flatten(), otsu_mask.flatten()))
+        self.metrics["target_forgery_f1_4"].append(f1_score(target_forgery_mask.flatten(), otsu_mask.flatten()))
+        self.metrics["target_forgery_mcc_4"].append(mcc(target_forgery_mask.flatten(), otsu_mask.flatten()))
 
         dr_gt_mcc_4, dr_decoy_mcc_4, dr_bg_mcc_4 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
@@ -438,12 +438,12 @@ class MetricGenerator(Logger):
         mask_5 = np.where(heatmap_attacked > 0.5, 1, 0)
 
         # F1 and MCC values of the original forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["original_forgery_f1s_5"].append(f1_score(original_forgery_mask.flatten(), mask_5.flatten()))
-        self.metrics["original_forgery_mccs_5"].append(mcc(original_forgery_mask.flatten(), mask_5.flatten()))
+        self.metrics["original_forgery_f1_5"].append(f1_score(original_forgery_mask.flatten(), mask_5.flatten()))
+        self.metrics["original_forgery_mcc_5"].append(mcc(original_forgery_mask.flatten(), mask_5.flatten()))
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["target_forgery_f1s_5"].append(f1_score(target_forgery_mask.flatten(), mask_5.flatten()))
-        self.metrics["target_forgery_mccs_5"].append(mcc(target_forgery_mask.flatten(), mask_5.flatten()))
+        self.metrics["target_forgery_f1_5"].append(f1_score(target_forgery_mask.flatten(), mask_5.flatten()))
+        self.metrics["target_forgery_mcc_5"].append(mcc(target_forgery_mask.flatten(), mask_5.flatten()))
 
         dr_gt_mcc_5, dr_decoy_mcc_5, dr_bg_mcc_5 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
@@ -461,12 +461,12 @@ class MetricGenerator(Logger):
         mask_6 = np.where(heatmap_attacked > t, 1, 0)
 
         # F1 and MCC values of the original forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["original_forgery_f1s_6"].append(f1_score(original_forgery_mask.flatten(), mask_6.flatten()))
-        self.metrics["original_forgery_mccs_6"].append(mcc(original_forgery_mask.flatten(), mask_6.flatten()))
+        self.metrics["original_forgery_f1_6"].append(f1_score(original_forgery_mask.flatten(), mask_6.flatten()))
+        self.metrics["original_forgery_mcc_6"].append(mcc(original_forgery_mask.flatten(), mask_6.flatten()))
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed using OTSU
-        self.metrics["target_forgery_f1s_6"].append(f1_score(target_forgery_mask.flatten(), mask_6.flatten()))
-        self.metrics["target_forgery_mccs_6"].append(mcc(target_forgery_mask.flatten(), mask_6.flatten()))
+        self.metrics["target_forgery_f1_6"].append(f1_score(target_forgery_mask.flatten(), mask_6.flatten()))
+        self.metrics["target_forgery_mcc_6"].append(mcc(target_forgery_mask.flatten(), mask_6.flatten()))
 
         dr_gt_mcc_6, dr_decoy_mcc_6, dr_bg_mcc_6 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,
@@ -484,12 +484,12 @@ class MetricGenerator(Logger):
         mask_7 = np.where(heatmap_attacked > percentile, 1, 0)
 
         # F1 and MCC values of the original forgery mask after the attack using thresholds computed using the 0.8 quantile
-        self.metrics["original_forgery_f1s_7"].append(f1_score(original_forgery_mask.flatten(), mask_7.flatten()))
-        self.metrics["original_forgery_mccs_7"].append(mcc(original_forgery_mask.flatten(), mask_7.flatten()))
+        self.metrics["original_forgery_f1_7"].append(f1_score(original_forgery_mask.flatten(), mask_7.flatten()))
+        self.metrics["original_forgery_mcc_7"].append(mcc(original_forgery_mask.flatten(), mask_7.flatten()))
 
         # F1 and MCC values of the target forgery mask after the attack using thresholds computed using the 0.8 quantile
-        self.metrics["target_forgery_f1s_7"].append(f1_score(target_forgery_mask.flatten(), mask_7.flatten()))
-        self.metrics["target_forgery_mccs_7"].append(mcc(target_forgery_mask.flatten(), mask_7.flatten()))
+        self.metrics["target_forgery_f1_7"].append(f1_score(target_forgery_mask.flatten(), mask_7.flatten()))
+        self.metrics["target_forgery_mcc_7"].append(mcc(target_forgery_mask.flatten(), mask_7.flatten()))
 
         dr_gt_mcc_7, dr_decoy_mcc_7, dr_bg_mcc_7 = self.compute_detection_rates(original_forgery_mask,
                                                                                 target_forgery_mask,

@@ -15,7 +15,7 @@ JOBTMPDIR=/tmp/job-"$SLURM_JOB_ID"
 
 srun mkdir "$JOBTMPDIR"
 
-srun --container-mounts="$JOBTMPDIR":/tmp --container-image=projects.cispa.saarland:5005#c01gide/tesi:tf2 nohup python /home/c01gide/CISPA-home/tesi/attack-samples.py -d columbia -t noiseprint -f /home/c01gide/CISPA-projects/llm_security_triggers-2023/tesi_archive/alpha_5/risultati/Data/Attacks/SingleAttacks/Attack-exif-columbia/outputs/attackedSamples/  > $JOBDATADIR/nohup.out
+srun --container-mounts="$JOBTMPDIR":/tmp --container-image=projects.cispa.saarland:5005#c01gide/tesi:tf2 nohup python /home/c01gide/CISPA-home/tesi/attack-samples.py -d dso -t noiseprint -f /home/c01gide/CISPA-projects/llm_security_triggers-2023/tesi_archive/alpha_5/risultati/Data/Attacks/SingleAttacks/Attack-exif-dso/outputs/attackedSamples/ > $JOBDATADIR/nohup.out
 
 srun mv /tmp/job-"$SLURM_JOB_ID".out "$JOBDATADIR"/out.txt
 srun mv "$JOBTMPDIR" "$JOBDATADIR"/data
