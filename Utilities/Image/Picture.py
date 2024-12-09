@@ -29,7 +29,8 @@ class Picture(Patch):
                                 "it from")
 
             # use the path to load the picture as a
-            value = np.asarray(Image.open(path).convert('RGB'), np.int)
+            with Image.open(path) as f:
+                value = np.asarray(f.convert('RGB'), np.int)
 
         obj = Patch.__new__(cls, value, *args, **kwargs)
         obj._path = path

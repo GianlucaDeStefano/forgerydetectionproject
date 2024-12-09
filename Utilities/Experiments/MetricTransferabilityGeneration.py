@@ -6,6 +6,12 @@ from Utilities.Experiments.MetricGeneration import MetricGenerator
 class MetricGeneratorTransferability(MetricGenerator):
 
     def __init__(self, attacked_samples_root, pristine_samples_root, configs, dataset=None):
+        """
+        Class used to generate statistics on the transferability of the attacks
+        @param attacked_samples_root: folder containing the attacked samples data
+        @param pristine_samples_root: folder containing the data of the samples tested without any attack
+        """
+
         super().__init__(attacked_samples_root, configs, dataset)
 
         self.attacked_samples_data_root = attacked_samples_root

@@ -1,8 +1,7 @@
+import gc
 import os.path
-import traceback
 from os import listdir
 from os.path import basename, isfile, join
-from statistics import mean
 import cv2
 import numpy as np
 from Attacks.BaseWhiteBoxAttack import BaseWhiteBoxAttack
@@ -10,12 +9,6 @@ from Datasets.Dataset import resize_mask
 from Detectors.DetectorEngine import find_optimal_mask
 from Utilities.Experiments.BaseExperiment import BaseExperiment
 from Utilities.Image.Picture import Picture
-from Utilities.Image.functions import create_random_nonoverlapping_mask
-from sklearn.metrics import f1_score
-from sklearn.metrics import matthews_corrcoef as mcc
-
-
-
 class ImpilabilityExperiment(BaseExperiment):
 
     def __init__(self, attack: BaseWhiteBoxAttack, debug_root, dataset,attacked_samples_folder_path):
@@ -110,9 +103,13 @@ class ImpilabilityExperiment(BaseExperiment):
         self.visualizer.save_prediction_pipeline(os.path.join(self.attacked_visualizations, filename),
                                                  target_forgery_mask)
 
-        # self.attack._engine.reset(True, True)
-        del heatmap_attacked, heatmap_pristine
+        self.visualizer.reset_metadata()
 
+        del heatmap_attacked, heatmap_pristine
+        del original_forgery_mask, target_forgery_mask
+        del pristine_sample, attacked_sample
+
+        gc.collect()
 
 def compute_score(heatmap, target_mask, metric, second_mask=None, threshold=None, test_flipped=True):
     """

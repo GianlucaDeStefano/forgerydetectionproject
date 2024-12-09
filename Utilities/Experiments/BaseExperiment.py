@@ -50,6 +50,9 @@ class BaseExperiment(Logger):
 
                 # print the current statistics in the log file
                 self.log_result()
+
+                del gt_mask,_
+
                 gc.collect()
 
             # Print the final statistics

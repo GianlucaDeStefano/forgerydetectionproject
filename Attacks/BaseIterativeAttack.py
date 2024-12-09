@@ -3,6 +3,8 @@ import os
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+from tqdm import tqdm
+
 from Attacks.BaseAttack import BaseAttack
 from Utilities.Image import Picture
 from Utilities.Visualizers.BaseVisualizer import BaseVisualizer
@@ -18,7 +20,7 @@ class BaseIterativeAttack(BaseAttack, ABC):
         :param visualizer: instance of the visualizer class wrapping the functionalities of the targeted detector
         :param steps: number of attack iterations to perform
         :param plot_interval: how often (# steps) should the step-visualizations be generated?
-        :param additive_attack: showl we feed the result of the iteration i as the input of the iteration 1+1?
+        :param additive_attack: showld we feed the result of the iteration i as the input of the iteration 1+1?
         :param debug_root: root folder inside which to create a folder to store the data produced by the pipeline
         :param verbosity: is this a test mode? In test mode visualizations and superfluous steps will be skipped in favour of a
             faster execution to test the code
@@ -70,7 +72,8 @@ class BaseIterativeAttack(BaseAttack, ABC):
 
         # iterate the attack for the given amount of steps
         attacked_image = pristine_image
-        for self.step_counter in range(0, self.steps):
+        print(f'EXECUTING FOR STEPS: {self.steps}')
+        for self.step_counter in tqdm(range(0, self.steps)):
 
             # print logs
             step_start_time = datetime.now()
